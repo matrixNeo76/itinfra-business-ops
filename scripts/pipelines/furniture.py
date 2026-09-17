@@ -1,3 +1,4 @@
+import datetime
 import yaml
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -66,3 +67,55 @@ class FurniturePipeline:
             "all_checks_passed": all_checks_ok,
             "signed_acceptance": handover.get("signed_acceptance_date", "")
         }
+
+    def advance_stage(self, slug: str, order_id: str, target_stage: Optional[str] = None) -> Optional[Dict[str, Any]]:
+        """Avanza la commessa alla fase successiva o alla fase specificata e salva su file."""
+        fdir = self.get_furniture_dir(slug)
+        for f in fdir.glob("*.yaml"):
+            try:
+                with open(f, "r", encoding="utf-8") as fp:
+                    data = yaml.safe_load(fp) or {}
+                if data.get("order_id") == order_id:
+                    current_status = data.get("status", "1_survey")
+                    if target_stage:
+                        new_stage = target_stage
+                    else:
+                        idx = self.STAGES_ORDER.index(current_status)
+                        if idx < len(self.STAGES_ORDER) - 1:
+                            new_stage = self.STAGES_ORDER[idx + 1]
+                        else:
+                            new_stage = current_status
+
+                    data["status"] = new_stage
+                    with open(f, "w", encoding="utf-8") as fp:
+                        yaml.safe_dump(data, fp, sort_keys=False, allow_unicode=True)
+                    return self.get_order_status(data)
+            except Exception:
+                pass
+        return None
+
+    def sign_handover(self, slug: str, order_id: str, client_signatory: str) -> Optional[Dict[str, Any]]:
+        """Certifica il superamento di tutti i collaudi, firma il verbale e chiude la commessa."""
+        fdir = self.get_furniture_dir(slug)
+        for f in fdir.glob("*.yaml"):
+            try:
+                with open(f, "r", encoding="utf-8") as fp:
+                    data = yaml.safe_load(fp) or {}
+                if data.get("order_id") == order_id:
+                    data["status"] = "6_handover_approved"
+                    stages = data.setdefault("stages", {})
+                    handover = stages.setdefault("handover", {})
+                    checklist = handover.setdefault("checklist", {})
+                    checklist["desk_planarity_ok"] = True
+                    checklist["drawer_locks_functional"] = True
+                    checklist["finishes_scratch_free"] = True
+                    checklist["power_data_accessible"] = True
+                    handover["signed_acceptance_date"] = datetime.date.today().isoformat()
+                    handover["client_signatory"] = client_signatory
+
+                    with open(f, "w", encoding="utf-8") as fp:
+                        yaml.safe_dump(data, fp, sort_keys=False, allow_unicode=True)
+                    return self.get_order_status(data)
+            except Exception:
+                pass
+        return None

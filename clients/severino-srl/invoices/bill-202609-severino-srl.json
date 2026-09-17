@@ -1,0 +1,67 @@
+{
+  "batch_id": "BILL-202609-severino-srl",
+  "slug": "severino-srl",
+  "period": "2026-09",
+  "status": "paid",
+  "invoice_draft": {
+    "invoice_number": "DRAFT-BILL-202609-severino-srl",
+    "invoice_date": "2026-09-17",
+    "payment_method": "MP05",
+    "lines": [
+      {
+        "description": "Canone Assistenza IT CTR-2026-SEVERINO - Periodo 2026-09",
+        "quantity": 1,
+        "unit_price": 150.0,
+        "vat_rate": 22.0,
+        "total_line": 150.0,
+        "source_type": "recurring_contract",
+        "source_ref": "CTR-2026-SEVERINO"
+      },
+      {
+        "description": "Canone Noleggio Ricoh IM C2500 A3 Multifunzione Colore (MPS-2026-SEVERINO-01) - Periodo 2026-09",
+        "quantity": 1,
+        "unit_price": 390.0,
+        "vat_rate": 22.0,
+        "total_line": 390.0,
+        "source_type": "mps_base_fee",
+        "source_ref": "MPS-2026-SEVERINO-01"
+      },
+      {
+        "description": "Eccedenza Copie BN (700 pag) MPS-2026-SEVERINO-01",
+        "quantity": 700,
+        "unit_price": 0.008,
+        "vat_rate": 22.0,
+        "total_line": 5.6,
+        "source_type": "mps_excess_bw",
+        "source_ref": "MPS-2026-SEVERINO-01"
+      },
+      {
+        "description": "Eccedenza Copie Colore (200 pag) MPS-2026-SEVERINO-01",
+        "quantity": 200,
+        "unit_price": 0.06,
+        "vat_rate": 22.0,
+        "total_line": 12.0,
+        "source_type": "mps_excess_color",
+        "source_ref": "MPS-2026-SEVERINO-01"
+      }
+    ],
+    "totals": {
+      "subtotal_net": 557.6,
+      "vat_amount": 122.67,
+      "total_gross": 680.27
+    }
+  },
+  "scadenzario": {
+    "overall_status": "paid",
+    "installments": [
+      {
+        "number": 1,
+        "due_date": "2026-11-16",
+        "amount": 680.27,
+        "status": "paid",
+        "paid_date": "2026-09-17",
+        "bank_transaction_id": "CRO-9988776655"
+      }
+    ]
+  }
+}

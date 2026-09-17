@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 itinfra-business-ops — Master CLI Dispatcher (it-ops)
-Gestione integrata Hub-and-Spoke per Contratti, Rapportini, Fatturazione, MPS e Arredo.
+Governance Operativa, Commerciale, Contratti SLA, MPS e Arredo Ufficio.
 """
 
 import argparse
@@ -47,7 +47,6 @@ def cmd_init(args):
     for s in subdirs:
         (target_dir / s).mkdir(parents=True, exist_ok=True)
 
-    # Scaffolding da template
     templates_dir = get_templates_dir()
     replacements = {
         "{{SLUG}}": slug,
@@ -92,7 +91,6 @@ def cmd_status(args):
     print(f" 🏢 SCHEDA ESECUTIVA CLIENTE: {slug.upper()}")
     print("=" * 70)
 
-    # 1. Manifest
     mfile = client_dir / "client-manifest.yaml"
     if mfile.exists():
         with open(mfile, "r", encoding="utf-8") as fp:
@@ -103,7 +101,6 @@ def cmd_status(args):
             mods = [k for k, v in manifest.get("modules", {}).items() if v]
             print(f" Moduli Attivi   : {', '.join(mods)}")
 
-    # 2. Bridge itinfra
     bridge = ITInfraBridge()
     has_tech = bridge.project_exists(slug)
     tech_icon = "✓ Connesso" if has_tech else "✗ Non presente in itinfra"
@@ -112,7 +109,6 @@ def cmd_status(args):
         serials = bridge.get_known_serials(slug)
         print(f" Apparati As-Built: {len(serials)} seriali hardware rilevati")
 
-    # 3. Contratti SLA & Monte Ore
     cp = ContractsPipeline()
     c_summary = cp.get_contract_summary(slug)
     print("\n--- [A] Contratti SLA & Monte Ore ---")
@@ -122,7 +118,6 @@ def cmd_status(args):
     for alert in c_summary["alerts"]:
         print(f"  ⚠️  {alert}")
 
-    # 4. Rapportini
     rp = ReportsPipeline()
     r_summary = rp.get_ledger_summary(slug)
     print("\n--- [B] Rendicontazione Interventi ---")
@@ -130,7 +125,6 @@ def cmd_status(args):
     print(f" Ore a Contratto   : {r_summary['contract_debit_hours']} h")
     print(f" Ore Spot da Fatt. : {r_summary['invoice_spot_hours']} h ({len(r_summary['unbilled_spot_reports'])} rapportini)")
 
-    # 5. MPS Multifunzione
     mp = MPSPipeline()
     mps_list = mp.list_mps_contracts(slug)
     print("\n--- [F] Parco Stampanti & Noleggio MPS ---")
@@ -142,7 +136,6 @@ def cmd_status(args):
         for alert in settlement["alerts"]:
             print(f"    ⚠️  {alert}")
 
-    # 6. Arredo Ufficio
     fp = FurniturePipeline()
     orders = fp.list_orders(slug)
     if orders:
@@ -184,6 +177,20 @@ def cmd_check(args):
 def cmd_contract(args):
     slug = args.slug.strip().lower()
     cp = ContractsPipeline()
+    action = args.action or "status"
+
+    if action == "renew":
+        cid = args.contract_id
+        if not cid:
+            print("[ERRORE] Specificare il contract_id da rinnovare con --contract-id")
+            return 1
+        res = cp.renew_contract(slug, cid)
+        if res:
+            print(f"[✓] Bozza di rinnovo contrattuale creata con successo: {res.name}")
+        else:
+            print(f"[!] Contratto {cid} non trovato.")
+        return 0
+
     res = cp.get_contract_summary(slug)
     print(json.dumps(res, indent=2))
     return 0
@@ -191,28 +198,147 @@ def cmd_contract(args):
 def cmd_report(args):
     slug = args.slug.strip().lower()
     rp = ReportsPipeline()
+    action = args.action or "list"
+
+    if action == "new":
+        if not args.tech or not args.desc or not args.clock_in or not args.clock_out:
+            print("[ERRORE] Per creare un rapportino specificare: --tech, --desc, --in, --out")
+            return 1
+        assets = []
+        if args.assets:
+            for s in args.assets.split(","):
+                assets.append({"serial_number": s.strip(), "role": "Apparato", "description": "Intervento"})
+        rep = rp.create_report(
+            slug=slug,
+            technician=args.tech,
+            description=args.desc,
+            clock_in=args.clock_in,
+            clock_out=args.clock_out,
+            date_str=args.date,
+            ledger_action=args.ledger_action or "debit_contract",
+            impacted_assets=assets,
+            customer_signed=args.signed,
+            signer_name=args.signer or ""
+        )
+        print(f"[✓] Rapportino creato con successo: {rep['report_id']}")
+        print(f"    Ore consuntivate: {rep['total_hours_rounded']} h ({rep['ledger_action']})")
+        print(f"    File generati: {rep['report_id'].lower()}.yaml e {rep['report_id'].lower()}.html")
+        return 0
+
     res = rp.get_ledger_summary(slug)
     print(json.dumps(res, indent=2))
-    return 0
-
-def cmd_mps(args):
-    slug = args.slug.strip().lower()
-    mp = MPSPipeline()
-    contracts = mp.list_mps_contracts(slug)
-    results = [mp.calculate_settlement(c) for c in contracts]
-    print(json.dumps(results, indent=2))
     return 0
 
 def cmd_billing(args):
     slug = args.slug.strip().lower()
     bp = BillingPipeline()
-    batch = bp.aggregate_monthly_batch(slug)
+    action = args.action or "summary"
+
+    if action == "generate":
+        batch = bp.aggregate_monthly_batch(slug, period=args.period)
+        paths = bp.save_batch(slug, batch)
+        print(f"[✓] Batch di fatturazione generato e salvato con successo:")
+        print(f"    JSON Batch : {paths['json']}")
+        print(f"    FatturaPA  : {paths['xml']} (SDI v1.2 FPR12)")
+        print(f"    Totale Doc : € {batch['invoice_draft']['totals']['total_gross']:.2f}")
+        return 0
+
+    if action == "pay":
+        if not args.batch_id:
+            print("[ERRORE] Specificare --batch-id per registrare il pagamento")
+            return 1
+        ok = bp.mark_installment_paid(slug, args.batch_id, installment_num=args.inst, tx_id=args.tx or "")
+        if ok:
+            print(f"[✓] Rata {args.inst} del batch {args.batch_id} segnata come PAGATA!")
+        else:
+            print(f"[!] Batch {args.batch_id} non trovato in invoices.")
+        return 0
+
+    batch = bp.aggregate_monthly_batch(slug, period=args.period)
     print(json.dumps(batch, indent=2))
+    return 0
+
+def cmd_jira(args):
+    slug = args.slug.strip().lower()
+    jp = JiraSyncPipeline()
+    action = args.action or "schedule"
+
+    if action == "schedule":
+        if not args.issue or not args.summary or not args.start:
+            print("[ERRORE] Per schedulare un appuntamento specificare: --issue, --summary, --start (es. 2026-09-20T09:00:00)")
+            return 1
+        rec = jp.create_appointment(
+            slug=slug,
+            issue_key=args.issue,
+            summary=args.summary,
+            start_dt=args.start,
+            duration_hours=args.duration or 2.0,
+            technician=args.tech or "Tecnico"
+        )
+        print(f"[✓] Appuntamento schedulato per {args.issue}:")
+        print(f"    Data/Ora: {rec['appointment']['start_datetime']} &rarr; {rec['appointment']['end_datetime']}")
+        print(f"    File ICS: appointment-{args.issue.lower()}.ics (Pronto per Outlook/Google Calendar)")
+        return 0
+
+    print(f"Nessuna azione specificata per Jira.")
+    return 0
+
+def cmd_mps(args):
+    slug = args.slug.strip().lower()
+    mp = MPSPipeline()
+    action = args.action or "calculate"
+
+    if action == "read":
+        if not args.id or args.mono is None or args.color is None:
+            print("[ERRORE] Specificare --id, --mono e --color per registrare la lettura contatori")
+            return 1
+        st = mp.record_reading(
+            slug=slug,
+            mps_id=args.id,
+            mono_total=args.mono,
+            color_total=args.color,
+            toner_black=args.bk or 80,
+            toner_cyan=args.c or 70,
+            toner_magenta=args.m or 65,
+            toner_yellow=args.y or 75
+        )
+        if st:
+            print(f"[✓] Lettura contatori salvata per {args.id}!")
+            print(f"    Copie Semestre: Mono {st['mono_produced']} (Ecc: {st['mono_excess']}), Colore {st['color_produced']} (Ecc: {st['color_excess']})")
+            print(f"    Prossimo Conguaglio: € {st['total_settlement_next_period']:.2f}")
+        return 0
+
+    contracts = mp.list_mps_contracts(slug)
+    results = [mp.calculate_settlement(c) for c in contracts]
+    print(json.dumps(results, indent=2))
     return 0
 
 def cmd_furniture(args):
     slug = args.slug.strip().lower()
     fp = FurniturePipeline()
+    action = args.action or "status"
+
+    if action == "advance":
+        if not args.id:
+            print("[ERRORE] Specificare l'ID commessa con --id (es. --id ARR-2026-SEVERINO-01)")
+            return 1
+        st = fp.advance_stage(slug, args.id, target_stage=args.stage)
+        if st:
+            print(f"[✓] Commessa {args.id} avanzata a: {st['current_stage']} (Avanzamento: {st['progress_percent']}%)")
+        else:
+            print(f"[!] Commessa {args.id} non trovata.")
+        return 0
+
+    if action == "sign":
+        if not args.id or not args.signatory:
+            print("[ERRORE] Specificare --id e --signatory per firmare il verbale di collaudo")
+            return 1
+        st = fp.sign_handover(slug, args.id, args.signatory)
+        if st:
+            print(f"[✓] Collaudo finale completato e controfirmato per {args.id}!")
+            print(f"    Stato: {st['current_stage']} (100.0%) | Firmatario: {args.signatory}")
+        return 0
+
     orders = fp.list_orders(slug)
     results = [fp.get_order_status(o) for o in orders]
     print(json.dumps(results, indent=2))
@@ -285,7 +411,7 @@ def main():
 
     # init
     p_init = subparsers.add_parser("init", help="Inizializza una nuova anagrafica cliente")
-    p_init.add_argument("slug", help="Slug univoco del cliente (es. cliente-rossi-srl)")
+    p_init.add_argument("slug", help="Slug cliente")
     p_init.add_argument("--client", help="Ragione Sociale del cliente")
     p_init.set_defaults(func=cmd_init)
 
@@ -302,26 +428,66 @@ def main():
     # contract
     p_contract = subparsers.add_parser("contract", help="Gestione contratti SLA e monte ore")
     p_contract.add_argument("slug", help="Slug cliente")
+    p_contract.add_argument("action", nargs="?", default="status", choices=["status", "balance", "renew"])
+    p_contract.add_argument("--contract-id", dest="contract_id", help="ID contratto")
     p_contract.set_defaults(func=cmd_contract)
 
     # report
     p_report = subparsers.add_parser("report", help="Gestione rapportini e time tracking")
     p_report.add_argument("slug", help="Slug cliente")
+    p_report.add_argument("action", nargs="?", default="list", choices=["list", "balance", "new"])
+    p_report.add_argument("--tech", help="Nome tecnico incaricato")
+    p_report.add_argument("--desc", help="Descrizione dettagliata intervento")
+    p_report.add_argument("--in", dest="clock_in", help="Orario inizio (HH:MM)")
+    p_report.add_argument("--out", dest="clock_out", help="Orario fine (HH:MM)")
+    p_report.add_argument("--date", help="Data intervento (YYYY-MM-DD)")
+    p_report.add_argument("--action-type", dest="ledger_action", choices=["debit_contract", "invoice_spot", "included_flat"], default="debit_contract")
+    p_report.add_argument("--assets", help="Seriale apparati impattati separati da virgola")
+    p_report.add_argument("--signed", action="store_true", help="Segna come firmato dal cliente")
+    p_report.add_argument("--signer", help="Nome referente cliente firmatario")
     p_report.set_defaults(func=cmd_report)
-
-    # mps
-    p_mps = subparsers.add_parser("mps", help="Gestione stampanti e costo copia")
-    p_mps.add_argument("slug", help="Slug cliente")
-    p_mps.set_defaults(func=cmd_mps)
 
     # billing
     p_billing = subparsers.add_parser("billing", help="Batch di fatturazione e scadenziario")
     p_billing.add_argument("slug", help="Slug cliente")
+    p_billing.add_argument("action", nargs="?", default="summary", choices=["summary", "generate", "pay"])
+    p_billing.add_argument("--period", help="Periodo contabile YYYY-MM")
+    p_billing.add_argument("--batch-id", dest="batch_id", help="ID del batch da saldare")
+    p_billing.add_argument("--inst", type=int, default=1, help="Numero rata (default: 1)")
+    p_billing.add_argument("--tx", help="Identificativo transazione bancaria / CRO")
     p_billing.set_defaults(func=cmd_billing)
+
+    # jira
+    p_jira = subparsers.add_parser("jira", help="Sincronizzazione Jira & Calendario")
+    p_jira.add_argument("slug", help="Slug cliente")
+    p_jira.add_argument("action", nargs="?", default="schedule", choices=["schedule"])
+    p_jira.add_argument("--issue", help="Key del task Jira (es. IT-142)")
+    p_jira.add_argument("--summary", help="Titolo/Sintesi dell'intervento")
+    p_jira.add_argument("--start", help="Data e ora inizio (YYYY-MM-DDTHH:MM:SS)")
+    p_jira.add_argument("--duration", type=float, default=2.0, help="Durata in ore (default: 2.0)")
+    p_jira.add_argument("--tech", help="Tecnico incaricato")
+    p_jira.set_defaults(func=cmd_jira)
+
+    # mps
+    p_mps = subparsers.add_parser("mps", help="Gestione stampanti e costo copia")
+    p_mps.add_argument("slug", help="Slug cliente")
+    p_mps.add_argument("action", nargs="?", default="calculate", choices=["calculate", "read"])
+    p_mps.add_argument("--id", help="ID contratto MPS")
+    p_mps.add_argument("--mono", type=int, help="Lettura contatore mono totale")
+    p_mps.add_argument("--color", type=int, help="Lettura contatore colore totale")
+    p_mps.add_argument("--bk", type=int, help="Toner nero %")
+    p_mps.add_argument("--c", type=int, help="Toner ciano %")
+    p_mps.add_argument("--m", type=int, help="Toner magenta %")
+    p_mps.add_argument("--y", type=int, help="Toner giallo %")
+    p_mps.set_defaults(func=cmd_mps)
 
     # furniture
     p_furniture = subparsers.add_parser("furniture", help="Gestione commesse arredo ufficio")
     p_furniture.add_argument("slug", help="Slug cliente")
+    p_furniture.add_argument("action", nargs="?", default="status", choices=["status", "advance", "sign"])
+    p_furniture.add_argument("--id", help="ID commessa arredo")
+    p_furniture.add_argument("--stage", help="Fase specifica a cui avanzare")
+    p_furniture.add_argument("--signatory", help="Nome firmatario accettazione fornitura")
     p_furniture.set_defaults(func=cmd_furniture)
 
     # quote

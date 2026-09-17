@@ -1,0 +1,16 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//ITInfra Business Ops//Intervento Tecnico//IT
+CALSCALE:GREGORIAN
+METHOD:REQUEST
+BEGIN:VEVENT
+UID:IT-205@itinfra.local
+DTSTAMP:20260917T131617Z
+DTSTART:20260922T093000
+DTEND:20260922T120000
+SUMMARY:[IT-205] Sostituzione tamburo e tuning routing VPN
+DESCRIPTION:Intervento tecnico programmato per il cliente severino-srl\nAssegnatario: Mario Rossi
+LOCATION:Presso sede cliente severino-srl
+STATUS:CONFIRMED
+END:VEVENT
+END:VCALENDAR

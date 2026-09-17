@@ -7,9 +7,10 @@ from typing import Any, Dict, List, Optional
 from scripts.core.config import get_clients_dir, load_config
 from scripts.pipelines.contracts import ContractsPipeline
 from scripts.pipelines.reports import ReportsPipeline
+from scripts.pipelines.mps import MPSPipeline
 
 class BillingPipeline:
-    """Pipeline C: Fatturazione Elettronica SDI & Scadenzario Attivo."""
+    """Pipeline C: Fatturazione Elettronica SDI (v1.2) & Scadenzario Attivo."""
 
     def __init__(self, clients_root: Optional[Path] = None):
         self.clients_root = clients_root or get_clients_dir()
@@ -18,16 +19,25 @@ class BillingPipeline:
     def get_invoices_dir(self, slug: str) -> Path:
         return self.clients_root / slug / "invoices"
 
+    def get_client_manifest(self, slug: str) -> Dict[str, Any]:
+        mfile = self.clients_root / slug / "client-manifest.yaml"
+        if mfile.is_file():
+            with open(mfile, "r", encoding="utf-8") as f:
+                return yaml.safe_load(f) or {}
+        return {}
+
     def aggregate_monthly_batch(self, slug: str, period: Optional[str] = None) -> Dict[str, Any]:
-        """Aggrega canoni, rapportini spot ed eventuali voci MPS per la fatturazione."""
+        """Aggrega canoni ricorrenti, ore spot, canoni e conguagli MPS in un batch contabile."""
         if not period:
             period = datetime.date.today().strftime("%Y-%m")
 
         contracts_pipe = ContractsPipeline(self.clients_root)
         reports_pipe = ReportsPipeline(self.clients_root)
+        mps_pipe = MPSPipeline(self.clients_root)
 
         contracts = contracts_pipe.list_contracts(slug)
         reports_summary = reports_pipe.get_ledger_summary(slug)
+        mps_contracts = mps_pipe.list_mps_contracts(slug)
 
         vat_rate = float(self.config.get("company", {}).get("default_vat_rate", 22.0))
         lines: List[Dict[str, Any]] = []
@@ -51,7 +61,7 @@ class BillingPipeline:
         # 2. Rapportini Spot da Fatturare
         for rep in reports_summary["unbilled_spot_reports"]:
             h = rep["hours"]
-            hourly_rate = 75.0 # Default o preso da contratto
+            hourly_rate = 75.0
             tot = round(h * hourly_rate, 2)
             lines.append({
                 "description": f"Intervento tecnico {rep['report_id']} ({rep['date']}) - {rep['description']}",
@@ -62,6 +72,43 @@ class BillingPipeline:
                 "source_type": "rapportino_hours",
                 "source_ref": rep["report_id"]
             })
+
+        # 3. Canoni & Conguagli Copie MPS Stampanti
+        for m in mps_contracts:
+            if m.get("status") == "active":
+                st = mps_pipe.calculate_settlement(m)
+                mid = m.get("mps_contract_id", "MPS")
+                model = m.get("device_info", {}).get("model", "Stampante")
+                if st["base_fee"] > 0:
+                    lines.append({
+                        "description": f"Canone Noleggio {model} ({mid}) - Periodo {period}",
+                        "quantity": 1,
+                        "unit_price": st["base_fee"],
+                        "vat_rate": vat_rate,
+                        "total_line": st["base_fee"],
+                        "source_type": "mps_base_fee",
+                        "source_ref": mid
+                    })
+                if st["mono_overage_cost"] > 0:
+                    lines.append({
+                        "description": f"Eccedenza Copie BN ({st['mono_excess']} pag) {mid}",
+                        "quantity": st["mono_excess"],
+                        "unit_price": float(m.get("contract_terms", {}).get("overage_cost_per_page", {}).get("mono", 0.009)),
+                        "vat_rate": vat_rate,
+                        "total_line": st["mono_overage_cost"],
+                        "source_type": "mps_excess_bw",
+                        "source_ref": mid
+                    })
+                if st["color_overage_cost"] > 0:
+                    lines.append({
+                        "description": f"Eccedenza Copie Colore ({st['color_excess']} pag) {mid}",
+                        "quantity": st["color_excess"],
+                        "unit_price": float(m.get("contract_terms", {}).get("overage_cost_per_page", {}).get("color", 0.065)),
+                        "vat_rate": vat_rate,
+                        "total_line": st["color_overage_cost"],
+                        "source_type": "mps_excess_color",
+                        "source_ref": mid
+                    })
 
         subtotal = round(sum(l["total_line"] for l in lines), 2)
         vat_amount = round(subtotal * (vat_rate / 100.0), 2)
@@ -91,37 +138,91 @@ class BillingPipeline:
                         "number": 1,
                         "due_date": (datetime.date.today() + datetime.timedelta(days=60)).isoformat(),
                         "amount": total_gross,
-                        "status": "unpaid"
+                        "status": "unpaid",
+                        "paid_date": "",
+                        "bank_transaction_id": ""
                     }
                 ]
             }
         }
         return batch
 
-    def generate_sdi_xml_preview(self, batch: Dict[str, Any]) -> str:
-        """Genera anteprima tracciato XML FatturaPA/SDI (v1.2)."""
+    def generate_sdi_xml(self, batch: Dict[str, Any]) -> str:
+        """Genera il tracciato formale FatturaPA/SDI v1.2 (FPR12 B2B) completo di Cedente e Cessionario."""
+        slug = batch.get("slug", "")
+        cmanifest = self.get_client_manifest(slug)
+        cbilling = cmanifest.get("billing_info", {})
+        caddr = cbilling.get("address", {})
+        comp = self.config.get("company", {})
+
         root = ET.Element("p:FatturaElettronica", {
             "versione": "FPR12",
-            "xmlns:p": "http://ivaservizi.agenziaentrate.gov.it/docs/xsd/fatture/v1.2"
+            "xmlns:p": "http://ivaservizi.agenziaentrate.gov.it/docs/xsd/fatture/v1.2",
+            "xmlns:ds": "http://www.w3.org/2000/09/xmldsig#"
         })
 
+        # --- HEADER ---
         header = ET.SubElement(root, "FatturaElettronicaHeader")
+        
+        # Dati Trasmissione
         dati_trasm = ET.SubElement(header, "DatiTrasmissione")
         id_trasm = ET.SubElement(dati_trasm, "IdTrasmittente")
         ET.SubElement(id_trasm, "IdPaese").text = "IT"
-        ET.SubElement(id_trasm, "IdCodice").text = self.config.get("company", {}).get("fiscal_code", "01234567890")
+        ET.SubElement(id_trasm, "IdCodice").text = comp.get("fiscal_code", "01234567890")
+        ET.SubElement(dati_trasm, "ProgressivoInvio").text = batch.get("batch_id", "00001")[-10:]
         ET.SubElement(dati_trasm, "FormatoTrasmissione").text = "FPR12"
-        ET.SubElement(dati_trasm, "CodiceDestinatario").text = self.config.get("company", {}).get("sdi_code", "0000000")
+        ET.SubElement(dati_trasm, "CodiceDestinatario").text = cbilling.get("sdi_code", "0000000")
+        if cbilling.get("pec"):
+            ET.SubElement(dati_trasm, "PECDestinatario").text = cbilling.get("pec")
 
+        # Cedente / Prestatore (Fornitore)
+        cedente = ET.SubElement(header, "CedentePrestatore")
+        dati_anag_ced = ET.SubElement(cedente, "DatiAnagrafici")
+        id_fisc_ced = ET.SubElement(dati_anag_ced, "IdFiscaleIVA")
+        ET.SubElement(id_fisc_ced, "IdPaese").text = "IT"
+        ET.SubElement(id_fisc_ced, "IdCodice").text = comp.get("fiscal_code", "01234567890")
+        anag_ced = ET.SubElement(dati_anag_ced, "Anagrafica")
+        ET.SubElement(anag_ced, "Denominazione").text = comp.get("name", "ITInfra Business Ops")
+        ET.SubElement(dati_anag_ced, "RegimeFiscale").text = "RF01"
+        sede_ced = ET.SubElement(cedente, "Sede")
+        ET.SubElement(sede_ced, "Indirizzo").text = "Via dell'Infrastruttura, 10"
+        ET.SubElement(sede_ced, "CAP").text = "20100"
+        ET.SubElement(sede_ced, "Comune").text = "Milano"
+        ET.SubElement(sede_ced, "Provincia").text = "MI"
+        ET.SubElement(sede_ced, "Nazione").text = "IT"
+
+        # Cessionario / Committente (Cliente)
+        cessionario = ET.SubElement(header, "CessionarioCommittente")
+        dati_anag_cess = ET.SubElement(cessionario, "DatiAnagrafici")
+        vat_raw = cbilling.get("vat_id", "00000000000").replace("IT", "")
+        id_fisc_cess = ET.SubElement(dati_anag_cess, "IdFiscaleIVA")
+        ET.SubElement(id_fisc_cess, "IdPaese").text = "IT"
+        ET.SubElement(id_fisc_cess, "IdCodice").text = vat_raw
+        if cbilling.get("fiscal_code"):
+            ET.SubElement(dati_anag_cess, "CodiceFiscale").text = cbilling.get("fiscal_code")
+        anag_cess = ET.SubElement(dati_anag_cess, "Anagrafica")
+        ET.SubElement(anag_cess, "Denominazione").text = cmanifest.get("client_name", slug)
+        sede_cess = ET.SubElement(cessionario, "Sede")
+        ET.SubElement(sede_cess, "Indirizzo").text = caddr.get("street", "Via Cliente, 1")
+        ET.SubElement(sede_cess, "CAP").text = caddr.get("zip", "00100")
+        ET.SubElement(sede_cess, "Comune").text = caddr.get("city", "Roma")
+        ET.SubElement(sede_cess, "Provincia").text = caddr.get("province", "RM")
+        ET.SubElement(sede_cess, "Nazione").text = "IT"
+
+        # --- BODY ---
         body = ET.SubElement(root, "FatturaElettronicaBody")
         dati_gen = ET.SubElement(body, "DatiGenerali")
         dati_doc = ET.SubElement(dati_gen, "DatiGeneraliDocumento")
         ET.SubElement(dati_doc, "TipoDocumento").text = "TD01"
-        ET.SubElement(dati_doc, "Divisa").text = self.config.get("company", {}).get("currency", "EUR")
+        ET.SubElement(dati_doc, "Divisa").text = comp.get("currency", "EUR")
         ET.SubElement(dati_doc, "Data").text = batch.get("invoice_draft", {}).get("invoice_date", "")
-        ET.SubElement(dati_doc, "ImportoTotaleDocumento").text = f"{batch.get('invoice_draft', {}).get('totals', {}).get('total_gross', 0.0):.2f}"
+        ET.SubElement(dati_doc, "Numero").text = batch.get("invoice_draft", {}).get("invoice_number", "DRAFT-01")
+        tot_gross = batch.get("invoice_draft", {}).get("totals", {}).get("total_gross", 0.0)
+        ET.SubElement(dati_doc, "ImportoTotaleDocumento").text = f"{tot_gross:.2f}"
 
+        # Righe Dettaglio
         dati_beni = ET.SubElement(body, "DatiBeniServizi")
+        vat_rate = float(comp.get("default_vat_rate", 22.0))
         for i, line in enumerate(batch.get("invoice_draft", {}).get("lines", []), start=1):
             dett = ET.SubElement(dati_beni, "DettaglioLinee")
             ET.SubElement(dett, "NumeroLinea").text = str(i)
@@ -129,6 +230,91 @@ class BillingPipeline:
             ET.SubElement(dett, "Quantita").text = f"{line.get('quantity', 1):.2f}"
             ET.SubElement(dett, "PrezzoUnitario").text = f"{line.get('unit_price', 0.0):.2f}"
             ET.SubElement(dett, "PrezzoTotale").text = f"{line.get('total_line', 0.0):.2f}"
-            ET.SubElement(dett, "AliquotaIVA").text = f"{line.get('vat_rate', 22.0):.2f}"
+            ET.SubElement(dett, "AliquotaIVA").text = f"{line.get('vat_rate', vat_rate):.2f}"
 
-        return ET.tostring(root, encoding="utf-8").decode("utf-8")
+        # Dati Riepilogo IVA
+        riepilogo = ET.SubElement(dati_beni, "DatiRiepilogo")
+        ET.SubElement(riepilogo, "AliquotaIVA").text = f"{vat_rate:.2f}"
+        subtot = batch.get("invoice_draft", {}).get("totals", {}).get("subtotal_net", 0.0)
+        vat_amt = batch.get("invoice_draft", {}).get("totals", {}).get("vat_amount", 0.0)
+        ET.SubElement(riepilogo, "ImponibileImporto").text = f"{subtot:.2f}"
+        ET.SubElement(riepilogo, "Imposta").text = f"{vat_amt:.2f}"
+        ET.SubElement(riepilogo, "EsigibilitaIVA").text = "I" # Immediata
+
+        # Dati Pagamento
+        dati_pag = ET.SubElement(body, "DatiPagamento")
+        ET.SubElement(dati_pag, "CondizioniPagamento").text = "TP02" # Completo
+        dett_pag = ET.SubElement(dati_pag, "DettaglioPagamento")
+        ET.SubElement(dett_pag, "ModalitaPagamento").text = batch.get("invoice_draft", {}).get("payment_method", "MP05")
+        inst = batch.get("scadenzario", {}).get("installments", [{}])[0]
+        if inst.get("due_date"):
+            ET.SubElement(dett_pag, "DataScadenzaPagamento").text = inst.get("due_date")
+        ET.SubElement(dett_pag, "ImportoPagamento").text = f"{tot_gross:.2f}"
+        if cbilling.get("iban"):
+            ET.SubElement(dett_pag, "IBAN").text = cbilling.get("iban")
+
+        # Pretty-print indentation
+        self._indent(root)
+        return ET.tostring(root, encoding="utf-8", xml_declaration=True).decode("utf-8")
+
+    def save_batch(self, slug: str, batch: Dict[str, Any]) -> Dict[str, Path]:
+        """Salva fisicamente il batch JSON e l'XML SDI nella cartella invoices del cliente."""
+        idir = self.get_invoices_dir(slug)
+        idir.mkdir(parents=True, exist_ok=True)
+        batch_id = batch["batch_id"]
+
+        json_path = idir / f"{batch_id.lower()}.json"
+        with open(json_path, "w", encoding="utf-8") as f:
+            json.dump(batch, f, indent=2, ensure_ascii=False)
+
+        xml_content = self.generate_sdi_xml(batch)
+        xml_path = idir / f"{batch_id.lower()}.xml"
+        xml_path.write_text(xml_content, encoding="utf-8")
+
+        return {"json": json_path, "xml": xml_path}
+
+    def mark_installment_paid(self, slug: str, batch_id: str, installment_num: int = 1, tx_id: str = "") -> bool:
+        """Registra l'avvenuto incasso di una rata nello scadenzario."""
+        idir = self.get_invoices_dir(slug)
+        json_path = idir / f"{batch_id.lower()}.json"
+        if not json_path.is_file():
+            return False
+
+        with open(json_path, "r", encoding="utf-8") as f:
+            batch = json.load(f)
+
+        updated = False
+        all_paid = True
+        for inst in batch.get("scadenzario", {}).get("installments", []):
+            if inst.get("number") == installment_num:
+                inst["status"] = "paid"
+                inst["paid_date"] = datetime.date.today().isoformat()
+                inst["bank_transaction_id"] = tx_id or f"TX-{datetime.date.today().strftime('%Y%m%d')}-01"
+                updated = True
+            if inst.get("status") != "paid":
+                all_paid = False
+
+        if updated:
+            if all_paid:
+                batch["scadenzario"]["overall_status"] = "paid"
+                batch["status"] = "paid"
+            with open(json_path, "w", encoding="utf-8") as f:
+                json.dump(batch, f, indent=2, ensure_ascii=False)
+            return True
+        return False
+
+    @staticmethod
+    def _indent(elem, level=0):
+        i = "\n" + level * "  "
+        if len(elem):
+            if not elem.text or not elem.text.strip():
+                elem.text = i + "  "
+            if not elem.tail or not elem.tail.strip():
+                elem.tail = i
+            for elem in elem:
+                BillingPipeline._indent(elem, level + 1)
+            if not elem.tail or not elem.tail.strip():
+                elem.tail = i
+        else:
+            if level and (not elem.tail or not elem.tail.strip()):
+                elem.tail = i

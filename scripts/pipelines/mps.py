@@ -1,4 +1,5 @@
 import datetime
+import socket
 import yaml
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -98,3 +99,41 @@ class MPSPipeline:
             "toner_levels": toner_levels,
             "alerts": alerts
         }
+
+    def record_reading(
+        self,
+        slug: str,
+        mps_id: str,
+        mono_total: int,
+        color_total: int,
+        toner_black: int = 80,
+        toner_cyan: int = 70,
+        toner_magenta: int = 65,
+        toner_yellow: int = 75,
+        method: str = "manual_customer"
+    ) -> Optional[Dict[str, Any]]:
+        """Registra e salva una nuova lettura contatori nel contratto MPS."""
+        mdir = self.get_mps_dir(slug)
+        for f in mdir.glob("*.yaml"):
+            try:
+                with open(f, "r", encoding="utf-8") as fp:
+                    data = yaml.safe_load(fp) or {}
+                if data.get("mps_contract_id") == mps_id:
+                    readings = data.setdefault("readings", [])
+                    new_reading = {
+                        "reading_date": datetime.date.today().isoformat(),
+                        "mono_total": mono_total,
+                        "color_total": color_total,
+                        "toner_black_percent": toner_black,
+                        "toner_cyan_percent": toner_cyan,
+                        "toner_magenta_percent": toner_magenta,
+                        "toner_yellow_percent": toner_yellow,
+                        "reading_method": method
+                    }
+                    readings.append(new_reading)
+                    with open(f, "w", encoding="utf-8") as fp:
+                        yaml.safe_dump(data, fp, sort_keys=False, allow_unicode=True)
+                    return self.calculate_settlement(data)
+            except Exception:
+                pass
+        return None

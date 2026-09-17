@@ -1,0 +1,17 @@
+sync_id: SYNC-IT-205
+slug: severino-srl
+jira_issue_key: IT-205
+issue_type: Task
+priority: High
+summary: Sostituzione tamburo e tuning routing VPN
+assignee: Mario Rossi
+appointment:
+  start_datetime: '2026-09-22T09:30:00'
+  end_datetime: '2026-09-22T12:00:00'
+  location: Presso sede cliente severino-srl
+  calendar_event_id: CAL-IT-205
+  confirmation_sent: true
+execution:
+  status: scheduled
+  rapportino_ref: ''
+  actual_time_minutes: 0

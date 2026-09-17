@@ -14,7 +14,7 @@ class JiraSyncPipeline:
         return self.clients_root / slug / "jira_sync.yaml"
 
     def create_appointment(self, slug: str, issue_key: str, summary: str, start_dt: str, duration_hours: float = 2.0, technician: str = "Tecnico") -> Dict[str, Any]:
-        """Crea o aggiorna uno slot appuntamento schedulato agganciato a un task Jira."""
+        """Crea o aggiorna uno slot appuntamento schedulato agganciato a un task Jira ed esporta l'ICS."""
         start = datetime.datetime.fromisoformat(start_dt)
         end = start + datetime.timedelta(hours=duration_hours)
 
@@ -44,4 +44,35 @@ class JiraSyncPipeline:
         with open(sfile, "w", encoding="utf-8") as f:
             yaml.safe_dump(record, f, sort_keys=False, allow_unicode=True)
 
+        # Genera il file standard iCalendar (.ics) per Outlook e Google Calendar
+        ics_content = self.generate_ics(record)
+        ics_file = self.clients_root / slug / f"appointment-{issue_key.lower()}.ics"
+        ics_file.write_text(ics_content, encoding="utf-8")
+
         return record
+
+    def generate_ics(self, record: Dict[str, Any]) -> str:
+        """Genera tracciato standard RFC 5545 iCalendar."""
+        app = record.get("appointment", {})
+        start_dt = datetime.datetime.fromisoformat(app.get("start_datetime")).strftime("%Y%m%dT%H%M%S")
+        end_dt = datetime.datetime.fromisoformat(app.get("end_datetime")).strftime("%Y%m%dT%H%M%S")
+        now_dt = datetime.datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
+        uid = f"{record.get('jira_issue_key')}@itinfra.local"
+
+        return f"""BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//ITInfra Business Ops//Intervento Tecnico//IT
+CALSCALE:GREGORIAN
+METHOD:REQUEST
+BEGIN:VEVENT
+UID:{uid}
+DTSTAMP:{now_dt}
+DTSTART:{start_dt}
+DTEND:{end_dt}
+SUMMARY:[{record.get('jira_issue_key')}] {record.get('summary')}
+DESCRIPTION:Intervento tecnico programmato per il cliente {record.get('slug')}\\nAssegnatario: {record.get('assignee')}
+LOCATION:{app.get('location')}
+STATUS:CONFIRMED
+END:VEVENT
+END:VCALENDAR
+"""

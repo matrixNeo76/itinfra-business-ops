@@ -87,3 +87,166 @@ class ReportsPipeline:
         summary["invoice_spot_hours"] = round(summary["invoice_spot_hours"], 2)
         summary["included_flat_hours"] = round(summary["included_flat_hours"], 2)
         return summary
+
+    def create_report(
+        self,
+        slug: str,
+        technician: str,
+        description: str,
+        clock_in: str,
+        clock_out: str,
+        date_str: Optional[str] = None,
+        intervention_type: str = "ordinary",
+        ledger_action: str = "debit_contract",
+        impacted_assets: Optional[List[Dict[str, str]]] = None,
+        contract_id: Optional[str] = None,
+        break_minutes: int = 0,
+        customer_signed: bool = False,
+        signer_name: str = ""
+    ) -> Dict[str, Any]:
+        """Crea, valida e salva fisicamente un nuovo rapportino di intervento."""
+        if not date_str:
+            date_str = datetime.date.today().isoformat()
+        date_compact = date_str.replace("-", "")
+
+        tdir = self.get_timesheets_dir(slug)
+        tdir.mkdir(parents=True, exist_ok=True)
+        existing_count = len(list(tdir.glob(f"rap-{date_compact}-*.yaml"))) + 1
+        rep_id = f"RAP-{date_compact}-{existing_count:03d}"
+
+        calc = self.calculate_rounded_hours(clock_in, clock_out, break_minutes)
+
+        # Se contract_id non specificato e action è debit_contract, trova il primo attivo
+        from scripts.pipelines.contracts import ContractsPipeline
+        cp = ContractsPipeline(self.clients_root)
+        if not contract_id and ledger_action == "debit_contract":
+            active = cp.get_contract_summary(slug).get("active_contracts", [])
+            if active:
+                contract_id = active[0]["contract_id"]
+
+        report_data = {
+            "report_id": rep_id,
+            "slug": slug,
+            "contract_id": contract_id or "",
+            "ticket_id": "",
+            "technician": technician,
+            "date": date_str,
+            "clock_in": clock_in,
+            "clock_out": clock_out,
+            "break_minutes": break_minutes,
+            "total_hours_raw": calc["raw_hours"],
+            "total_hours_rounded": calc["rounded_hours"],
+            "rounding_step_minutes": 30,
+            "intervention_type": intervention_type,
+            "ledger_action": ledger_action,
+            "impacted_assets": impacted_assets or [],
+            "description": description.strip(),
+            "customer_sign_off": {
+                "signed": customer_signed,
+                "signer_name": signer_name,
+                "signed_at": f"{date_str} {clock_out}" if customer_signed else ""
+            }
+        }
+
+        # Salvataggio file YAML
+        target_file = tdir / f"{rep_id.lower()}.yaml"
+        with open(target_file, "w", encoding="utf-8") as fp:
+            yaml.safe_dump(report_data, fp, sort_keys=False, allow_unicode=True)
+
+        # Se debit_contract, scala dal contratto attivo
+        if ledger_action == "debit_contract" and contract_id:
+            cp.debit_hours(slug, contract_id, calc["rounded_hours"], rep_id)
+
+        # Genera anche HTML di cortesia
+        html_content = self.generate_printable_html(report_data)
+        html_file = tdir / f"{rep_id.lower()}.html"
+        html_file.write_text(html_content, encoding="utf-8")
+
+        return report_data
+
+    def generate_printable_html(self, report_data: Dict[str, Any]) -> str:
+        """Genera un foglio di intervento stampabile o firmabile su tablet con styling professionale."""
+        rid = report_data.get("report_id", "RAP")
+        slug = report_data.get("slug", "")
+        tech = report_data.get("technician", "")
+        date = report_data.get("date", "")
+        cin = report_data.get("clock_in", "")
+        cout = report_data.get("clock_out", "")
+        h_round = report_data.get("total_hours_rounded", 0.0)
+        action = report_data.get("ledger_action", "")
+        desc = report_data.get("description", "").replace("\n", "<br/>")
+        cid = report_data.get("contract_id", "N/A")
+        signed = report_data.get("customer_sign_off", {}).get("signed", False)
+        signer = report_data.get("customer_sign_off", {}).get("signer_name", "")
+
+        assets_html = "".join(
+            f"<li><strong>{a.get('serial_number')}:</strong> {a.get('role', '')} — {a.get('description', '')}</li>"
+            for a in report_data.get("impacted_assets", [])
+        ) or "<li>Nessun apparato specifico segnalato.</li>"
+
+        return f"""<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<title>Rapportino {rid} — {slug}</title>
+<style>
+  body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 30px; color: #1f2937; }}
+  .header {{ display: flex; justify-content: space-between; border-bottom: 2px solid #2563eb; padding-bottom: 12px; margin-bottom: 24px; }}
+  .badge {{ display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; background: #e0e7ff; color: #3730a3; }}
+  .grid {{ display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }}
+  .box {{ border: 1px solid #e5e7eb; border-radius: 6px; padding: 12px; background: #f9fafb; }}
+  .desc-box {{ border: 1px solid #e5e7eb; border-radius: 6px; padding: 16px; min-height: 100px; margin-bottom: 24px; background: #fff; }}
+  .signature-grid {{ display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-top: 40px; }}
+  .sign-line {{ border-top: 1px dashed #9ca3af; margin-top: 50px; text-align: center; font-size: 12px; color: #6b7280; padding-top: 6px; }}
+  @media print {{
+    body {{ margin: 10mm; font-size: 12pt; }}
+    .no-print {{ display: none; }}
+  }}
+</style>
+</head>
+<body>
+<div class="header">
+  <div>
+    <h2 style="margin:0; color:#1e40af;">RAPPORTINO DI INTERVENTO TECNICO</h2>
+    <span style="font-size: 14px; color:#6b7280;">ID: {rid} | Cliente: <strong>{slug}</strong></span>
+  </div>
+  <div style="text-align: right;">
+    <span class="badge">{action.upper()}</span>
+    <div style="font-size: 12px; margin-top: 4px; color:#4b5563;">Contratto Rif: {cid}</div>
+  </div>
+</div>
+
+<div class="grid">
+  <div class="box">
+    <strong>Dettagli Intervento:</strong><br>
+    Data: {date}<br>
+    Orario: {cin} &rarr; {cout}<br>
+    Ore Consuntivate: <strong>{h_round} h</strong> (scatti 30 min)<br>
+    Tecnico Incaricato: <strong>{tech}</strong>
+  </div>
+  <div class="box">
+    <strong>Apparati Impattati / S/N:</strong>
+    <ul style="margin: 6px 0 0 16px; padding: 0; font-size: 13px;">
+      {assets_html}
+    </ul>
+  </div>
+</div>
+
+<strong>Descrizione Dettagliata Attività Svolta:</strong>
+<div class="desc-box">
+  {desc}
+</div>
+
+<div class="signature-grid">
+  <div>
+    <strong>Firma Tecnico Esecutore:</strong>
+    <div class="sign-line">{tech}</div>
+  </div>
+  <div>
+    <strong>Firma per Accettazione Cliente:</strong>
+    <div class="sign-line">{signer or "Timbro e Firma Referente"}</div>
+  </div>
+</div>
+</body>
+</html>
+"""

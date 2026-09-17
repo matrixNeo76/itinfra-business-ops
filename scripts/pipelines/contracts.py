@@ -121,3 +121,51 @@ class ContractsPipeline:
                 })
 
         return report
+
+    def debit_hours(self, slug: str, contract_id: str, hours: float, report_id: str = "") -> bool:
+        """Aggiorna e salva fisicamente le ore consumate sul file YAML del contratto."""
+        cdir = self.get_contracts_dir(slug)
+        for f in cdir.glob("*.yaml"):
+            try:
+                with open(f, "r", encoding="utf-8") as fp:
+                    data = yaml.safe_load(fp) or {}
+                if data.get("contract_id") == contract_id:
+                    fin = data.setdefault("financial", {})
+                    current_consumed = float(fin.get("consumed_hours", 0.0))
+                    fin["consumed_hours"] = round(current_consumed + hours, 2)
+                    
+                    with open(f, "w", encoding="utf-8") as fp:
+                        yaml.safe_dump(data, fp, sort_keys=False, allow_unicode=True)
+                    return True
+            except Exception:
+                pass
+        return False
+
+    def renew_contract(self, slug: str, contract_id: str) -> Optional[Path]:
+        """Duplica e crea una bozza di rinnovo per l'anno successivo."""
+        cdir = self.get_contracts_dir(slug)
+        for f in cdir.glob("*.yaml"):
+            try:
+                with open(f, "r", encoding="utf-8") as fp:
+                    data = yaml.safe_load(fp) or {}
+                if data.get("contract_id") == contract_id:
+                    # Calcolo date nuovo anno
+                    old_v_to = datetime.date.fromisoformat(str(data.get("valid_to", "2026-12-31")))
+                    new_v_from = old_v_to + datetime.timedelta(days=1)
+                    new_v_to = datetime.date(new_v_from.year, 12, 31)
+                    new_year = str(new_v_from.year)
+                    new_id = f"CTR-{new_year}-{slug.upper()}"
+
+                    data["contract_id"] = new_id
+                    data["status"] = "draft"
+                    data["valid_from"] = new_v_from.isoformat()
+                    data["valid_to"] = new_v_to.isoformat()
+                    data.setdefault("financial", {})["consumed_hours"] = 0.0
+
+                    new_file = cdir / f"ctr-{slug}-{new_year}.yaml"
+                    with open(new_file, "w", encoding="utf-8") as fp:
+                        yaml.safe_dump(data, fp, sort_keys=False, allow_unicode=True)
+                    return new_file
+            except Exception:
+                pass
+        return None
