@@ -2,19 +2,24 @@
 <html lang="it">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Rapportino RAP-20260917-002 — severino-srl</title>
 <style>
-  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 30px; color: #1f2937; }
-  .header { display: flex; justify-content: space-between; border-bottom: 2px solid #2563eb; padding-bottom: 12px; margin-bottom: 24px; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 30px; color: #1f2937; line-height: 1.4; }
+  .header { display: flex; justify-content: space-between; border-bottom: 2px solid #2563eb; padding-bottom: 12px; margin-bottom: 20px; }
   .badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; background: #e0e7ff; color: #3730a3; }
-  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
   .box { border: 1px solid #e5e7eb; border-radius: 6px; padding: 12px; background: #f9fafb; }
-  .desc-box { border: 1px solid #e5e7eb; border-radius: 6px; padding: 16px; min-height: 100px; margin-bottom: 24px; background: #fff; }
-  .signature-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-top: 40px; }
-  .sign-line { border-top: 1px dashed #9ca3af; margin-top: 50px; text-align: center; font-size: 12px; color: #6b7280; padding-top: 6px; }
+  .desc-box { border: 1px solid #e5e7eb; border-radius: 6px; padding: 14px; min-height: 80px; margin-bottom: 20px; background: #fff; }
+  .sig-container { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-top: 30px; }
+  canvas#sig-pad { border: 1px solid #d1d5db; border-radius: 4px; width: 100%; height: 120px; touch-action: none; background: #ffffff; cursor: crosshair; }
+  .canvas-controls { margin-top: 6px; display: flex; gap: 8px; }
+  .btn { font-size: 11px; padding: 4px 8px; border-radius: 4px; border: 1px solid #d1d5db; background: #fff; cursor: pointer; }
+  .btn:hover { background: #f3f4f6; }
   @media print {
-    body { margin: 10mm; font-size: 12pt; }
-    .no-print { display: none; }
+    body { margin: 10mm; font-size: 11pt; }
+    .no-print { display: none !important; }
+    canvas#sig-pad { border: 1px dashed #9ca3af; }
   }
 </style>
 </head>
@@ -22,7 +27,7 @@
 <div class="header">
   <div>
     <h2 style="margin:0; color:#1e40af;">RAPPORTINO DI INTERVENTO TECNICO</h2>
-    <span style="font-size: 14px; color:#6b7280;">ID: RAP-20260917-002 | Cliente: <strong>severino-srl</strong></span>
+    <span style="font-size: 13px; color:#6b7280;">ID: <strong>RAP-20260917-002</strong> | Cliente: <strong>severino-srl</strong></span>
   </div>
   <div style="text-align: right;">
     <span class="badge">DEBIT_CONTRACT</span>
@@ -34,32 +39,106 @@
   <div class="box">
     <strong>Dettagli Intervento:</strong><br>
     Data: 2026-09-17<br>
-    Orario: 09:00 &rarr; 10:30<br>
-    Ore Consuntivate: <strong>1.5 h</strong> (scatti 30 min)<br>
+    Orario: 10:00 &rarr; 11:30<br>
+    Ore Totali Consuntivate: <strong>1.5 h</strong> (a canone: 1.5 h)<br>
     Tecnico Incaricato: <strong>Mario Rossi</strong>
   </div>
   <div class="box">
     <strong>Apparati Impattati / S/N:</strong>
     <ul style="margin: 6px 0 0 16px; padding: 0; font-size: 13px;">
-      <li><strong>E4200891F7BC:</strong> Apparato — Intervento</li>
+      <li><strong>CZC8492K1L:</strong> Apparato — Intervento</li>
     </ul>
   </div>
 </div>
 
-<strong>Descrizione Dettagliata Attività Svolta:</strong>
+<strong>Descrizione Attività Svolta:</strong>
 <div class="desc-box">
-  Manutenzione switch perimetrale e aggiornamento firmware RouterOS
+  Sostituzione modulo RAM guasto e installazione SSD di sistema
 </div>
 
-<div class="signature-grid">
+
+            <h4 style="margin: 16px 0 8px 0; color:#1e40af;">Ricambi & Materiali Impiegati:</h4>
+            <table style="width:100%; border-collapse: collapse; margin-bottom: 16px; font-size: 13px;">
+              <thead>
+                <tr style="background:#f3f4f6; text-align:left;">
+                  <th style="padding:6px; border:1px solid #e5e7eb;">Codice</th>
+                  <th style="padding:6px; border:1px solid #e5e7eb;">Descrizione</th>
+                  <th style="padding:6px; border:1px solid #e5e7eb; text-align:center;">Q.tà</th>
+                  <th style="padding:6px; border:1px solid #e5e7eb; text-align:right;">Prezzo Unit.</th>
+                </tr>
+              </thead>
+              <tbody><tr><td><code>RAM-32GB</code></td><td>Modulo DDR4 32GB ECC</td><td style='text-align:center;'>1.0</td><td style='text-align:right;'>€ 140.00</td></tr><tr><td><code>SSD-1TB</code></td><td>Samsung 980 Pro 1TB</td><td style='text-align:center;'>1.0</td><td style='text-align:right;'>€ 125.00</td></tr></tbody>
+            </table>
+            
+
+<div class="sig-container">
   <div>
     <strong>Firma Tecnico Esecutore:</strong>
-    <div class="sign-line">Mario Rossi</div>
+    <div style="margin-top: 40px; border-top: 1px dashed #9ca3af; text-align: center; font-size: 12px; color: #4b5563; padding-top: 4px;">
+      Mario Rossi
+    </div>
   </div>
   <div>
-    <strong>Firma per Accettazione Cliente:</strong>
-    <div class="sign-line">Marco Severino</div>
+    <strong>Firma Cliente per Accettazione:</strong>
+    <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">Firma qui sotto (Touch / Pennino):</div>
+    <canvas id="sig-pad"></canvas>
+    <div class="canvas-controls no-print">
+      <button type="button" class="btn" onclick="clearCanvas()">Pulisci Firma</button>
+      <button type="button" class="btn" onclick="window.print()">Stampa / PDF</button>
+    </div>
+    <div style="font-size: 11px; color:#6b7280; margin-top: 4px;">Referente: <strong>Marco Severino</strong></div>
   </div>
 </div>
+
+<script>
+  const canvas = document.getElementById('sig-pad');
+  if (canvas) {
+    const ctx = canvas.getContext('2d');
+    let drawing = false;
+
+    function resize() {
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width;
+      canvas.height = rect.height;
+      ctx.lineWidth = 2;
+      ctx.lineCap = 'round';
+      ctx.strokeStyle = '#1e3a8a';
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    function start(e) {
+      drawing = true;
+      ctx.beginPath();
+      const pos = getPos(e);
+      ctx.moveTo(pos.x, pos.y);
+    }
+    function end() { drawing = false; }
+    function draw(e) {
+      if (!drawing) return;
+      e.preventDefault();
+      const pos = getPos(e);
+      ctx.lineTo(pos.x, pos.y);
+      ctx.stroke();
+    }
+    function getPos(e) {
+      const rect = canvas.getBoundingClientRect();
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      return { x: clientX - rect.left, y: clientY - rect.top };
+    }
+
+    canvas.addEventListener('mousedown', start);
+    canvas.addEventListener('mouseup', end);
+    canvas.addEventListener('mousemove', draw);
+    canvas.addEventListener('touchstart', start);
+    canvas.addEventListener('touchend', end);
+    canvas.addEventListener('touchmove', draw);
+
+    window.clearCanvas = function() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    };
+  }
+</script>
 </body>
 </html>

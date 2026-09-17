@@ -1,36 +1,49 @@
-quote_id: "Q-2026-SEVERINO-01"
-slug: "severino-srl"
-status: "sent"
-created_at: "2026-09-10"
-valid_until: "2026-10-10"
-payment_terms: "30_60_DF_FM"
+quote_id: Q-2026-SEVERINO-01
+slug: severino-srl
+status: sent
+created_at: '2026-09-10'
+valid_until: '2026-10-10'
+payment_terms: 30_60_DF_FM
 delivery_time_weeks: 2
-
 categories:
-  - name: "hardware_server_network"
-    items:
-      - part_number: "UBI-U6-PRO"
-        description: "Access Point Ubiquiti UniFi WiFi 6 Pro PoE"
-        quantity: 2
-        unit_cost: 135.00
-        markup_percent: 25.0
-        unit_price: 168.75
-        line_total: 337.50
-        is_optional: false
-
-  - name: "professional_services"
-    items:
-      - part_number: "SRV-WIFI-SURVEY"
-        description: "Posa, certificazione canali RF e tuning roaming wireless"
-        quantity: 4
-        unit_cost: 40.00
-        markup_percent: 75.0
-        unit_price: 70.00
-        line_total: 280.00
-        is_optional: false
-
+- name: hardware_server_network
+  total_cost: 590.0
+  total_net: 737.5
+  margin_amount: 147.5
+  margin_percent: 20.0
+  items:
+  - part_number: UBI-U6-PRO
+    description: Access Point Ubiquiti UniFi WiFi 6 Pro PoE
+    quantity: 2
+    unit_cost: 135.0
+    markup_percent: 25.0
+    unit_price: 168.75
+    line_total: 337.5
+    is_optional: false
+  - part_number: UBI-SW-24
+    description: Switch Ubiquiti UniFi PoE 24 Porte Gigabit
+    quantity: 1.0
+    unit_cost: 320.0
+    markup_percent: 25.0
+    unit_price: 400.0
+    line_total: 400.0
+    is_optional: false
+- name: professional_services
+  total_cost: 160.0
+  total_net: 280.0
+  margin_amount: 120.0
+  margin_percent: 42.86
+  items:
+  - part_number: SRV-WIFI-SURVEY
+    description: Posa, certificazione canali RF e tuning roaming wireless
+    quantity: 4
+    unit_cost: 40.0
+    markup_percent: 75.0
+    unit_price: 70.0
+    line_total: 280.0
+    is_optional: false
 totals:
-  total_cost: 430.00
-  total_net: 617.50
-  gross_margin_amount: 187.50
-  gross_margin_percent: 30.36
+  total_cost: 750.0
+  total_net: 1017.5
+  gross_margin_amount: 267.5
+  gross_margin_percent: 26.29

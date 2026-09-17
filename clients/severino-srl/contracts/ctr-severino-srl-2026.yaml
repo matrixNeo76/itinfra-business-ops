@@ -16,7 +16,7 @@ financial:
   recurring_fee: 150.0
   billing_period: monthly
   total_hours_included: 40.0
-  consumed_hours: 10.0
+  consumed_hours: 11.5
   extra_hourly_rate: 80.0
   travel_fee_fixed: 35.0
 covered_assets:

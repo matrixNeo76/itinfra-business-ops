@@ -4,20 +4,31 @@ contract_id: CTR-2026-SEVERINO
 ticket_id: ''
 technician: Mario Rossi
 date: '2026-09-17'
-clock_in: 09:00
-clock_out: '10:30'
+clock_in: '10:00'
+clock_out: '11:30'
 break_minutes: 0
 total_hours_raw: 1.5
 total_hours_rounded: 1.5
+debited_contract_hours: 1.5
+extra_hours: 0.0
 rounding_step_minutes: 30
 intervention_type: ordinary
 ledger_action: debit_contract
 impacted_assets:
-- serial_number: E4200891F7BC
+- serial_number: CZC8492K1L
   role: Apparato
   description: Intervento
-description: Manutenzione switch perimetrale e aggiornamento firmware RouterOS
+spare_parts:
+- code: RAM-32GB
+  description: Modulo DDR4 32GB ECC
+  quantity: 1.0
+  unit_price: 140.0
+- code: SSD-1TB
+  description: Samsung 980 Pro 1TB
+  quantity: 1.0
+  unit_price: 125.0
+description: Sostituzione modulo RAM guasto e installazione SSD di sistema
 customer_sign_off:
   signed: true
   signer_name: Marco Severino
-  signed_at: 2026-09-17 10:30
+  signed_at: 2026-09-17 11:30

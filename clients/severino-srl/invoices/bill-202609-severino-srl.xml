@@ -57,7 +57,7 @@
         <Divisa>EUR</Divisa>
         <Data>2026-09-17</Data>
         <Numero>DRAFT-BILL-202609-severino-srl</Numero>
-        <ImportoTotaleDocumento>680.27</ImportoTotaleDocumento>
+        <ImportoTotaleDocumento>1003.57</ImportoTotaleDocumento>
       </DatiGeneraliDocumento>
     </DatiGenerali>
     <DatiBeniServizi>
@@ -71,6 +71,22 @@
       </DettaglioLinee>
       <DettaglioLinee>
         <NumeroLinea>2</NumeroLinea>
+        <Descrizione>Ricambio: Modulo DDR4 32GB ECC [RAM-32GB] (RAP-20260917-002)</Descrizione>
+        <Quantita>1.00</Quantita>
+        <PrezzoUnitario>140.00</PrezzoUnitario>
+        <PrezzoTotale>140.00</PrezzoTotale>
+        <AliquotaIVA>22.00</AliquotaIVA>
+      </DettaglioLinee>
+      <DettaglioLinee>
+        <NumeroLinea>3</NumeroLinea>
+        <Descrizione>Ricambio: Samsung 980 Pro 1TB [SSD-1TB] (RAP-20260917-002)</Descrizione>
+        <Quantita>1.00</Quantita>
+        <PrezzoUnitario>125.00</PrezzoUnitario>
+        <PrezzoTotale>125.00</PrezzoTotale>
+        <AliquotaIVA>22.00</AliquotaIVA>
+      </DettaglioLinee>
+      <DettaglioLinee>
+        <NumeroLinea>4</NumeroLinea>
         <Descrizione>Canone Noleggio Ricoh IM C2500 A3 Multifunzione Colore (MPS-2026-SEVERINO-01) - Periodo 2026-09</Descrizione>
         <Quantita>1.00</Quantita>
         <PrezzoUnitario>390.00</PrezzoUnitario>
@@ -78,7 +94,7 @@
         <AliquotaIVA>22.00</AliquotaIVA>
       </DettaglioLinee>
       <DettaglioLinee>
-        <NumeroLinea>3</NumeroLinea>
+        <NumeroLinea>5</NumeroLinea>
         <Descrizione>Eccedenza Copie BN (700 pag) MPS-2026-SEVERINO-01</Descrizione>
         <Quantita>700.00</Quantita>
         <PrezzoUnitario>0.01</PrezzoUnitario>
@@ -86,7 +102,7 @@
         <AliquotaIVA>22.00</AliquotaIVA>
       </DettaglioLinee>
       <DettaglioLinee>
-        <NumeroLinea>4</NumeroLinea>
+        <NumeroLinea>6</NumeroLinea>
         <Descrizione>Eccedenza Copie Colore (200 pag) MPS-2026-SEVERINO-01</Descrizione>
         <Quantita>200.00</Quantita>
         <PrezzoUnitario>0.06</PrezzoUnitario>
@@ -95,8 +111,8 @@
       </DettaglioLinee>
       <DatiRiepilogo>
         <AliquotaIVA>22.00</AliquotaIVA>
-        <ImponibileImporto>557.60</ImponibileImporto>
-        <Imposta>122.67</Imposta>
+        <ImponibileImporto>822.60</ImponibileImporto>
+        <Imposta>180.97</Imposta>
         <EsigibilitaIVA>I</EsigibilitaIVA>
       </DatiRiepilogo>
     </DatiBeniServizi>
@@ -104,8 +120,8 @@
       <CondizioniPagamento>TP02</CondizioniPagamento>
       <DettaglioPagamento>
         <ModalitaPagamento>MP05</ModalitaPagamento>
-        <DataScadenzaPagamento>2026-11-16</DataScadenzaPagamento>
-        <ImportoPagamento>680.27</ImportoPagamento>
+        <DataScadenzaPagamento>2026-10-31</DataScadenzaPagamento>
+        <ImportoPagamento>1003.57</ImportoPagamento>
         <IBAN>IT77X0306909606100000123456</IBAN>
       </DettaglioPagamento>
     </DatiPagamento>

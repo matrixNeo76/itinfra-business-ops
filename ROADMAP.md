@@ -49,36 +49,44 @@ flowchart LR
 
 ---
 
-### 🔵 FASE 2: v0.2.0 — Persistenza, Lifecycle Contratti & FatturaPA (In Corso)
-* [ ] **Pipeline A (Contratti)**:
-  * [ ] Scarico automatico persistente delle ore consumate sul file `ctr-*.yaml` all'approvazione di un rapportino.
-  * [ ] Comando CLI `it-ops contract renew <slug> <contract_id>` per generare la bozza di rinnovo contrattuale.
-* [ ] **Pipeline B (Rapportini)**:
-  * [ ] Comando CLI `it-ops report new <slug>` con parametri e generazione automatica ID `RAP-YYYYMMDD-ID`.
-  * [ ] Generazione foglio di lavoro stampabile/firmabile in formato HTML/CSS con box grafometrico per il cliente.
-* [ ] **Pipeline C (Fatturazione & Scadenzario)**:
-  * [ ] Completamento tracciato XML FatturaPA SDI v1.2 (dati anagrafici Cedente, Cessionario, esigibilità IVA).
-  * [ ] Salvataggio fisico del batch `billing_batch.json` e del file `.xml` in `clients/<slug>/invoices/`.
-  * [ ] Gestione incassi: comando `it-ops billing pay <slug> <batch_id>` per chiudere le rate nello scadenzario.
-* [ ] **Pipeline D (Jira & Calendari)**:
-  * [ ] Sottocomando CLI `it-ops jira` registrato e funzionante.
-  * [ ] Generazione file standard iCalendar (`.ics`) per sincronizzazione rapida con Microsoft Outlook e Google Calendar.
-* [ ] **Pipeline F (MPS & Billing Integration)**:
-  * [ ] Passaggio automatico delle eccedenze copie e canoni base direttamente nel batch di fatturazione fine mese.
-* [ ] **Pipeline G (Arredo Ufficio)**:
-  * [ ] Comandi CLI per avanzare le fasi di commessa (`it-ops furniture advance`) e firma collaudo finale.
+### 🔵 FASE 2: v0.2.0 — Persistenza, Lifecycle Contratti & FatturaPA (Completata)
+* [x] **Pipeline A (Contratti)**:
+  * [x] Scarico automatico persistente delle ore consumate sul file `ctr-*.yaml` all'approvazione di un rapportino.
+  * [x] Comando CLI `it-ops contract renew <slug> <contract_id>` per generare la bozza di rinnovo contrattuale.
+* [x] **Pipeline B (Rapportini)**:
+  * [x] Comando CLI `it-ops report new <slug>` con parametri e generazione automatica ID `RAP-YYYYMMDD-ID`.
+  * [x] Generazione foglio di lavoro stampabile/firmabile in formato HTML/CSS con box grafometrico per il cliente.
+* [x] **Pipeline C (Fatturazione & Scadenzario)**:
+  * [x] Completamento tracciato XML FatturaPA SDI v1.2 (dati anagrafici Cedente, Cessionario, esigibilità IVA).
+  * [x] Salvataggio fisico del batch `billing_batch.json` e del file `.xml` in `clients/<slug>/invoices/`.
+  * [x] Gestione incassi: comando `it-ops billing pay <slug> <batch_id>` per chiudere le rate nello scadenzario.
+* [x] **Pipeline D (Jira & Calendari)**:
+  * [x] Sottocomando CLI `it-ops jira` registrato e funzionante.
+  * [x] Generazione file standard iCalendar (`.ics`) per sincronizzazione rapida con Microsoft Outlook e Google Calendar.
+* [x] **Pipeline F (MPS & Billing Integration)**:
+  * [x] Passaggio automatico delle eccedenze copie e canoni base direttamente nel batch di fatturazione fine mese.
+* [x] **Pipeline G (Arredo Ufficio)**:
+  * [x] Comandi CLI per avanzare le fasi di commessa (`it-ops furniture advance`) e firma collaudo finale.
 
 ---
 
-### 🟡 FASE 3: v0.3.0 — Telemetria Real-Time & Sniffer Contatori (Q4 2026)
-* [ ] **SNMP Telemetry Poller**:
-  * [ ] Polling automatico via UDP 161 delle stampanti in rete locale su standard MIB Printer (RFC 3805).
-  * [ ] Lettura autonoma contatori pagine totali (BN, Colore) e percentuali toner residuo (C, M, Y, K).
-* [ ] **Alerting Consumabili & Logistica**:
-  * [ ] Generazione automatica di ordini interni di magazzino quando il toner scende sotto la soglia del 15%.
-  * [ ] Emissione automatica DDT di consegna materiale di consumo con aggancio al cliente.
-* [ ] **Integrazione Webhook Jira Cloud**:
-  * [ ] Ricezione eventi `issue_created` o `issue_updated` per pre-compilare i rapportini tecnici sul campo.
+### 🟡 FASE 3: v0.3.0 — Telemetria Real-Time, Field Automation & Over-Budget (Completata)
+* [x] **Gestione Deterministica Over-Budget**:
+  * [x] Scorporo automatico delle ore contrattuali residue dalle ore eccedenti.
+  * [x] Conversione automatica delle ore extra in addebiti a tariffa oraria extra nella fatturazione fine mese.
+* [x] **Firma Grafometrica su Canvas & Ricambi**:
+  * [x] Pad interattivo HTML5 Canvas per firma cliente su tablet/smartphone integrato in `rap-*.html`.
+  * [x] Gestione materiali e ricambi usati sul campo via CLI (`--parts`) e addebito automatico nel billing.
+* [x] **Scadenzario Multi-Rata 30/60 gg Fine Mese**:
+  * [x] Calcolo automatico scadenze fine mese con split 50%/50% per termini `30_60_DF_FM`.
+* [x] **SNMP Telemetry Live Poller**:
+  * [x] Modulo nativo Python `scripts/core/snmp.py` via UDP 161 per Printer MIB (RFC 3805).
+  * [x] Comando `it-ops mps poll` con rilevamento online e gestione timeout senza crash.
+* [x] **Quote Builder & Offerta Commerciale Formale**:
+  * [x] Comando `it-ops quote add-item` per comporre preventivi da terminale.
+  * [x] Esportazione automatica della proposta commerciale formale `quote-*.html` con layout print-ready.
+* [x] **Certificato di Collaudo & Handover Arredo**:
+  * [x] Generazione automatica del Verbale di Collaudo e Accettazione Fornitura `handover-*.html`.
 
 ---
 
@@ -108,12 +116,12 @@ flowchart LR
 
 ## 📈 Matrice di Avanzamento per Pipeline
 
-| Pipeline | Ambito | MVP (v0.1) | Engine (v0.2) | Telemetry (v0.3) | Automation (v0.4) | Enterprise (v1.0) |
+| Pipeline | Ambito | MVP (v0.1) | Engine (v0.2) | Telemetry & Field (v0.3) | Automation (v0.4) | Enterprise (v1.0) |
 | :--- | :--- | :---: | :---: | :---: | :---: | :---: |
-| **A** | Contratti SLA & Ore | ✅ | 🔄 In corso | 📅 Pianificato | 📅 Pianificato | 📅 Pianificato |
-| **B** | Rapportini Intervento | ✅ | 🔄 In corso | 📅 Pianificato | 📅 Pianificato | 📅 Pianificato |
-| **C** | Fatturazione & SDI | ✅ | 🔄 In corso | 📅 Pianificato | 📅 Pianificato | 📅 Pianificato |
-| **D** | Jira & Calendario | ✅ | 🔄 In corso | 📅 Pianificato | 📅 Pianificato | 📅 Pianificato |
-| **E** | Preventivazione Multi | ✅ | 🔄 In corso | 📅 Pianificato | 📅 Pianificato | 📅 Pianificato |
-| **F** | Multifunzione MPS | ✅ | 🔄 In corso | 📅 Pianificato | 📅 Pianificato | 📅 Pianificato |
-| **G** | Commesse Arredo | ✅ | 🔄 In corso | 📅 Pianificato | 📅 Pianificato | 📅 Pianificato |
+| **A** | Contratti SLA & Ore | ✅ | ✅ | ✅ | 📅 Pianificato | 📅 Pianificato |
+| **B** | Rapportini Intervento | ✅ | ✅ | ✅ | 📅 Pianificato | 📅 Pianificato |
+| **C** | Fatturazione & SDI | ✅ | ✅ | ✅ | 📅 Pianificato | 📅 Pianificato |
+| **D** | Jira & Calendario | ✅ | ✅ | ✅ | 📅 Pianificato | 📅 Pianificato |
+| **E** | Preventivazione Multi | ✅ | ✅ | ✅ | 📅 Pianificato | 📅 Pianificato |
+| **F** | Multifunzione MPS | ✅ | ✅ | ✅ | 📅 Pianificato | 📅 Pianificato |
+| **G** | Commesse Arredo | ✅ | ✅ | ✅ | 📅 Pianificato | 📅 Pianificato |

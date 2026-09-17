@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-itinfra-business-ops — Master CLI Dispatcher (it-ops)
+itinfra-business-ops — Master CLI Dispatcher (it-ops v0.3.0)
 Governance Operativa, Commerciale, Contratti SLA, MPS e Arredo Ufficio.
 """
 
@@ -208,6 +208,20 @@ def cmd_report(args):
         if args.assets:
             for s in args.assets.split(","):
                 assets.append({"serial_number": s.strip(), "role": "Apparato", "description": "Intervento"})
+
+        spare_parts = []
+        if args.parts:
+            # Formato: CODE:Descrizione:Qta:Prezzo
+            for item in args.parts.split(","):
+                parts = item.split(":")
+                if len(parts) >= 4:
+                    spare_parts.append({
+                        "code": parts[0].strip(),
+                        "description": parts[1].strip(),
+                        "quantity": float(parts[2].strip()),
+                        "unit_price": float(parts[3].strip())
+                    })
+
         rep = rp.create_report(
             slug=slug,
             technician=args.tech,
@@ -218,11 +232,12 @@ def cmd_report(args):
             ledger_action=args.ledger_action or "debit_contract",
             impacted_assets=assets,
             customer_signed=args.signed,
-            signer_name=args.signer or ""
+            signer_name=args.signer or "",
+            spare_parts=spare_parts
         )
         print(f"[✓] Rapportino creato con successo: {rep['report_id']}")
-        print(f"    Ore consuntivate: {rep['total_hours_rounded']} h ({rep['ledger_action']})")
-        print(f"    File generati: {rep['report_id'].lower()}.yaml e {rep['report_id'].lower()}.html")
+        print(f"    Ore Totali: {rep['total_hours_rounded']} h (A canone: {rep['debited_contract_hours']} h, Extra: {rep['extra_hours']} h)")
+        print(f"    File generati: {rep['report_id'].lower()}.yaml e {rep['report_id'].lower()}.html (Firma Canvas Integrata)")
         return 0
 
     res = rp.get_ledger_summary(slug)
@@ -241,6 +256,9 @@ def cmd_billing(args):
         print(f"    JSON Batch : {paths['json']}")
         print(f"    FatturaPA  : {paths['xml']} (SDI v1.2 FPR12)")
         print(f"    Totale Doc : € {batch['invoice_draft']['totals']['total_gross']:.2f}")
+        print(f"    Rate Scadenzario ({len(batch['scadenzario']['installments'])} rate):")
+        for inst in batch['scadenzario']['installments']:
+            print(f"      • Rata {inst['number']}: € {inst['amount']:.2f} scadenza {inst['due_date']} [{inst['status'].upper()}]")
         return 0
 
     if action == "pay":
@@ -287,6 +305,17 @@ def cmd_mps(args):
     slug = args.slug.strip().lower()
     mp = MPSPipeline()
     action = args.action or "calculate"
+
+    if action == "poll":
+        res = mp.poll_device(slug, mps_id=args.id, ip_override=args.ip)
+        if res.get("status") == "success":
+            print(f"[✓] Telemetria SNMP acquisita con successo da {res['ip']}:")
+            settlement = res["settlement"]
+            print(f"    Copie Totali: Mono {settlement['mono_produced']} | Colore {settlement['color_produced']}")
+            print(f"    Prossimo Conguaglio: € {settlement['total_settlement_next_period']:.2f}")
+        else:
+            print(f"[!] {res.get('message')}")
+        return 0
 
     if action == "read":
         if not args.id or args.mono is None or args.color is None:
@@ -337,6 +366,7 @@ def cmd_furniture(args):
         if st:
             print(f"[✓] Collaudo finale completato e controfirmato per {args.id}!")
             print(f"    Stato: {st['current_stage']} (100.0%) | Firmatario: {args.signatory}")
+            print(f"    Generato Certificato: handover-{args.id.lower()}.html")
         return 0
 
     orders = fp.list_orders(slug)
@@ -347,6 +377,38 @@ def cmd_furniture(args):
 def cmd_quote(args):
     slug = args.slug.strip().lower()
     qp = QuotesPipeline()
+    action = args.action or "calculate"
+
+    if action == "add-item":
+        if not args.id or not args.cat or not args.desc or args.cost is None:
+            print("[ERRORE] Specificare: --id, --cat, --desc, --cost [--markup, --qty, --sku]")
+            return 1
+        res = qp.add_item_to_quote(
+            slug=slug,
+            quote_id=args.id,
+            category=args.cat,
+            part_number=args.sku or "SKU-GEN",
+            description=args.desc,
+            quantity=args.qty or 1.0,
+            unit_cost=args.cost,
+            markup_percent=args.markup or 25.0
+        )
+        if res:
+            print(f"[✓] Articolo aggiunto a {args.id}!")
+            print(f"    Nuovo Totale Netto: € {res['totals']['total_net']:.2f} (Margine: {res['totals']['gross_margin_percent']}%)")
+            print(f"    Aggiornata Offerta Formale: {args.id.lower()}.html")
+        return 0
+
+    if action == "export":
+        if not args.id:
+            print("[ERRORE] Specificare --id del preventivo da esportare")
+            return 1
+        out = qp.export_quote_html(slug, args.id)
+        if out:
+            print(f"[✓] Proposta commerciale formale esportata con successo:")
+            print(f"    File: {out}")
+        return 0
+
     qdir = qp.get_quotes_dir(slug)
     for qf in qdir.glob("*.yaml"):
         with open(qf, "r", encoding="utf-8") as fp:
@@ -406,7 +468,7 @@ def cmd_validate(args):
     return 0 if total_errors == 0 else 1
 
 def main():
-    parser = argparse.ArgumentParser(description="itinfra-business-ops CLI Master Engine")
+    parser = argparse.ArgumentParser(description="itinfra-business-ops CLI Master Engine (v0.3.0)")
     subparsers = parser.add_subparsers(dest="subcommand", help="Sottocomando da eseguire")
 
     # init
@@ -443,6 +505,7 @@ def main():
     p_report.add_argument("--date", help="Data intervento (YYYY-MM-DD)")
     p_report.add_argument("--action-type", dest="ledger_action", choices=["debit_contract", "invoice_spot", "included_flat"], default="debit_contract")
     p_report.add_argument("--assets", help="Seriale apparati impattati separati da virgola")
+    p_report.add_argument("--parts", help="Ricambi nel formato CODICE:Descrizione:Qta:PrezzoUnit, separati da virgola")
     p_report.add_argument("--signed", action="store_true", help="Segna come firmato dal cliente")
     p_report.add_argument("--signer", help="Nome referente cliente firmatario")
     p_report.set_defaults(func=cmd_report)
@@ -471,8 +534,9 @@ def main():
     # mps
     p_mps = subparsers.add_parser("mps", help="Gestione stampanti e costo copia")
     p_mps.add_argument("slug", help="Slug cliente")
-    p_mps.add_argument("action", nargs="?", default="calculate", choices=["calculate", "read"])
+    p_mps.add_argument("action", nargs="?", default="calculate", choices=["calculate", "read", "poll"])
     p_mps.add_argument("--id", help="ID contratto MPS")
+    p_mps.add_argument("--ip", help="Indirizzo IP per interrogazione SNMP diretta")
     p_mps.add_argument("--mono", type=int, help="Lettura contatore mono totale")
     p_mps.add_argument("--color", type=int, help="Lettura contatore colore totale")
     p_mps.add_argument("--bk", type=int, help="Toner nero %")
@@ -493,6 +557,14 @@ def main():
     # quote
     p_quote = subparsers.add_parser("quote", help="Preventivazione e margini")
     p_quote.add_argument("slug", help="Slug cliente")
+    p_quote.add_argument("action", nargs="?", default="calculate", choices=["calculate", "add-item", "export"])
+    p_quote.add_argument("--id", help="ID preventivo")
+    p_quote.add_argument("--cat", help="Categoria merceologica (hardware_server_network, professional_services, ecc.)")
+    p_quote.add_argument("--sku", help="Codice articolo / SKU")
+    p_quote.add_argument("--desc", help="Descrizione articolo")
+    p_quote.add_argument("--cost", type=float, help="Costo acquisto unitario")
+    p_quote.add_argument("--markup", type=float, default=25.0, help="Markup percentuale (default: 25%)")
+    p_quote.add_argument("--qty", type=float, default=1.0, help="Quantità (default: 1.0)")
     p_quote.set_defaults(func=cmd_quote)
 
     # validate

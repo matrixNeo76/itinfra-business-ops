@@ -2,11 +2,12 @@
   "batch_id": "BILL-202609-severino-srl",
   "slug": "severino-srl",
   "period": "2026-09",
-  "status": "paid",
+  "status": "draft",
   "invoice_draft": {
     "invoice_number": "DRAFT-BILL-202609-severino-srl",
     "invoice_date": "2026-09-17",
     "payment_method": "MP05",
+    "payment_terms": "30_60_DF_FM",
     "lines": [
       {
         "description": "Canone Assistenza IT CTR-2026-SEVERINO - Periodo 2026-09",
@@ -16,6 +17,24 @@
         "total_line": 150.0,
         "source_type": "recurring_contract",
         "source_ref": "CTR-2026-SEVERINO"
+      },
+      {
+        "description": "Ricambio: Modulo DDR4 32GB ECC [RAM-32GB] (RAP-20260917-002)",
+        "quantity": 1.0,
+        "unit_price": 140.0,
+        "vat_rate": 22.0,
+        "total_line": 140.0,
+        "source_type": "hardware_sale",
+        "source_ref": "RAP-20260917-002"
+      },
+      {
+        "description": "Ricambio: Samsung 980 Pro 1TB [SSD-1TB] (RAP-20260917-002)",
+        "quantity": 1.0,
+        "unit_price": 125.0,
+        "vat_rate": 22.0,
+        "total_line": 125.0,
+        "source_type": "hardware_sale",
+        "source_ref": "RAP-20260917-002"
       },
       {
         "description": "Canone Noleggio Ricoh IM C2500 A3 Multifunzione Colore (MPS-2026-SEVERINO-01) - Periodo 2026-09",
@@ -46,21 +65,30 @@
       }
     ],
     "totals": {
-      "subtotal_net": 557.6,
-      "vat_amount": 122.67,
-      "total_gross": 680.27
+      "subtotal_net": 822.6,
+      "vat_amount": 180.97,
+      "total_gross": 1003.57
     }
   },
   "scadenzario": {
-    "overall_status": "paid",
+    "overall_status": "open",
+    "payment_terms": "30_60_DF_FM",
     "installments": [
       {
         "number": 1,
-        "due_date": "2026-11-16",
-        "amount": 680.27,
-        "status": "paid",
-        "paid_date": "2026-09-17",
-        "bank_transaction_id": "CRO-9988776655"
+        "due_date": "2026-10-31",
+        "amount": 501.79,
+        "status": "unpaid",
+        "paid_date": "",
+        "bank_transaction_id": ""
+      },
+      {
+        "number": 2,
+        "due_date": "2026-11-30",
+        "amount": 501.78,
+        "status": "unpaid",
+        "paid_date": "",
+        "bank_transaction_id": ""
       }
     ]
   }

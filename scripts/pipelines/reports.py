@@ -102,9 +102,10 @@ class ReportsPipeline:
         contract_id: Optional[str] = None,
         break_minutes: int = 0,
         customer_signed: bool = False,
-        signer_name: str = ""
+        signer_name: str = "",
+        spare_parts: Optional[List[Dict[str, Any]]] = None
     ) -> Dict[str, Any]:
-        """Crea, valida e salva fisicamente un nuovo rapportino di intervento."""
+        """Crea, valida e salva fisicamente un nuovo rapportino di intervento con gestione over-budget e ricambi."""
         if not date_str:
             date_str = datetime.date.today().isoformat()
         date_compact = date_str.replace("-", "")
@@ -124,6 +125,15 @@ class ReportsPipeline:
             if active:
                 contract_id = active[0]["contract_id"]
 
+        debited_h = calc["rounded_hours"]
+        extra_h = 0.0
+
+        # Se debit_contract, scala dal contratto attivo e gestisci over-budget
+        if ledger_action == "debit_contract" and contract_id:
+            res_debit = cp.debit_hours(slug, contract_id, calc["rounded_hours"], rep_id)
+            debited_h = res_debit["debited_contract_hours"]
+            extra_h = res_debit["extra_hours"]
+
         report_data = {
             "report_id": rep_id,
             "slug": slug,
@@ -136,10 +146,13 @@ class ReportsPipeline:
             "break_minutes": break_minutes,
             "total_hours_raw": calc["raw_hours"],
             "total_hours_rounded": calc["rounded_hours"],
+            "debited_contract_hours": debited_h,
+            "extra_hours": extra_h,
             "rounding_step_minutes": 30,
             "intervention_type": intervention_type,
             "ledger_action": ledger_action,
             "impacted_assets": impacted_assets or [],
+            "spare_parts": spare_parts or [],
             "description": description.strip(),
             "customer_sign_off": {
                 "signed": customer_signed,
@@ -153,11 +166,7 @@ class ReportsPipeline:
         with open(target_file, "w", encoding="utf-8") as fp:
             yaml.safe_dump(report_data, fp, sort_keys=False, allow_unicode=True)
 
-        # Se debit_contract, scala dal contratto attivo
-        if ledger_action == "debit_contract" and contract_id:
-            cp.debit_hours(slug, contract_id, calc["rounded_hours"], rep_id)
-
-        # Genera anche HTML di cortesia
+        # Genera anche HTML interattivo di cortesia con Canvas Firma
         html_content = self.generate_printable_html(report_data)
         html_file = tdir / f"{rep_id.lower()}.html"
         html_file.write_text(html_content, encoding="utf-8")
@@ -165,7 +174,7 @@ class ReportsPipeline:
         return report_data
 
     def generate_printable_html(self, report_data: Dict[str, Any]) -> str:
-        """Genera un foglio di intervento stampabile o firmabile su tablet con styling professionale."""
+        """Genera un foglio di intervento stampabile e firmabile interattivamente su tablet con HTML5 Canvas."""
         rid = report_data.get("report_id", "RAP")
         slug = report_data.get("slug", "")
         tech = report_data.get("technician", "")
@@ -173,10 +182,11 @@ class ReportsPipeline:
         cin = report_data.get("clock_in", "")
         cout = report_data.get("clock_out", "")
         h_round = report_data.get("total_hours_rounded", 0.0)
+        debited_h = report_data.get("debited_contract_hours", h_round)
+        extra_h = report_data.get("extra_hours", 0.0)
         action = report_data.get("ledger_action", "")
         desc = report_data.get("description", "").replace("\n", "<br/>")
         cid = report_data.get("contract_id", "N/A")
-        signed = report_data.get("customer_sign_off", {}).get("signed", False)
         signer = report_data.get("customer_sign_off", {}).get("signer_name", "")
 
         assets_html = "".join(
@@ -184,23 +194,53 @@ class ReportsPipeline:
             for a in report_data.get("impacted_assets", [])
         ) or "<li>Nessun apparato specifico segnalato.</li>"
 
+        parts = report_data.get("spare_parts", [])
+        if parts:
+            parts_rows = "".join(
+                f"<tr><td><code>{p.get('code')}</code></td><td>{p.get('description')}</td><td style='text-align:center;'>{p.get('quantity')}</td><td style='text-align:right;'>€ {p.get('unit_price', 0.0):.2f}</td></tr>"
+                for p in parts
+            )
+            parts_html = f"""
+            <h4 style="margin: 16px 0 8px 0; color:#1e40af;">Ricambi & Materiali Impiegati:</h4>
+            <table style="width:100%; border-collapse: collapse; margin-bottom: 16px; font-size: 13px;">
+              <thead>
+                <tr style="background:#f3f4f6; text-align:left;">
+                  <th style="padding:6px; border:1px solid #e5e7eb;">Codice</th>
+                  <th style="padding:6px; border:1px solid #e5e7eb;">Descrizione</th>
+                  <th style="padding:6px; border:1px solid #e5e7eb; text-align:center;">Q.tà</th>
+                  <th style="padding:6px; border:1px solid #e5e7eb; text-align:right;">Prezzo Unit.</th>
+                </tr>
+              </thead>
+              <tbody>{parts_rows}</tbody>
+            </table>
+            """
+        else:
+            parts_html = ""
+
+        overbudget_badge = f"<span style='background:#fee2e2; color:#991b1b; padding:3px 6px; border-radius:4px; font-size:11px; margin-left:8px;'>EXTRA-SOGLIA: {extra_h} h</span>" if extra_h > 0 else ""
+
         return f"""<!DOCTYPE html>
 <html lang="it">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Rapportino {rid} — {slug}</title>
 <style>
-  body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 30px; color: #1f2937; }}
-  .header {{ display: flex; justify-content: space-between; border-bottom: 2px solid #2563eb; padding-bottom: 12px; margin-bottom: 24px; }}
+  body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 30px; color: #1f2937; line-height: 1.4; }}
+  .header {{ display: flex; justify-content: space-between; border-bottom: 2px solid #2563eb; padding-bottom: 12px; margin-bottom: 20px; }}
   .badge {{ display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; background: #e0e7ff; color: #3730a3; }}
-  .grid {{ display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }}
+  .grid {{ display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }}
   .box {{ border: 1px solid #e5e7eb; border-radius: 6px; padding: 12px; background: #f9fafb; }}
-  .desc-box {{ border: 1px solid #e5e7eb; border-radius: 6px; padding: 16px; min-height: 100px; margin-bottom: 24px; background: #fff; }}
-  .signature-grid {{ display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-top: 40px; }}
-  .sign-line {{ border-top: 1px dashed #9ca3af; margin-top: 50px; text-align: center; font-size: 12px; color: #6b7280; padding-top: 6px; }}
+  .desc-box {{ border: 1px solid #e5e7eb; border-radius: 6px; padding: 14px; min-height: 80px; margin-bottom: 20px; background: #fff; }}
+  .sig-container {{ display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-top: 30px; }}
+  canvas#sig-pad {{ border: 1px solid #d1d5db; border-radius: 4px; width: 100%; height: 120px; touch-action: none; background: #ffffff; cursor: crosshair; }}
+  .canvas-controls {{ margin-top: 6px; display: flex; gap: 8px; }}
+  .btn {{ font-size: 11px; padding: 4px 8px; border-radius: 4px; border: 1px solid #d1d5db; background: #fff; cursor: pointer; }}
+  .btn:hover {{ background: #f3f4f6; }}
   @media print {{
-    body {{ margin: 10mm; font-size: 12pt; }}
-    .no-print {{ display: none; }}
+    body {{ margin: 10mm; font-size: 11pt; }}
+    .no-print {{ display: none !important; }}
+    canvas#sig-pad {{ border: 1px dashed #9ca3af; }}
   }}
 </style>
 </head>
@@ -208,10 +248,10 @@ class ReportsPipeline:
 <div class="header">
   <div>
     <h2 style="margin:0; color:#1e40af;">RAPPORTINO DI INTERVENTO TECNICO</h2>
-    <span style="font-size: 14px; color:#6b7280;">ID: {rid} | Cliente: <strong>{slug}</strong></span>
+    <span style="font-size: 13px; color:#6b7280;">ID: <strong>{rid}</strong> | Cliente: <strong>{slug}</strong></span>
   </div>
   <div style="text-align: right;">
-    <span class="badge">{action.upper()}</span>
+    <span class="badge">{action.upper()}</span>{overbudget_badge}
     <div style="font-size: 12px; margin-top: 4px; color:#4b5563;">Contratto Rif: {cid}</div>
   </div>
 </div>
@@ -221,7 +261,7 @@ class ReportsPipeline:
     <strong>Dettagli Intervento:</strong><br>
     Data: {date}<br>
     Orario: {cin} &rarr; {cout}<br>
-    Ore Consuntivate: <strong>{h_round} h</strong> (scatti 30 min)<br>
+    Ore Totali Consuntivate: <strong>{h_round} h</strong> (a canone: {debited_h} h{f', extra: {extra_h} h' if extra_h > 0 else ''})<br>
     Tecnico Incaricato: <strong>{tech}</strong>
   </div>
   <div class="box">
@@ -232,21 +272,82 @@ class ReportsPipeline:
   </div>
 </div>
 
-<strong>Descrizione Dettagliata Attività Svolta:</strong>
+<strong>Descrizione Attività Svolta:</strong>
 <div class="desc-box">
   {desc}
 </div>
 
-<div class="signature-grid">
+{parts_html}
+
+<div class="sig-container">
   <div>
     <strong>Firma Tecnico Esecutore:</strong>
-    <div class="sign-line">{tech}</div>
+    <div style="margin-top: 40px; border-top: 1px dashed #9ca3af; text-align: center; font-size: 12px; color: #4b5563; padding-top: 4px;">
+      {tech}
+    </div>
   </div>
   <div>
-    <strong>Firma per Accettazione Cliente:</strong>
-    <div class="sign-line">{signer or "Timbro e Firma Referente"}</div>
+    <strong>Firma Cliente per Accettazione:</strong>
+    <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">Firma qui sotto (Touch / Pennino):</div>
+    <canvas id="sig-pad"></canvas>
+    <div class="canvas-controls no-print">
+      <button type="button" class="btn" onclick="clearCanvas()">Pulisci Firma</button>
+      <button type="button" class="btn" onclick="window.print()">Stampa / PDF</button>
+    </div>
+    <div style="font-size: 11px; color:#6b7280; margin-top: 4px;">Referente: <strong>{signer or "Referente Autorizzato"}</strong></div>
   </div>
 </div>
+
+<script>
+  const canvas = document.getElementById('sig-pad');
+  if (canvas) {{
+    const ctx = canvas.getContext('2d');
+    let drawing = false;
+
+    function resize() {{
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width;
+      canvas.height = rect.height;
+      ctx.lineWidth = 2;
+      ctx.lineCap = 'round';
+      ctx.strokeStyle = '#1e3a8a';
+    }}
+    resize();
+    window.addEventListener('resize', resize);
+
+    function start(e) {{
+      drawing = true;
+      ctx.beginPath();
+      const pos = getPos(e);
+      ctx.moveTo(pos.x, pos.y);
+    }}
+    function end() {{ drawing = false; }}
+    function draw(e) {{
+      if (!drawing) return;
+      e.preventDefault();
+      const pos = getPos(e);
+      ctx.lineTo(pos.x, pos.y);
+      ctx.stroke();
+    }}
+    function getPos(e) {{
+      const rect = canvas.getBoundingClientRect();
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      return {{ x: clientX - rect.left, y: clientY - rect.top }};
+    }}
+
+    canvas.addEventListener('mousedown', start);
+    canvas.addEventListener('mouseup', end);
+    canvas.addEventListener('mousemove', draw);
+    canvas.addEventListener('touchstart', start);
+    canvas.addEventListener('touchend', end);
+    canvas.addEventListener('touchmove', draw);
+
+    window.clearCanvas = function() {{
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }};
+  }}
+</script>
 </body>
 </html>
 """

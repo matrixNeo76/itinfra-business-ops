@@ -137,3 +137,49 @@ class MPSPipeline:
             except Exception:
                 pass
         return None
+
+    def poll_device(self, slug: str, mps_id: Optional[str] = None, ip_override: Optional[str] = None) -> Dict[str, Any]:
+        """Interroga la stampante fisica via SNMP e registra automaticamente la telelettura se raggiungibile."""
+        from scripts.core.snmp import SNMPPoller
+        poller = SNMPPoller()
+
+        contracts = self.list_mps_contracts(slug)
+        if not contracts:
+            return {"status": "error", "message": f"Nessun contratto MPS trovato per {slug}"}
+
+        target_contract = None
+        for c in contracts:
+            if not mps_id or c.get("mps_contract_id") == mps_id:
+                target_contract = c
+                break
+
+        if not target_contract:
+            return {"status": "error", "message": f"Contratto {mps_id} non trovato"}
+
+        cid = target_contract.get("mps_contract_id")
+        ip = ip_override or target_contract.get("device_info", {}).get("ip_address")
+        if not ip:
+            return {"status": "error", "message": f"Indirizzo IP non specificato per {cid}"}
+
+        snmp_cfg = target_contract.get("snmp_config", {})
+        comm = snmp_cfg.get("community", "public")
+
+        res = poller.poll_ip(ip, community=comm)
+        if res["reachable"]:
+            telem = res.get("telemetry", {})
+            st = self.record_reading(
+                slug=slug,
+                mps_id=cid,
+                mono_total=telem.get("mono_total", 0),
+                color_total=telem.get("color_total", 0),
+                method="snmp_auto"
+            )
+            return {"status": "success", "ip": ip, "reachable": True, "settlement": st}
+        else:
+            return {
+                "status": "warning",
+                "ip": ip,
+                "reachable": False,
+                "snmp_status": res["snmp_status"],
+                "message": f"Dispositivo {ip} non ha risposto alla query SNMP UDP 161 ({res['snmp_status']}). È possibile registrare la lettura manuale con 'it-ops mps {slug} read'."
+            }

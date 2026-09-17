@@ -26,8 +26,70 @@ class BillingPipeline:
                 return yaml.safe_load(f) or {}
         return {}
 
+    @staticmethod
+    def _get_end_of_month(d: datetime.date) -> datetime.date:
+        """Calcola l'ultimo giorno del mese per la data fornita."""
+        next_month = d.replace(day=28) + datetime.timedelta(days=4)
+        return next_month - datetime.timedelta(days=next_month.day)
+
+    def compute_installments(self, total_gross: float, terms: str, base_date: datetime.date) -> List[Dict[str, Any]]:
+        """Calcola deterministamente le rate e le scadenze (es. 30/60 gg fine mese)."""
+        installments = []
+        if terms == "30_60_DF_FM":
+            inst1_due = self._get_end_of_month(base_date + datetime.timedelta(days=30)).isoformat()
+            inst2_due = self._get_end_of_month(base_date + datetime.timedelta(days=60)).isoformat()
+            amt1 = round(total_gross / 2.0, 2)
+            amt2 = round(total_gross - amt1, 2)
+            installments.append({
+                "number": 1,
+                "due_date": inst1_due,
+                "amount": amt1,
+                "status": "unpaid",
+                "paid_date": "",
+                "bank_transaction_id": ""
+            })
+            installments.append({
+                "number": 2,
+                "due_date": inst2_due,
+                "amount": amt2,
+                "status": "unpaid",
+                "paid_date": "",
+                "bank_transaction_id": ""
+            })
+        elif terms in ("30_DF_FM", "30_FM"):
+            inst_due = self._get_end_of_month(base_date + datetime.timedelta(days=30)).isoformat()
+            installments.append({
+                "number": 1,
+                "due_date": inst_due,
+                "amount": total_gross,
+                "status": "unpaid",
+                "paid_date": "",
+                "bank_transaction_id": ""
+            })
+        elif terms in ("60_DF_FM", "60_FM"):
+            inst_due = self._get_end_of_month(base_date + datetime.timedelta(days=60)).isoformat()
+            installments.append({
+                "number": 1,
+                "due_date": inst_due,
+                "amount": total_gross,
+                "status": "unpaid",
+                "paid_date": "",
+                "bank_transaction_id": ""
+            })
+        else:
+            inst_due = (base_date + datetime.timedelta(days=30)).isoformat()
+            installments.append({
+                "number": 1,
+                "due_date": inst_due,
+                "amount": total_gross,
+                "status": "unpaid",
+                "paid_date": "",
+                "bank_transaction_id": ""
+            })
+        return installments
+
     def aggregate_monthly_batch(self, slug: str, period: Optional[str] = None) -> Dict[str, Any]:
-        """Aggrega canoni ricorrenti, ore spot, canoni e conguagli MPS in un batch contabile."""
+        """Aggrega canoni ricorrenti, ore spot, ore extra-soglia, ricambi, canoni e conguagli MPS."""
         if not period:
             period = datetime.date.today().strftime("%Y-%m")
 
@@ -36,8 +98,11 @@ class BillingPipeline:
         mps_pipe = MPSPipeline(self.clients_root)
 
         contracts = contracts_pipe.list_contracts(slug)
+        reports = reports_pipe.list_reports(slug)
         reports_summary = reports_pipe.get_ledger_summary(slug)
         mps_contracts = mps_pipe.list_mps_contracts(slug)
+        cmanifest = self.get_client_manifest(slug)
+        terms = cmanifest.get("billing_info", {}).get("payment_terms", "30_60_DF_FM")
 
         vat_rate = float(self.config.get("company", {}).get("default_vat_rate", 22.0))
         lines: List[Dict[str, Any]] = []
@@ -73,13 +138,56 @@ class BillingPipeline:
                 "source_ref": rep["report_id"]
             })
 
-        # 3. Canoni & Conguagli Copie MPS Stampanti
+        # 3. Ore Extra-Soglia da Contratti (Over-Budget da Rapportini)
+        for r in reports:
+            extra_h = float(r.get("extra_hours", 0.0))
+            if extra_h > 0 and r.get("date", "").startswith(period):
+                # Trova tariffa extra da contratto
+                cid = r.get("contract_id", "")
+                extra_rate = 80.0
+                for c in contracts:
+                    if c.get("contract_id") == cid:
+                        extra_rate = float(c.get("financial", {}).get("extra_hourly_rate", 80.0))
+                        break
+                tot_extra = round(extra_h * extra_rate, 2)
+                lines.append({
+                    "description": f"Ore Extra-Soglia a contratto {cid} ({r.get('report_id')})",
+                    "quantity": extra_h,
+                    "unit_price": extra_rate,
+                    "vat_rate": vat_rate,
+                    "total_line": tot_extra,
+                    "source_type": "rapportino_hours",
+                    "source_ref": r.get("report_id")
+                })
+
+        # 4. Ricambi & Materiali fatturabili da Rapportini
+        for r in reports:
+            if r.get("date", "").startswith(period):
+                for part in r.get("spare_parts", []):
+                    qty = float(part.get("quantity", 1))
+                    price = float(part.get("unit_price", 0.0))
+                    if price > 0:
+                        line_tot = round(qty * price, 2)
+                        lines.append({
+                            "description": f"Ricambio: {part.get('description')} [{part.get('code')}] ({r.get('report_id')})",
+                            "quantity": qty,
+                            "unit_price": price,
+                            "vat_rate": vat_rate,
+                            "total_line": line_tot,
+                            "source_type": "hardware_sale",
+                            "source_ref": r.get("report_id")
+                        })
+
+        # 5. Canoni & Conguagli Copie MPS Stampanti
         for m in mps_contracts:
             if m.get("status") == "active":
                 st = mps_pipe.calculate_settlement(m)
                 mid = m.get("mps_contract_id", "MPS")
                 model = m.get("device_info", {}).get("model", "Stampante")
-                if st["base_fee"] > 0:
+                rental_type = m.get("contract_terms", {}).get("rental_type", "direct_internal")
+
+                # Se non è finanziaria terza, include il canone base hardware
+                if "financial_lease" not in rental_type and st["base_fee"] > 0:
                     lines.append({
                         "description": f"Canone Noleggio {model} ({mid}) - Periodo {period}",
                         "quantity": 1,
@@ -115,6 +223,9 @@ class BillingPipeline:
         total_gross = round(subtotal + vat_amount, 2)
 
         batch_id = f"BILL-{period.replace('-', '')}-{slug}"
+        today = datetime.date.today()
+        installments = self.compute_installments(total_gross, terms, today)
+
         batch = {
             "batch_id": batch_id,
             "slug": slug,
@@ -122,8 +233,9 @@ class BillingPipeline:
             "status": "draft",
             "invoice_draft": {
                 "invoice_number": f"DRAFT-{batch_id}",
-                "invoice_date": datetime.date.today().isoformat(),
-                "payment_method": "MP05", # Bonifico Bancario
+                "invoice_date": today.isoformat(),
+                "payment_method": "MP05",
+                "payment_terms": terms,
                 "lines": lines,
                 "totals": {
                     "subtotal_net": subtotal,
@@ -133,16 +245,8 @@ class BillingPipeline:
             },
             "scadenzario": {
                 "overall_status": "open",
-                "installments": [
-                    {
-                        "number": 1,
-                        "due_date": (datetime.date.today() + datetime.timedelta(days=60)).isoformat(),
-                        "amount": total_gross,
-                        "status": "unpaid",
-                        "paid_date": "",
-                        "bank_transaction_id": ""
-                    }
-                ]
+                "payment_terms": terms,
+                "installments": installments
             }
         }
         return batch

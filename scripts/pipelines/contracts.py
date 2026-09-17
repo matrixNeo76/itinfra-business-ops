@@ -122,24 +122,45 @@ class ContractsPipeline:
 
         return report
 
-    def debit_hours(self, slug: str, contract_id: str, hours: float, report_id: str = "") -> bool:
-        """Aggiorna e salva fisicamente le ore consumate sul file YAML del contratto."""
+    def debit_hours(self, slug: str, contract_id: str, hours: float, report_id: str = "") -> Dict[str, float]:
+        """
+        Aggiorna e salva fisicamente le ore consumate sul file YAML del contratto.
+        Se le ore richieste superano il monte ore residuo, scorpora automaticamente:
+        - ore a canone (fino a esaurimento monte ore)
+        - ore extra-soglia (da fatturare con tariffa extra)
+        """
         cdir = self.get_contracts_dir(slug)
+        result = {"debited_contract_hours": 0.0, "extra_hours": 0.0}
         for f in cdir.glob("*.yaml"):
             try:
                 with open(f, "r", encoding="utf-8") as fp:
                     data = yaml.safe_load(fp) or {}
                 if data.get("contract_id") == contract_id:
                     fin = data.setdefault("financial", {})
+                    total_included = float(fin.get("total_hours_included", 0.0))
                     current_consumed = float(fin.get("consumed_hours", 0.0))
-                    fin["consumed_hours"] = round(current_consumed + hours, 2)
-                    
+                    remaining = max(0.0, total_included - current_consumed)
+
+                    if hours <= remaining:
+                        debited = hours
+                        extra = 0.0
+                    else:
+                        debited = remaining
+                        extra = round(hours - remaining, 2)
+
+                    fin["consumed_hours"] = round(current_consumed + debited, 2)
+                    if extra > 0:
+                        fin["extra_hours_billed"] = round(float(fin.get("extra_hours_billed", 0.0)) + extra, 2)
+
                     with open(f, "w", encoding="utf-8") as fp:
                         yaml.safe_dump(data, fp, sort_keys=False, allow_unicode=True)
-                    return True
+
+                    result["debited_contract_hours"] = debited
+                    result["extra_hours"] = extra
+                    return result
             except Exception:
                 pass
-        return False
+        return result
 
     def renew_contract(self, slug: str, contract_id: str) -> Optional[Path]:
         """Duplica e crea una bozza di rinnovo per l'anno successivo."""
