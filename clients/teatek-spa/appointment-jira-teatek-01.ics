@@ -1,0 +1,16 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//ITInfra Business Ops//Intervento Tecnico//IT
+CALSCALE:GREGORIAN
+METHOD:REQUEST
+BEGIN:VEVENT
+UID:JIRA-TEATEK-01@itinfra.local
+DTSTAMP:20260917T135729Z
+DTSTART:20260917T090000
+DTEND:20260917T160000
+SUMMARY:[JIRA-TEATEK-01] Deployment & Collaudo OpenStor JovianDSS Metro Cluster
+DESCRIPTION:Intervento tecnico programmato per il cliente teatek-spa\nAssegnatario: andrea.m@auresystem.com
+LOCATION:Presso sede cliente teatek-spa
+STATUS:CONFIRMED
+END:VEVENT
+END:VCALENDAR

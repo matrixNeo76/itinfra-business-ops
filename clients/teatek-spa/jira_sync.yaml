@@ -1,0 +1,17 @@
+sync_id: SYNC-JIRA-TEATEK-01
+slug: teatek-spa
+jira_issue_key: JIRA-TEATEK-01
+issue_type: Task
+priority: High
+summary: Deployment & Collaudo OpenStor JovianDSS Metro Cluster
+assignee: andrea.m@auresystem.com
+appointment:
+  start_datetime: '2026-09-17T09:00:00'
+  end_datetime: '2026-09-17T16:00:00'
+  location: Presso sede cliente teatek-spa
+  calendar_event_id: CAL-JIRA-TEATEK-01
+  confirmation_sent: true
+execution:
+  status: scheduled
+  rapportino_ref: ''
+  actual_time_minutes: 0

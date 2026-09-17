@@ -150,13 +150,16 @@ class QuotesPipeline:
         tot_vat = round(tot_net * (vat_rate / 100.0), 2)
         tot_gross = round(tot_net + tot_vat, 2)
 
+        client_name = quote_data.get("client_name") or slug.upper()
+        contact_info = f"<div style='font-size:13px; color:#475569;'>C.a.: <strong>{quote_data['client_contact']}</strong></div>" if quote_data.get("client_contact") else ""
+
         categories_html = []
         for cat in quote_data.get("categories", []):
             cat_name = cat.get("name", "").replace("_", " ").title()
             items_rows = "".join(
-                f"""<tr>
+                f"""<tr style="{'background-color: #fefce8;' if it.get('is_optional') else ''}">
                   <td style="padding:8px; border-bottom:1px solid #e5e7eb;"><code>{it.get('part_number', '')}</code></td>
-                  <td style="padding:8px; border-bottom:1px solid #e5e7eb;">{it.get('description', '')}</td>
+                  <td style="padding:8px; border-bottom:1px solid #e5e7eb;">{it.get('description', '')} {'<span style=\"color:#b45309; font-weight:bold; font-size:11px;\">[OPZIONE]</span>' if it.get('is_optional') else ''}</td>
                   <td style="padding:8px; border-bottom:1px solid #e5e7eb; text-align:center;">{it.get('quantity', 1)}</td>
                   <td style="padding:8px; border-bottom:1px solid #e5e7eb; text-align:right;">€ {it.get('unit_price', 0.0):.2f}</td>
                   <td style="padding:8px; border-bottom:1px solid #e5e7eb; text-align:right; font-weight:bold;">€ {it.get('line_total', 0.0):.2f}</td>
@@ -183,7 +186,7 @@ class QuotesPipeline:
 <html lang="it">
 <head>
 <meta charset="UTF-8">
-<title>Offerta Commerciale {quote_id} — {slug}</title>
+<title>Offerta Commerciale {quote_id} — {client_name}</title>
 <style>
   body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 35px; color:#1e293b; line-height: 1.5; }}
   .header {{ display: flex; justify-content: space-between; border-bottom: 2px solid #2563eb; padding-bottom: 16px; margin-bottom: 24px; }}
@@ -206,7 +209,8 @@ class QuotesPipeline:
   <div style="text-align: right;">
     <h3 style="margin:0; color:#0f172a;">{comp.get('name', 'ITInfra')}</h3>
     <div style="font-size: 12px; color:#64748b;">P.IVA: {comp.get('vat_id')} | PEC: {comp.get('pec')}</div>
-    <div style="margin-top:8px; font-size:13px;">Destinatario: <strong>{slug.upper()}</strong></div>
+    <div style="margin-top:8px; font-size:14px;">Destinatario: <strong>{client_name}</strong></div>
+    {contact_info}
   </div>
 </div>
 
@@ -222,7 +226,8 @@ class QuotesPipeline:
   <strong>Condizioni di Fornitura:</strong><br>
   • Tempi di Consegna Stimati: {quote_data.get('delivery_time_weeks', 3)} settimane da conferma d'ordine.<br>
   • Termini di Pagamento: {quote_data.get('payment_terms', '30_60_DF_FM')}.<br>
-  • Garanzia Hardware: On-site con supporto tecnico certificato come da SLA.
+  • Garanzia Hardware: On-site con supporto tecnico certificato come da SLA.<br>
+  • Note: Le voci contrassegnate come [OPZIONE] sono escluse dall'imponibile vincolante e attivabili su richiesta.
 </div>
 
 <div class="sign-section">
@@ -232,7 +237,7 @@ class QuotesPipeline:
   </div>
   <div>
     <strong>Per Accettazione Cliente (Timbro e Firma):</strong>
-    <div class="sign-line">{slug.upper()}</div>
+    <div class="sign-line">{client_name}</div>
   </div>
 </div>
 </body>

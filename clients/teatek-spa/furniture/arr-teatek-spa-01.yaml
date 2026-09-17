@@ -1,0 +1,38 @@
+order_id: "ARR-2026-ODA-4500028515"
+slug: "teatek-spa"
+title: "Fornitura 4 Scrivanie U 140x80 Bianco e 16 Sedute C80 BLU (ODA 4500028515)"
+status: "6_handover_approved"
+budget_net: 1332.40
+
+stages:
+  survey:
+    date: "2026-01-15"
+    surveyor: "Architetto Aure System"
+    laser_measures_verified: true
+    data_power_points_mapped: true
+    notes: "Rilievo locali Via Santa Lucia 36 eseguito con successo"
+
+  design:
+    dwg_reference: "CAD/TEATEK-UFFICI-2026.dwg"
+    render_3d_count: 2
+    workstations_count: 4
+    meeting_rooms_count: 1
+    approved_by_client: true
+
+  procurement:
+    factory_orders_sent: true
+
+  assembly:
+    planned_start_date: "2026-01-30"
+    assembly_team: "Squadra Montaggi Aure System"
+    cable_trays_fitted: true
+    packaging_disposed_green: true
+
+  handover:
+    checklist:
+      desk_planarity_ok: true
+      drawer_locks_functional: true
+      finishes_scratch_free: true
+      power_data_accessible: true
+    signed_acceptance_date: "2026-02-02"
+    client_signatory: "Felice Granisso"

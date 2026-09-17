@@ -57,16 +57,53 @@ class ITInfraBridge:
         content = as_built_file.read_text(encoding="utf-8")
         assets: List[Dict[str, str]] = []
 
-        # Estrazione tabelle markdown: | **Numero di Serie** | `CZC8492K1L` |
-        # o | **Hostname ...** | `...` |
-        # Cerchiamo blocchi o coppie di valori
+        # Estrazione tabelle markdown: sia formato a coppie chiave-valore che a colonne (Service Tag / Serial)
         current_asset: Dict[str, str] = {}
+        table_headers: Optional[List[str]] = None
+
         for line in content.splitlines():
+            line_str = line.strip()
+
             # Riconoscimento sezioni 4.X
-            if line.startswith("### 4."):
+            if line_str.startswith("### 4."):
                 if current_asset.get("serial_number"):
                     assets.append(current_asset)
-                current_asset = {"section": line.replace("###", "").strip()}
+                current_asset = {"section": line_str.replace("###", "").strip()}
+                table_headers = None
+                continue
+
+            # Riconoscimento intestazioni tabella markdown a colonne
+            if line_str.startswith("|") and ("serial" in line_str.lower() or "service tag" in line_str.lower()) and "---" not in line_str:
+                table_headers = [c.strip().lower() for c in line_str.split("|")[1:-1]]
+                continue
+
+            if table_headers and line_str.startswith("|"):
+                if "---" in line_str:
+                    continue
+                row_vals = [c.strip() for c in line_str.split("|")[1:-1]]
+                if len(row_vals) >= len(table_headers):
+                    row_dict = dict(zip(table_headers, row_vals))
+                    serial_val = None
+                    host_val = None
+                    model_val = None
+                    for k, v in row_dict.items():
+                        clean_v = v.strip("`").strip()
+                        if clean_v.startswith("<") and clean_v.endswith(">"):
+                            continue
+                        if "serial" in k or "service tag" in k:
+                            serial_val = clean_v
+                        elif "hostname" in k or "host" in k:
+                            host_val = clean_v
+                        elif "modello" in k or "model" in k:
+                            model_val = clean_v
+
+                    if serial_val and serial_val not in ["-", "N/A", "none", "", "..."]:
+                        assets.append({
+                            "serial_number": serial_val,
+                            "hostname": host_val or "",
+                            "model": model_val or ""
+                        })
+                continue
 
             # Match chiave / valore markdown
             m_serial = re.search(r"\|\s*\*\*Numero di Serie\*\*\s*\|\s*`?([A-Za-z0-9\-_]+)`?\s*\|", line, re.IGNORECASE)

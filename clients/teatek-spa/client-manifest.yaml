@@ -1,0 +1,32 @@
+slug: "teatek-spa"
+client_name: "T.E.A. TEK S.P.A."
+created_at: "2026-09-17"
+
+contacts:
+  - name: "Felice Granisso"
+    role: "Referente Tecnico / Direzione"
+    email: "f.granisso@teatek.it"
+    phone: "+39 081 0000000"
+  - name: "Amministrazione T.E.A. TEK"
+    role: "Ufficio Amministrazione e Finanza"
+    email: "amministrazione@teatek.it"
+    phone: "+39 081 0000001"
+
+billing_info:
+  customer_code: "501.00238"
+  vat_id: "IT06362981216"
+  fiscal_code: "06362981216"
+  sdi_code: "SUBM70N"
+  pec: "teatek@pec.it"
+  iban: "IT41E0306903497100000008327"
+  payment_terms: "30_60_DF_FM"
+  address:
+    street: "Via Santa Lucia, 36"
+    zip: "80132"
+    city: "Napoli"
+    province: "NA"
+
+modules:
+  it_support: true
+  mps_rental: true
+  office_furniture: true

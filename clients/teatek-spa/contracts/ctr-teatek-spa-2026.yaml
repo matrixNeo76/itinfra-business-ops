@@ -1,0 +1,35 @@
+contract_id: "CTR-2026-TEATEK-HA"
+slug: "teatek-spa"
+status: "active"
+formula: "hours_bank"
+valid_from: "2026-09-17"
+valid_to: "2029-09-16"
+
+renewal:
+  automatic: true
+  notice_period_days: 60
+
+sla:
+  tier: "critical"
+  coverage_window: "08:00-20:00 Lun-Sab (24/7 On-Call per Disaster Recovery)"
+  first_response_hours: 2
+  target_resolution_hours: 4
+
+financial:
+  recurring_fee: 6000.0
+  billing_period: "annual"
+  total_hours_included: 60.0
+  consumed_hours: 8.0
+  extra_hourly_rate: 85.0
+  travel_fee_fixed: 0.0
+
+# Elenco apparati coperti (cross-check con itinfra 06-As-Built.md)
+covered_assets:
+  - serial_number: "OPENSTOR-TEATEK-NODE1"
+    hostname: "SRV-TEATEK-OPENSTOR-01"
+    role: "Hyperconverged ZFS Storage Node 1"
+    model: "OpenStor JovianDSS 2U 24-Bay NVMe"
+  - serial_number: "OPENSTOR-TEATEK-NODE2"
+    hostname: "SRV-TEATEK-OPENSTOR-02"
+    role: "Hyperconverged ZFS Storage Node 2"
+    model: "OpenStor JovianDSS 2U 24-Bay NVMe"

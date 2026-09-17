@@ -558,7 +558,7 @@ def main():
     p_quote = subparsers.add_parser("quote", help="Preventivazione e margini")
     p_quote.add_argument("slug", help="Slug cliente")
     p_quote.add_argument("action", nargs="?", default="calculate", choices=["calculate", "add-item", "export"])
-    p_quote.add_argument("--id", help="ID preventivo")
+    p_quote.add_argument("--id", "--quote-id", dest="id", help="ID preventivo")
     p_quote.add_argument("--cat", help="Categoria merceologica (hardware_server_network, professional_services, ecc.)")
     p_quote.add_argument("--sku", help="Codice articolo / SKU")
     p_quote.add_argument("--desc", help="Descrizione articolo")
