@@ -25,5 +25,5 @@ billing_info:
     province: NA
 modules:
   it_support: false
-  mps_rental: false
+  mps_rental: true
   office_furniture: true

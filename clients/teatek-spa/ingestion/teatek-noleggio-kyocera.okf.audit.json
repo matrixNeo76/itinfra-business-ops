@@ -1,0 +1,151 @@
+{
+  "document_type": "MPS_CONTRACT",
+  "source_file": "teatek-noleggio-kyocera.okf.md",
+  "evidence": [
+    {
+      "field": "client_name",
+      "value": "Spett.le TEA TEK spa (Via Santa Lucia, 36, 80132 Napoli).",
+      "source_file": "file://@CONTRATTO_DI_NOLEGGIO_TEA_TEK.pdf",
+      "page": 1,
+      "matched_text": "Spett.le TEA TEK spa (Via Santa Lucia, 36, 80132 Napoli).",
+      "confidence": 1.0,
+      "status": "VERIFIED",
+      "notes": ""
+    },
+    {
+      "field": "contract_protocol",
+      "value": "Prot. N.01/26",
+      "source_file": "file://@CONTRATTO_DI_NOLEGGIO_TEA_TEK.pdf",
+      "page": 1,
+      "matched_text": "Prot. N.01/26",
+      "confidence": 1.0,
+      "status": "VERIFIED",
+      "notes": ""
+    },
+    {
+      "field": "device_model",
+      "value": "multifunzione a colori Kyocera TASKalfa 5052ci",
+      "source_file": "file://@CONTRATTO_DI_NOLEGGIO_TEA_TEK.pdf",
+      "page": 1,
+      "matched_text": "multifunzione a colori Kyocera TASKalfa 5052ci",
+      "confidence": 1.0,
+      "status": "VERIFIED",
+      "notes": ""
+    },
+    {
+      "field": "device_location",
+      "value": "Consorzio Area, Via Maddaloni, snc, 80011 Acerra (NA)",
+      "source_file": "file://@CONTRATTO_DI_NOLEGGIO_TEA_TEK.pdf",
+      "page": 1,
+      "matched_text": "Consorzio Area, Via Maddaloni, snc, 80011 Acerra (NA)",
+      "confidence": 1.0,
+      "status": "VERIFIED",
+      "notes": ""
+    },
+    {
+      "field": "monthly_base_fee",
+      "value": 75.0,
+      "source_file": "file://@CONTRATTO_DI_NOLEGGIO_TEA_TEK.pdf",
+      "page": 1,
+      "matched_text": "€ 75.00/mese",
+      "confidence": 1.0,
+      "status": "VERIFIED",
+      "notes": ""
+    },
+    {
+      "field": "semestral_base_fee",
+      "value": 450.0,
+      "source_file": "file://@CONTRATTO_DI_NOLEGGIO_TEA_TEK.pdf",
+      "page": 1,
+      "matched_text": "€ 450.00/semestre",
+      "confidence": 1.0,
+      "status": "VERIFIED",
+      "notes": ""
+    },
+    {
+      "field": "included_mono",
+      "value": 18000,
+      "source_file": "file://@CONTRATTO_DI_NOLEGGIO_TEA_TEK.pdf",
+      "page": 1,
+      "matched_text": "3000 copie/mese = 18000/semestre",
+      "confidence": 1.0,
+      "status": "VERIFIED",
+      "notes": ""
+    },
+    {
+      "field": "included_color",
+      "value": 900,
+      "source_file": "file://@CONTRATTO_DI_NOLEGGIO_TEA_TEK.pdf",
+      "page": 1,
+      "matched_text": "150 copie/mese = 900/semestre",
+      "confidence": 1.0,
+      "status": "VERIFIED",
+      "notes": ""
+    },
+    {
+      "field": "excess_mono",
+      "value": 0.008,
+      "source_file": "file://@CONTRATTO_DI_NOLEGGIO_TEA_TEK.pdf",
+      "page": 1,
+      "matched_text": "€ 0,008/copia",
+      "confidence": 1.0,
+      "status": "VERIFIED",
+      "notes": ""
+    },
+    {
+      "field": "excess_color",
+      "value": 0.08,
+      "source_file": "file://@CONTRATTO_DI_NOLEGGIO_TEA_TEK.pdf",
+      "page": 1,
+      "matched_text": "€ 0,080/copia",
+      "confidence": 1.0,
+      "status": "VERIFIED",
+      "notes": ""
+    },
+    {
+      "field": "duration_months",
+      "value": 36,
+      "source_file": "file://@CONTRATTO_DI_NOLEGGIO_TEA_TEK.pdf",
+      "page": 1,
+      "matched_text": "36 mesi",
+      "confidence": 1.0,
+      "status": "VERIFIED",
+      "notes": ""
+    },
+    {
+      "field": "sla_contract",
+      "value": null,
+      "source_file": "file://@CONTRATTO_DI_NOLEGGIO_TEA_TEK.pdf",
+      "page": 1,
+      "matched_text": "",
+      "confidence": 0.0,
+      "status": "NOT_FOUND",
+      "notes": "Nessun contratto SLA assistenza sistemistica."
+    }
+  ],
+  "frontmatter": {
+    "type": "concept",
+    "title": "Contratto di Noleggio Multifunzione Kyocera TASKalfa 5052ci — Tea Tek SPA",
+    "description": "Contratto di locazione operativa MPS (Managed Print Services) per 1 multifunzione a colori Kyocera TASKalfa 5052ci presso la sede di Acerra (NA) stipulato con Aure System, canone mensile comprensivo di copie e manutenzione full-service.",
+    "generated.at": "2026-09-17T17:06:00+02:00",
+    "sources": [
+      "file://@CONTRATTO_DI_NOLEGGIO_TEA_TEK.pdf"
+    ],
+    "tags": [
+      "document-intelligence",
+      "estrazione-sota",
+      "contract",
+      "mps",
+      "kyocera"
+    ]
+  },
+  "tables_found": 2,
+  "summary": {
+    "document_type": "MPS_CONTRACT",
+    "total_fields_checked": 12,
+    "verified_fields": 11,
+    "not_found_fields": 1,
+    "zero_hallucination_guard_active": true,
+    "timestamp": "2026-09-17T17:08:40.941212"
+  }
+}

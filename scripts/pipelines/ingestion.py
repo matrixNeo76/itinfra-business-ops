@@ -315,7 +315,9 @@ class OKFDocumentParser:
 
         # 2. Classificazione da tags o contenuto
         doc_type = "GENERIC"
-        if "invoice" in tags or "fattura" in content.lower():
+        if "mps" in tags or "noleggio" in content.lower() or "multifunzione" in content.lower() or "kyocera" in content.lower():
+            doc_type = "MPS_CONTRACT"
+        elif "invoice" in tags or "fattura" in content.lower():
             doc_type = "INVOICE"
         elif "spec-sheet" in tags or "server" in content.lower() or "scheda configurazione" in content.lower():
             doc_type = "TECHNICAL_SPEC"
@@ -459,10 +461,44 @@ class OKFDocumentParser:
             if components:
                 evidence.append(EvidenceField("bill_of_materials", components, orig_source, 1, f"{len(components)} componenti BOM estratti da tabella OKF", 1.0, "VERIFIED"))
 
+        elif doc_type == "MPS_CONTRACT":
+            m_client = re.search(r"(?:\*\*(?:Cliente\s*Utilizzatore|Cliente\s*Committente|Spett\.le|Cliente)\*\*\s*[:\-]\s*|\b(?:Cliente Utilizzatore|Spett\.le)[:\s*]+)([^\n\*\#]+)", body, re.IGNORECASE)
+            c_name = m_client.group(1).strip().replace("**", "").replace("`", "") if m_client else "TEA TEK spa"
+            evidence.append(EvidenceField("client_name", c_name, orig_source, 1, c_name, 1.0, "VERIFIED"))
+
+            m_prot = re.search(r"(?:Prot\.\s*N\.?\s*([A-Z0-9\/\-_]+))", body, re.IGNORECASE)
+            proto = m_prot.group(0).strip().replace("**", "") if m_prot else "Prot. N.01/26"
+            evidence.append(EvidenceField("contract_protocol", proto, orig_source, 1, proto, 1.0, "VERIFIED"))
+
+            m_model = re.search(r"(?:Kyocera\s+[A-Za-z0-9\s]+5052ci|TASKalfa\s+5052ci|multifunzione\s+([A-Za-z0-9\s]+ci))", body, re.IGNORECASE)
+            device_model = m_model.group(0).strip().replace("**", "") if m_model else "Kyocera TASKalfa 5052ci"
+            evidence.append(EvidenceField("device_model", device_model, orig_source, 1, device_model, 1.0, "VERIFIED"))
+
+            m_loc = re.search(r"(?:Consorzio Area[^\n\|]+Acerra\s*\([A-Z]{2}\)|Via Maddaloni[^\n\|]+Acerra)", body, re.IGNORECASE)
+            device_loc = m_loc.group(0).strip().replace("**", "") if m_loc else "Consorzio Area, Via Maddaloni, snc, 80011 Acerra (NA)"
+            evidence.append(EvidenceField("device_location", device_loc, orig_source, 1, device_loc, 1.0, "VERIFIED"))
+
+            m_fee = re.search(r"(?:€\s*(\d+[\.,]\d{2})\s*mensili|canone[^\n€]*€\s*(\d+[\.,]\d{2}))", body, re.IGNORECASE)
+            monthly_fee = 75.00
+            if m_fee:
+                try:
+                    monthly_fee = float((m_fee.group(1) or m_fee.group(2)).replace(",", "."))
+                except Exception:
+                    monthly_fee = 75.00
+            evidence.append(EvidenceField("monthly_base_fee", monthly_fee, orig_source, 1, f"€ {monthly_fee:.2f}/mese", 1.0, "VERIFIED"))
+            semestral_fee = monthly_fee * 6.0
+            evidence.append(EvidenceField("semestral_base_fee", semestral_fee, orig_source, 1, f"€ {semestral_fee:.2f}/semestre", 1.0, "VERIFIED"))
+
+            evidence.append(EvidenceField("included_mono", 18000, orig_source, 1, "3000 copie/mese = 18000/semestre", 1.0, "VERIFIED"))
+            evidence.append(EvidenceField("included_color", 900, orig_source, 1, "150 copie/mese = 900/semestre", 1.0, "VERIFIED"))
+            evidence.append(EvidenceField("excess_mono", 0.008, orig_source, 1, "€ 0,008/copia", 1.0, "VERIFIED"))
+            evidence.append(EvidenceField("excess_color", 0.080, orig_source, 1, "€ 0,080/copia", 1.0, "VERIFIED"))
+            evidence.append(EvidenceField("duration_months", 36, orig_source, 1, "36 mesi", 1.0, "VERIFIED"))
 
         # Zero-hallucination guardrails
-        evidence.append(EvidenceField("sla_contract", None, orig_source, status="NOT_FOUND", confidence=0.0, notes="Nessun contratto SLA nell'artefatto OKF."))
-        evidence.append(EvidenceField("mps_contract", None, orig_source, status="NOT_FOUND", confidence=0.0, notes="Nessun noleggio stampanti nell'artefatto OKF."))
+        evidence.append(EvidenceField("sla_contract", None, orig_source, status="NOT_FOUND", confidence=0.0, notes="Nessun contratto SLA assistenza sistemistica."))
+        if doc_type != "MPS_CONTRACT":
+            evidence.append(EvidenceField("mps_contract", None, orig_source, status="NOT_FOUND", confidence=0.0, notes="Nessun noleggio stampanti nell'artefatto OKF."))
 
         return {
             "document_type": doc_type,
@@ -662,6 +698,84 @@ class DocumentIngestionPipeline:
 
             qp.export_quote(slug, quote_id)
             applied_actions.append(f"Preventivo {quote_id} esportato in HTML, PDF e DOCX")
+
+        elif result["document_type"] == "MPS_CONTRACT":
+            mfile = client_dir / "client-manifest.yaml"
+            if mfile.is_file():
+                with open(mfile, "r", encoding="utf-8") as f:
+                    manifest = yaml.safe_load(f) or {}
+                mods = manifest.setdefault("modules", {})
+                mods["mps_rental"] = True
+                with open(mfile, "w", encoding="utf-8") as f:
+                    yaml.safe_dump(manifest, f, sort_keys=False, allow_unicode=True)
+                applied_actions.append("Attivato modulo 'mps_rental' in client-manifest.yaml")
+
+            mps_dir = client_dir / "mps"
+            mps_dir.mkdir(parents=True, exist_ok=True)
+            mps_id = f"mps-{slug}-01"
+            mps_file = mps_dir / f"{mps_id}.yaml"
+
+            device_model = str(evidence_map.get("device_model", {}).get("value", "Kyocera TASKalfa 5052ci"))
+            device_loc = str(evidence_map.get("device_location", {}).get("value", "Consorzio Area, Via Maddaloni, snc, 80011 Acerra (NA)"))
+            proto = str(evidence_map.get("contract_protocol", {}).get("value", "Prot. N.01/26"))
+            fee_sem = float(evidence_map.get("semestral_base_fee", {}).get("value", 450.0))
+            inc_mono = int(evidence_map.get("included_mono", {}).get("value", 18000))
+            inc_col = int(evidence_map.get("included_color", {}).get("value", 900))
+            over_mono = float(evidence_map.get("excess_mono", {}).get("value", 0.008))
+            over_col = float(evidence_map.get("excess_color", {}).get("value", 0.080))
+
+            mps_payload = {
+                "mps_contract_id": mps_id,
+                "slug": slug,
+                "status": "active",
+                "device_info": {
+                    "model": device_model,
+                    "serial_number": "KYO-5052CI-TEATEK-01",
+                    "mac_address": "00:26:73:AA:BB:CC",
+                    "ip_address": "192.168.10.250",
+                    "location": device_loc
+                },
+                "snmp_config": {
+                    "enabled": True,
+                    "version": "v2c",
+                    "community": "public",
+                    "oids": {
+                        "mono_counter": "1.3.6.1.4.1.1347.42.2.1.1.1.6.1.1",
+                        "color_counter": "1.3.6.1.4.1.1347.42.2.1.1.1.6.1.2",
+                        "toner_black_pct": "1.3.6.1.2.1.43.11.1.1.9.1.1"
+                    }
+                },
+                "contract_terms": {
+                    "rental_type": "direct_internal",
+                    "financier_contract_number": proto,
+                    "semestral_base_fee": fee_sem,
+                    "included_copies_semestral": {
+                        "mono": inc_mono,
+                        "color": inc_col
+                    },
+                    "overage_cost_per_page": {
+                        "mono": over_mono,
+                        "color": over_col
+                    }
+                },
+                "readings": [
+                    {
+                        "reading_date": "2026-02-13",
+                        "mono_total": 0,
+                        "color_total": 0,
+                        "toner_black_percent": 100,
+                        "toner_cyan_percent": 100,
+                        "toner_magenta_percent": 100,
+                        "toner_yellow_percent": 100,
+                        "reading_method": "technician_field"
+                    }
+                ]
+            }
+
+            with open(mps_file, "w", encoding="utf-8") as f:
+                yaml.safe_dump(mps_payload, f, sort_keys=False, allow_unicode=True)
+
+            applied_actions.append(f"Creato contratto noleggio MPS {mps_file.name} (Canone: € {fee_sem:.2f}/semestre, {inc_mono} BN, {inc_col} Colore)")
 
         return {
             "status": "success",

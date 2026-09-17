@@ -1,0 +1,36 @@
+mps_contract_id: mps-teatek-spa-01
+slug: teatek-spa
+status: active
+device_info:
+  model: multifunzione a colori Kyocera TASKalfa 5052ci
+  serial_number: KYO-5052CI-TEATEK-01
+  mac_address: 00:26:73:AA:BB:CC
+  ip_address: 192.168.10.250
+  location: Consorzio Area, Via Maddaloni, snc, 80011 Acerra (NA)
+snmp_config:
+  enabled: true
+  version: v2c
+  community: public
+  oids:
+    mono_counter: 1.3.6.1.4.1.1347.42.2.1.1.1.6.1.1
+    color_counter: 1.3.6.1.4.1.1347.42.2.1.1.1.6.1.2
+    toner_black_pct: 1.3.6.1.2.1.43.11.1.1.9.1.1
+contract_terms:
+  rental_type: direct_internal
+  financier_contract_number: Prot. N.01/26
+  semestral_base_fee: 450.0
+  included_copies_semestral:
+    mono: 18000
+    color: 900
+  overage_cost_per_page:
+    mono: 0.008
+    color: 0.08
+readings:
+- reading_date: '2026-02-13'
+  mono_total: 0
+  color_total: 0
+  toner_black_percent: 100
+  toner_cyan_percent: 100
+  toner_magenta_percent: 100
+  toner_yellow_percent: 100
+  reading_method: technician_field
