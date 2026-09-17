@@ -56,7 +56,7 @@ class JiraSyncPipeline:
         app = record.get("appointment", {})
         start_dt = datetime.datetime.fromisoformat(app.get("start_datetime")).strftime("%Y%m%dT%H%M%S")
         end_dt = datetime.datetime.fromisoformat(app.get("end_datetime")).strftime("%Y%m%dT%H%M%S")
-        now_dt = datetime.datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
+        now_dt = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
         uid = f"{record.get('jira_issue_key')}@itinfra.local"
 
         return f"""BEGIN:VCALENDAR
@@ -76,3 +76,108 @@ STATUS:CONFIRMED
 END:VEVENT
 END:VCALENDAR
 """
+
+    def get_outbox_file(self, slug: str) -> Path:
+        """Restituisce il path della coda outbox offline Jira per il cliente."""
+        return self.clients_root / slug / "jira_outbox.yaml"
+
+    def queue_action(self, slug: str, action_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Accoda un'azione Jira (create_issue, log_work, update_status) nella outbox locale
+        garantendo resilienza offline prima della sincronizzazione via API remote.
+        """
+        ofile = self.get_outbox_file(slug)
+        outbox_items = []
+        if ofile.is_file():
+            try:
+                with open(ofile, "r", encoding="utf-8") as f:
+                    outbox_items = yaml.safe_load(f) or []
+            except Exception:
+                outbox_items = []
+
+        now_utc = datetime.datetime.now(datetime.timezone.utc).isoformat()
+        action_id = f"ACT-{len(outbox_items) + 1:04d}-{int(datetime.datetime.now().timestamp())}"
+        entry = {
+            "action_id": action_id,
+            "slug": slug,
+            "action_type": action_type,
+            "status": "pending",
+            "created_at": now_utc,
+            "attempts": 0,
+            "payload": payload
+        }
+        outbox_items.append(entry)
+
+        ofile.parent.mkdir(parents=True, exist_ok=True)
+        with open(ofile, "w", encoding="utf-8") as f:
+            yaml.safe_dump(outbox_items, f, sort_keys=False, allow_unicode=True)
+
+        return entry
+
+    def get_queued_actions(self, slug: str, status: Optional[str] = None) -> List[Dict[str, Any]]:
+        """Recupera le azioni accodate nella outbox locale, opzionalmente filtrate per stato."""
+        ofile = self.get_outbox_file(slug)
+        if not ofile.is_file():
+            return []
+        try:
+            with open(ofile, "r", encoding="utf-8") as f:
+                items = yaml.safe_load(f) or []
+            if status:
+                return [it for it in items if it.get("status") == status]
+            return items
+        except Exception:
+            return []
+
+    def check_schedule_conflicts(
+        self,
+        proposed_start: str,
+        proposed_end: str,
+        technician: str = "",
+        current_issue_key: str = ""
+    ) -> List[Dict[str, Any]]:
+        """
+        Scansiona l'intero parco clienti per individuare sovrapposizioni o conflitti di agenda
+        per lo stesso tecnico o nella stessa finestra temporale.
+        """
+        p_start = datetime.datetime.fromisoformat(proposed_start)
+        p_end = datetime.datetime.fromisoformat(proposed_end)
+        conflicts = []
+
+        for sfile in self.clients_root.glob("*/jira_sync.yaml"):
+            try:
+                with open(sfile, "r", encoding="utf-8") as f:
+                    rec = yaml.safe_load(f) or {}
+                ikey = rec.get("jira_issue_key", "")
+                if current_issue_key and ikey == current_issue_key:
+                    continue
+
+                app = rec.get("appointment", {})
+                start_str = app.get("start_datetime")
+                end_str = app.get("end_datetime")
+                if not start_str or not end_str:
+                    continue
+
+                ex_start = datetime.datetime.fromisoformat(start_str)
+                ex_end = datetime.datetime.fromisoformat(end_str)
+                assignee = rec.get("assignee", "")
+
+                # Se specificato un tecnico, il conflitto si applica solo al medesimo tecnico
+                if technician and assignee and technician.strip().lower() != assignee.strip().lower():
+                    continue
+
+                # Controllo sovrapposizione intervalli [A, B] e [C, D]: A < D and C < B
+                if p_start < ex_end and ex_start < p_end:
+                    conflicts.append({
+                        "slug": rec.get("slug", sfile.parent.name),
+                        "jira_issue_key": ikey,
+                        "summary": rec.get("summary", ""),
+                        "assignee": assignee,
+                        "start_datetime": start_str,
+                        "end_datetime": end_str,
+                        "conflict_type": "OVERLAP"
+                    })
+            except Exception:
+                continue
+
+        return conflicts
+

@@ -222,10 +222,174 @@ class ContractsPipeline:
             DocumentRenderer.render_contract_to_docx(contract_data, out_docx)
             results["docx"] = out_docx
 
-        if "pdf" in selected_formats:
-            out_pdf = cdir / f"{cid_clean}.pdf"
-            DocumentRenderer.render_contract_to_pdf(contract_data, out_pdf)
-            results["pdf"] = out_pdf
+            if "pdf" in selected_formats:
+                out_pdf = cdir / f"{cid_clean}.pdf"
+                DocumentRenderer.render_contract_to_pdf(contract_data, out_pdf)
+                results["pdf"] = out_pdf
 
         return results
 
+    # Festività nazionali italiane fisse
+    ITALIAN_HOLIDAYS_FIXED = {
+        (1, 1),   # Capodanno
+        (1, 6),   # Epifania
+        (4, 25),  # Liberazione
+        (5, 1),   # Festa del Lavoro
+        (6, 2),   # Festa della Repubblica
+        (8, 15),  # Ferragosto
+        (11, 1),  # Ognissanti
+        (12, 8),  # Immacolata
+        (12, 25), # Natale
+        (12, 26), # Santo Stefano
+    }
+
+    @classmethod
+    def is_italian_holiday_or_weekend(cls, d: datetime.date) -> bool:
+        """Verifica se una data cade di sabato, domenica o festività nazionale italiana."""
+        if d.weekday() in (5, 6): # Sabato = 5, Domenica = 6
+            return True
+        if (d.month, d.day) in cls.ITALIAN_HOLIDAYS_FIXED:
+            return True
+        return False
+
+    @classmethod
+    def compute_business_hours_sla(
+        cls,
+        start_dt: Any,
+        end_dt: Any,
+        window_start_str: str = "09:00",
+        window_end_str: str = "18:00"
+    ) -> float:
+        """
+        Calcola deterministamente le ore lavorative effettive trascorse tra due timestamp,
+        escludendo weekend, festività nazionali e ore al di fuori della finestra giornaliera (es. 09:00 - 18:00).
+        """
+        if isinstance(start_dt, str):
+            start_dt = datetime.datetime.fromisoformat(start_dt)
+        if isinstance(end_dt, str):
+            end_dt = datetime.datetime.fromisoformat(end_dt)
+
+        if end_dt <= start_dt:
+            return 0.0
+
+        w_start = datetime.datetime.strptime(window_start_str, "%H:%M").time()
+        w_end = datetime.datetime.strptime(window_end_str, "%H:%M").time()
+
+        total_seconds = 0.0
+        current = start_dt
+
+        while current < end_dt:
+            cur_date = current.date()
+            if not cls.is_italian_holiday_or_weekend(cur_date):
+                day_open = datetime.datetime.combine(cur_date, w_start)
+                day_close = datetime.datetime.combine(cur_date, w_end)
+
+                eff_start = max(current, day_open)
+                eff_end = min(end_dt, day_close)
+
+                if eff_end > eff_start:
+                    total_seconds += (eff_end - eff_start).total_seconds()
+
+            # Avanza all'inizio del giorno successivo
+            current = datetime.datetime.combine(cur_date + datetime.timedelta(days=1), datetime.time(0, 0))
+
+        return round(total_seconds / 3600.0, 2)
+
+    def apply_istat_adjustment(
+        self,
+        target: Any,
+        contract_id_or_rate: Any = None,
+        istat_rate_percent: float = 0.0,
+        inflation_rate_percent: Optional[float] = None,
+        foi_coefficient: float = 1.0
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Applica la rivalutazione ISTAT FOI (Famiglie Operai e Impiegati) al canone annuo o mensile.
+        Supporta sia il calcolo analitico su un importo base numerico, sia l'aggiornamento su file contratto YAML.
+        """
+        if isinstance(target, (int, float)):
+            base_fee = float(target)
+            rate = float(inflation_rate_percent if inflation_rate_percent is not None else (contract_id_or_rate if contract_id_or_rate is not None else istat_rate_percent))
+            adj = round(base_fee * (rate / 100.0) * foi_coefficient, 2)
+            revised = round(base_fee + adj, 2)
+            return {
+                "original_fee": base_fee,
+                "adjustment_amount": adj,
+                "revised_fee": revised,
+                "rate_percent": rate,
+                "foi_coefficient": foi_coefficient
+            }
+
+        slug = str(target)
+        contract_id = str(contract_id_or_rate)
+        rate = float(inflation_rate_percent if inflation_rate_percent is not None else istat_rate_percent)
+
+        cdir = self.get_contracts_dir(slug)
+        for f in cdir.glob("*.yaml"):
+            try:
+                with open(f, "r", encoding="utf-8") as fp:
+                    data = yaml.safe_load(fp) or {}
+                if data.get("contract_id") == contract_id:
+                    fin = data.setdefault("financial", {})
+                    base_fee = float(fin.get("annual_fee", fin.get("monthly_fee", 0.0)))
+                    if base_fee <= 0:
+                        return None
+
+                    adjustment_multiplier = 1.0 + ((rate * foi_coefficient) / 100.0)
+                    revised_fee = round(base_fee * adjustment_multiplier, 2)
+
+                    fee_key = "annual_fee" if "annual_fee" in fin else "monthly_fee"
+                    fin[f"original_{fee_key}"] = base_fee
+                    fin[fee_key] = revised_fee
+                    fin["istat_rate_applied"] = rate
+                    fin["istat_applied_date"] = datetime.date.today().isoformat()
+
+                    with open(f, "w", encoding="utf-8") as fp:
+                        yaml.safe_dump(data, fp, sort_keys=False, allow_unicode=True)
+
+                    return {
+                        "contract_id": contract_id,
+                        "fee_key": fee_key,
+                        "original_fee": base_fee,
+                        "revised_fee": revised_fee,
+                        "istat_rate_percent": rate,
+                        "applied_date": fin["istat_applied_date"]
+                    }
+            except Exception:
+                pass
+        return None
+
+    def route_asset_to_contract(self, slug: str, asset_serial_or_role: str) -> Optional[Dict[str, Any]]:
+        """
+        Determina a quale contratto attivo addebitare un intervento,
+        cercando per seriale hardware o ruolo apparato negli asset coperti.
+        """
+        contracts = self.list_contracts(slug)
+        needle = asset_serial_or_role.strip().upper()
+
+        for c in contracts:
+            if c.get("status") != "active":
+                continue
+            cid = c.get("contract_id")
+            for asset in c.get("covered_assets", []):
+                s = str(asset.get("serial_number", "")).strip().upper()
+                r = str(asset.get("role", "")).strip().upper()
+                h = str(asset.get("hostname", "")).strip().upper()
+                if needle in (s, r, h):
+                    return {
+                        "contract_id": cid,
+                        "formula": c.get("formula", "msp_flat"),
+                        "matched_asset": asset,
+                        "remaining_hours": float(c.get("financial", {}).get("total_hours_included", 0)) - float(c.get("financial", {}).get("consumed_hours", 0))
+                    }
+
+        # Fallback: primo contratto attivo con monte ore residuo
+        for c in contracts:
+            if c.get("status") == "active":
+                return {
+                    "contract_id": c.get("contract_id"),
+                    "formula": c.get("formula", "msp_flat"),
+                    "matched_asset": None,
+                    "remaining_hours": float(c.get("financial", {}).get("total_hours_included", 0)) - float(c.get("financial", {}).get("consumed_hours", 0))
+                }
+        return None

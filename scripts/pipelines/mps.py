@@ -82,6 +82,11 @@ class MPSPipeline:
         known = self.bridge.get_known_serials(mps_data.get("slug", ""))
         verified_as_built = serial in known if known else None
 
+        # Previsione predittiva esaurimento consumabili (Remaining Useful Life - RUL)
+        prediction = self.predict_toner_depletion(mps_data)
+        for rec in prediction.get("reorder_recommendations", []):
+            alerts.append(f"ORDINE PREVENTIVO CONSUMABILE: {rec['action']}")
+
         return {
             "mps_contract_id": mps_data.get("mps_contract_id"),
             "serial_number": serial,
@@ -97,7 +102,69 @@ class MPSPipeline:
             "base_fee": base_fee,
             "total_settlement_next_period": total_settlement,
             "toner_levels": toner_levels,
+            "predictive_maintenance": prediction,
             "alerts": alerts
+        }
+
+    @staticmethod
+    def predict_toner_depletion(mps_data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Calcola la velocità media di consumo pagine/giorno e stima i giorni residui
+        di vita utile (Remaining Useful Life - RUL) per ciascun consumabile toner.
+        Emette un alert proattivo di riordino se RUL <= 10 giorni lavorativi.
+        """
+        readings = mps_data.get("readings", [])
+        if len(readings) < 2:
+            return {
+                "daily_rate_pages": 0.0,
+                "days_analyzed": 0,
+                "toner_rul_days": {},
+                "reorder_recommendations": []
+            }
+
+        first_r = readings[0]
+        last_r = readings[-1]
+
+        try:
+            d_first = datetime.date.fromisoformat(first_r.get("reading_date", ""))
+            d_last = datetime.date.fromisoformat(last_r.get("reading_date", ""))
+            delta_days = max(1, (d_last - d_first).days)
+        except Exception:
+            delta_days = 30
+
+        total_pages_produced = (last_r.get("mono_total", 0) + last_r.get("color_total", 0)) - \
+                               (first_r.get("mono_total", 0) + first_r.get("color_total", 0))
+        daily_pages = round(total_pages_produced / delta_days, 1) if delta_days > 0 else 0.0
+
+        toner_rul = {}
+        reorder = []
+        colors = ["black", "cyan", "magenta", "yellow"]
+
+        for c in colors:
+            lvl_first = float(first_r.get(f"toner_{c}_percent", 100))
+            lvl_last = float(last_r.get(f"toner_{c}_percent", 100))
+            consumed_pct = lvl_first - lvl_last
+
+            if consumed_pct > 0 and delta_days > 0:
+                daily_pct = consumed_pct / delta_days
+                days_left = int(lvl_last / daily_pct) if daily_pct > 0 else 999
+            else:
+                days_left = int((lvl_last / 10.0) * 15)
+
+            toner_rul[c] = days_left
+            if days_left <= 10 or lvl_last <= 15:
+                reorder.append({
+                    "color": c.upper(),
+                    "current_level_percent": int(lvl_last),
+                    "estimated_days_remaining": days_left,
+                    "action": f"Emettere ordine toner {c.upper()} entro {max(1, days_left)} giorni per evitare fermo macchina."
+                })
+
+        return {
+            "daily_rate_pages": daily_pages,
+            "days_analyzed": delta_days,
+            "toner_rul_days": toner_rul,
+            "reorder_recommendations": reorder
         }
 
     def record_reading(
@@ -183,3 +250,56 @@ class MPSPipeline:
                 "snmp_status": res["snmp_status"],
                 "message": f"Dispositivo {ip} non ha risposto alla query SNMP UDP 161 ({res['snmp_status']}). È possibile registrare la lettura manuale con 'it-ops mps {slug} read'."
             }
+
+    def predict_toner_depletion(
+        self,
+        readings: List[Dict[str, Any]],
+        current_toner_percent: Optional[float] = None,
+        toner_color: str = "black"
+    ) -> Dict[str, Any]:
+        """
+        Algoritmo di manutenzione predittiva toner:
+        Calcola il consumo medio giornaliero (burn rate) e stima la vita utile residua (Remaining Useful Life - RUL).
+        Attiva l'allarme di riordino automatico quando RUL <= 10 giorni o percentuale toner <= 15%.
+        """
+        if not readings:
+            return {
+                "daily_burn_rate_pages": 0.0,
+                "remaining_useful_life_days": 999,
+                "reorder_triggered": False,
+                "message": "Nessuna lettura disponibile per la stima"
+            }
+
+        sorted_readings = sorted(readings, key=lambda r: r.get("reading_date", ""))
+        
+        burn_rate = 100.0
+        if len(sorted_readings) >= 2:
+            first = sorted_readings[0]
+            last = sorted_readings[-1]
+            d_start = datetime.date.fromisoformat(first.get("reading_date"))
+            d_end = datetime.date.fromisoformat(last.get("reading_date"))
+            days = max(1, (d_end - d_start).days)
+            delta_pages = max(0, int(last.get("mono_total", 0)) - int(first.get("mono_total", 0)))
+            if delta_pages > 0 and days > 0:
+                burn_rate = round(delta_pages / days, 1)
+
+        pct = current_toner_percent
+        if pct is None:
+            pct = float(sorted_readings[-1].get(f"toner_{toner_color}_percent", 50.0))
+
+        yield_total_pages = 10000.0
+        remaining_pages = (pct / 100.0) * yield_total_pages
+        rul_days = round(remaining_pages / max(1.0, burn_rate), 1)
+
+        reorder = (pct <= 15.0) or (rul_days <= 10.0)
+
+        return {
+            "toner_color": toner_color,
+            "current_toner_percent": pct,
+            "daily_burn_rate_pages": burn_rate,
+            "estimated_pages_remaining": int(remaining_pages),
+            "remaining_useful_life_days": rul_days,
+            "reorder_triggered": reorder,
+            "recommendation": "Ordinare nuova cartuccia toner" if reorder else "Livello consumabile ottimale"
+        }
+

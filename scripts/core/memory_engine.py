@@ -198,6 +198,57 @@ class MemoryEngine:
 
         return target_file
 
+    def record_incident_as_draft(
+        self,
+        context: str,
+        error_message: str,
+        root_cause: str,
+        domain: str = "core",
+        suggested_guardrail: str = "",
+        tags: Optional[List[str]] = None,
+    ) -> Path:
+        """
+        Genera automaticamente una bozza OKF v0.2 a partire da un'eccezione, disallineamento o fallimento runtime.
+        Il nodo viene creato con trust.tier: generated per successiva revisione e attestazione.
+        """
+        now = datetime.datetime.now(datetime.timezone.utc)
+        ts = now.strftime("%Y%m%d%H%M%S")
+        node_id = f"LES-AUTO-{ts}"
+        title = f"Risoluzione Anomalia: {error_message[:45]}"
+        description = f"Lezione appresa autogenerata da anomalia runtime: {error_message[:80]}"
+
+        incident = {
+            "context": context,
+            "observed_failure": error_message,
+            "root_cause": root_cause,
+        }
+
+        body = f"""# Incidente Operativo Rilevato
+
+## Contesto
+{context}
+
+## Errore Rilevato
+```
+{error_message}
+```
+
+## Causa Radice
+{root_cause}
+
+# Regola Vincolante (Proposta Automatica)
+{suggested_guardrail or f"Verificare e correggere la causa radice per prevenire ricorsioni dell'errore: {error_message}"}
+"""
+        return self.record_lesson(
+            node_id=node_id,
+            title=title,
+            description=description,
+            domain=domain,
+            incident=incident,
+            guardrail_content=body,
+            tags=(tags or []) + ["auto-captured", "runtime-incident"],
+        )
+
     def attest_lesson(
         self,
         node_id: str,
@@ -368,6 +419,7 @@ class MemoryEngine:
             "attested_nodes": 0,
             "generated_nodes": 0,
             "stale_nodes": [],
+            "expiring_soon_nodes": [],
             "tampered_nodes": [],
             "schema_errors": [],
             "status": "PASS"
@@ -394,13 +446,20 @@ class MemoryEngine:
             elif tier == "generated":
                 report["generated_nodes"] += 1
 
-            # Controllo Stale
+            # Controllo Stale & Scadenza Imminente (30 giorni)
             stale_str = meta.get("stale_after")
             if stale_str:
                 try:
                     stale_dt = datetime.datetime.fromisoformat(stale_str.replace("Z", "+00:00"))
                     if stale_dt < now:
                         report["stale_nodes"].append({"id": node_id, "stale_since": stale_str})
+                    elif stale_dt < now + datetime.timedelta(days=30):
+                        days_left = max(0, (stale_dt - now).days)
+                        report["expiring_soon_nodes"].append({
+                            "id": node_id,
+                            "expires_at": stale_str,
+                            "days_remaining": days_left
+                        })
                 except Exception:
                     pass
 
@@ -418,7 +477,7 @@ class MemoryEngine:
 
         if report["tampered_nodes"] or report["schema_errors"]:
             report["status"] = "FAIL"
-        elif report["stale_nodes"]:
+        elif report["stale_nodes"] or report["expiring_soon_nodes"]:
             report["status"] = "WARNING"
 
         return report

@@ -26,7 +26,7 @@ class QuotesPipeline:
             updated_items = []
 
             for item in cat.get("items", []):
-                cost = float(item.get("unit_cost", 0.0))
+                cost = self.parse_cascading_cost(item.get("unit_cost", 0.0))
                 qty = float(item.get("quantity", 1))
                 markup = float(item.get("markup_percent", 0.0))
 
@@ -72,6 +72,7 @@ class QuotesPipeline:
             "gross_margin_amount": gross_margin,
             "gross_margin_percent": gross_margin_pct
         }
+        quote_data["lease_financial_options"] = self.calculate_lease_options(total_net)
         return quote_data
 
     def add_item_to_quote(
@@ -189,4 +190,140 @@ class QuotesPipeline:
 
         out_html = qdir / f"{quote_id.lower()}.html"
         return DocumentRenderer.render_quote_to_html(quote_data, out_html)
+
+    @staticmethod
+    def parse_cascading_cost(cost_raw: Any) -> float:
+        """
+        Interpreta sia numeri decimali sia formule di sconto a cascata della distribuzione IT.
+        Es. '1500.00 - 40% - 5% - 2%' -> 1500 * 0.60 * 0.95 * 0.98 = 837.90
+        """
+        if isinstance(cost_raw, (int, float)):
+            return float(cost_raw)
+
+        s = str(cost_raw).strip()
+        if not s:
+            return 0.0
+
+        try:
+            return float(s)
+        except ValueError:
+            pass
+
+        import re
+        tokens = re.split(r"(\s*-\s*)", s)
+        if not tokens:
+            return 0.0
+
+        try:
+            base_val = float(tokens[0].strip())
+        except ValueError:
+            return 0.0
+
+        current_val = base_val
+        for part in tokens[1:]:
+            part_str = part.strip().lstrip("-").strip()
+            if not part_str:
+                continue
+            if part_str.endswith("%"):
+                try:
+                    pct = float(part_str.rstrip("%").strip())
+                    current_val *= (1.0 - pct / 100.0)
+                except ValueError:
+                    pass
+            else:
+                try:
+                    current_val -= float(part_str)
+                except ValueError:
+                    pass
+
+        return round(current_val, 2)
+
+    @staticmethod
+    @staticmethod
+    def calculate_lease_options(total_net: float = 0.0, total_capital_amount: Optional[float] = None) -> Dict[str, Any]:
+        """
+        Simula le rate del Noleggio Operativo (Locazione Finanziaria OpEx)
+        sui principali orizzonti temporali standard di mercato (24, 36, 48, 60 mesi).
+        """
+        amount = float(total_capital_amount if total_capital_amount is not None else total_net)
+        plans_spec = [
+            {"months": 24, "factor": 0.0450, "label": "24 Mesi (2 Anni)"},
+            {"months": 36, "factor": 0.0315, "label": "36 Mesi (3 Anni)"},
+            {"months": 48, "factor": 0.0245, "label": "48 Mesi (4 Anni)"},
+            {"months": 60, "factor": 0.0205, "label": "60 Mesi (5 Anni)"}
+        ]
+
+        options = []
+        plans_dict = {}
+        for p in plans_spec:
+            monthly_rate = round(amount * p["factor"], 2)
+            total_payments = round(monthly_rate * p["months"], 2)
+            buyback_1pct = round(amount * 0.01, 2)
+            opt_entry = {
+                "duration_months": p["months"],
+                "label": p["label"],
+                "financial_factor": p["factor"],
+                "monthly_installment": monthly_rate,
+                "total_rent_cost": total_payments,
+                "buyback_option": buyback_1pct,
+                "buyback_option_euro": buyback_1pct,
+                "tax_deductible_opex": True
+            }
+            options.append(opt_entry)
+            plans_dict[f"{p['months']}_months"] = opt_entry
+
+        return {
+            "purchase_capex_net": round(amount, 2),
+            "lease_opex_options": options,
+            "plans": plans_dict
+        }
+
+    def convert_quote_to_contract(self, slug: str, quote_id: str, formula: str = "msp_flat") -> Optional[Path]:
+        """Converte un preventivo approvato in una bozza di contratto SLA attiva."""
+        qdir = self.get_quotes_dir(slug)
+        quote_data = None
+        for qf in qdir.glob("*.yaml"):
+            try:
+                with open(qf, "r", encoding="utf-8") as fp:
+                    d = yaml.safe_load(fp) or {}
+                if d.get("quote_id") == quote_id:
+                    quote_data = self.calculate_quote(d)
+                    break
+            except Exception:
+                pass
+
+        if not quote_data:
+            return None
+
+        year = datetime.date.today().year
+        cdir = self.clients_root / slug / "contracts"
+        cdir.mkdir(parents=True, exist_ok=True)
+        c_file = cdir / f"ctr-{slug}-{year}.yaml"
+
+        tot = quote_data.get("totals", {})
+        contract_data = {
+            "contract_id": f"CTR-{year}-{slug.upper()}",
+            "slug": slug,
+            "status": "draft",
+            "formula": formula,
+            "valid_from": f"{year}-01-01",
+            "valid_to": f"{year}-12-31",
+            "financial": {
+                "annual_fee": tot.get("total_net", 0.0),
+                "consumed_hours": 0.0,
+                "total_hours_included": 40.0 if formula == "hours_bank" else 0.0
+            },
+            "sla": {
+                "business_hours": "09:00 - 18:00 lun-ven",
+                "first_response_hours": 4,
+                "resolution_target_hours": 8
+            },
+            "source_quote_id": quote_id
+        }
+
+        with open(c_file, "w", encoding="utf-8") as fp:
+            yaml.safe_dump(contract_data, fp, sort_keys=False, allow_unicode=True)
+
+        return c_file
+
 

@@ -1,6 +1,6 @@
 version: '0.2'
 format: google-okf-v0.2
-updated_at: '2026-09-17T18:48:35.326846+00:00'
+updated_at: '2026-09-17T20:16:52.263909+00:00'
 nodes:
   LES-UI-001:
     file: ui/LES-UI-001.okf.md
@@ -42,3 +42,39 @@ nodes:
     attested_by: human:possumato
     sha256: b6faab9a69487dc07d90fcb4a1637e6564d6923a28aae7371fc8bb6ea3b4baff
     updated_at: '2026-09-17T18:48:35.305091+00:00'
+  LES-AUTO-20260917201246:
+    file: core/LES-AUTO-20260917201246.okf.md
+    domain: core
+    tier: generated
+    title: 'Risoluzione Anomalia: KeyError: ''semestral_base_fee'' in mps.py'
+    updated_at: '2026-09-17T20:12:46.532933+00:00'
+  LES-AUTO-20260917201510:
+    file: core/LES-AUTO-20260917201510.okf.md
+    domain: core
+    tier: generated
+    title: 'Risoluzione Anomalia: KeyError: ''semestral_base_fee'' in mps.py'
+    updated_at: '2026-09-17T20:15:10.065157+00:00'
+  LES-AUTO-20260917201540:
+    file: core/LES-AUTO-20260917201540.okf.md
+    domain: core
+    tier: generated
+    title: 'Risoluzione Anomalia: KeyError: ''semestral_base_fee'' in mps.py'
+    updated_at: '2026-09-17T20:15:40.383198+00:00'
+  LES-AUTO-20260917201627:
+    file: core/LES-AUTO-20260917201627.okf.md
+    domain: core
+    tier: generated
+    title: 'Risoluzione Anomalia: KeyError: ''semestral_base_fee'' in mps.py'
+    updated_at: '2026-09-17T20:16:27.376266+00:00'
+  LES-AUTO-20260917201639:
+    file: core/LES-AUTO-20260917201639.okf.md
+    domain: core
+    tier: generated
+    title: 'Risoluzione Anomalia: KeyError: ''semestral_base_fee'' in mps.py'
+    updated_at: '2026-09-17T20:16:39.519579+00:00'
+  LES-AUTO-20260917201652:
+    file: core/LES-AUTO-20260917201652.okf.md
+    domain: core
+    tier: generated
+    title: 'Risoluzione Anomalia: KeyError: ''semestral_base_fee'' in mps.py'
+    updated_at: '2026-09-17T20:16:52.241434+00:00'

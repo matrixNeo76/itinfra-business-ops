@@ -601,7 +601,12 @@ def cmd_ingest(args):
             print("\n[!] Specificare --slug per applicare i dati al cliente.")
             return 1
         target_price = float(args.target_price) if args.target_price else None
-        app_res = ip.apply_to_client(slug, res, target_price=target_price)
+        force_audit = getattr(args, "force_audit", False)
+        try:
+            app_res = ip.apply_to_client(slug, res, target_price=target_price, force_audit=force_audit)
+        except Exception as e:
+            print(f"\n[!] Impossibile applicare le modifiche: {e}")
+            return 1
         print(f"\n[✓] Applicazione deterministica completata su '{slug}':")
         for act in app_res.get("applied_actions", []):
             print(f"    • {act}")
@@ -903,6 +908,7 @@ def main():
     p_ingest.add_argument("--slug", help="Slug cliente da associare")
     p_ingest.add_argument("--apply", action="store_true", help="Applica i dati verificati all'anagrafica o preventivo")
     p_ingest.add_argument("--target-price", type=float, help="Prezzo di vendita desiderato (per distinte tecniche)")
+    p_ingest.add_argument("--force-audit", action="store_true", help="Ignora i blocchi per rilievi critici emersi dall'audit di qualità/congruita")
     p_ingest.add_argument("--json", dest="as_json", action="store_true", help="Output in formato JSON")
     p_ingest.set_defaults(func=cmd_ingest)
 

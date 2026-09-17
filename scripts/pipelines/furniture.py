@@ -3,6 +3,7 @@ import yaml
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 from scripts.core.config import get_clients_dir, load_config
+from scripts.core.bridge import ITInfraBridge
 
 class FurniturePipeline:
     """Pipeline G: Fornitura Arredo Ufficio & Commesse."""
@@ -223,3 +224,107 @@ Si certifica che in data <strong>{sign_date}</strong> la squadra di posa in oper
         cert_file = fdir / f"handover-{oid.lower()}.html"
         cert_file.write_text(html, encoding="utf-8")
         return cert_file
+
+    def cross_check_network_ipam(self, slug: str, order_data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Esegue il cross-check tra le postazioni fisiche d'arredo (scrivanie/tavoli riunione)
+        e le torrette/prese LAN censite in 04-Network-IPAM.md o 03-LLD.md del repo tecnico itinfra.
+        """
+        bridge = ITInfraBridge()
+        pdir = bridge.get_project_dir(slug)
+        if not pdir:
+            return {
+                "slug": slug,
+                "network_doc_found": False,
+                "status": "warning",
+                "message": f"Nessun progetto tecnico trovato in itinfra per {slug}"
+            }
+
+        ipam_file = pdir / "04-Network-IPAM.md"
+        lld_file = pdir / "03-LLD.md"
+        network_text = ""
+        if ipam_file.is_file():
+            network_text += ipam_file.read_text(encoding="utf-8")
+        if lld_file.is_file():
+            network_text += lld_file.read_text(encoding="utf-8")
+
+        import re
+        lan_drops = len(re.findall(r"\b(?:torretta|presa|drop|patch|rj45|lan)\b", network_text, re.IGNORECASE))
+
+        stages = order_data.get("stages", {})
+        survey = stages.get("survey", {})
+        desks_count = survey.get("workstations_count", 0)
+        if desks_count == 0:
+            for it in order_data.get("items", []):
+                if any(w in it.get("description", "").lower() for w in ["scrivania", "desk", "postazione", "tavolo"]):
+                    desks_count += int(it.get("quantity", 1))
+
+        coverage_ok = lan_drops >= desks_count if desks_count > 0 else True
+
+        return {
+            "slug": slug,
+            "network_doc_found": True,
+            "workstations_planned": desks_count,
+            "network_drops_identified": lan_drops,
+            "cabling_adequate": coverage_ok,
+            "status": "PASS" if coverage_ok else "WARNING",
+            "message": f"Identificate {lan_drops} prese/torrette di rete per {desks_count} postazioni arredo previste."
+        }
+
+    def add_change_order(
+        self,
+        slug: str,
+        order_id: str,
+        title: str,
+        additional_amount: float,
+        items: Optional[List[Dict[str, Any]]] = None,
+        approved_by: str = ""
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Registra una variante in corso d'opera (Change Order / Addendum) alla commessa arredo,
+        aggiornando i totali economici e lo storico delle varianti approvate.
+        """
+        fdir = self.get_furniture_dir(slug)
+        for f in fdir.glob("*.yaml"):
+            try:
+                with open(f, "r", encoding="utf-8") as fp:
+                    data = yaml.safe_load(fp) or {}
+                if data.get("order_id") == order_id:
+                    change_orders = data.setdefault("change_orders", [])
+                    var_num = len(change_orders) + 1
+                    var_id = f"VAR-{order_id}-{var_num:02d}"
+
+                    new_var = {
+                        "change_order_id": var_id,
+                        "title": title,
+                        "date": datetime.date.today().isoformat(),
+                        "amount_net": round(additional_amount, 2),
+                        "approved_by": approved_by or "Direzione Lavori Committente",
+                        "items": items or []
+                    }
+                    change_orders.append(new_var)
+
+                    orig_tot = float(data.get("totals", {}).get("total_net", 0.0))
+                    total_variations = sum(float(v.get("amount_net", 0.0)) for v in change_orders)
+                    revised_total = round(orig_tot + total_variations, 2)
+
+                    totals = data.setdefault("totals", {})
+                    totals["original_net"] = orig_tot
+                    totals["total_variations_net"] = round(total_variations, 2)
+                    totals["revised_total_net"] = revised_total
+
+                    with open(f, "w", encoding="utf-8") as fp:
+                        yaml.safe_dump(data, fp, sort_keys=False, allow_unicode=True)
+
+                    return {
+                        "order_id": order_id,
+                        "change_order_id": var_id,
+                        "title": title,
+                        "amount_added": round(additional_amount, 2),
+                        "revised_total_net": revised_total,
+                        "total_variations_count": len(change_orders)
+                    }
+            except Exception:
+                pass
+        return None
+

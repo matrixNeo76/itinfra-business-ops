@@ -668,11 +668,26 @@ class DocumentIngestionPipeline:
             json.dump(result, f, indent=2, ensure_ascii=False)
         return audit_file
 
-    def apply_to_client(self, slug: str, result: Dict[str, Any], target_price: Optional[float] = None) -> Dict[str, Any]:
-        """Applica in modo strettamente deterministico le sole evidenze verificate al cliente."""
+    def apply_to_client(self, slug: str, result: Dict[str, Any], target_price: Optional[float] = None, force_audit: bool = False) -> Dict[str, Any]:
+        """Applica in modo strettamente deterministico le sole evidenze verificate al cliente con pre-flight audit."""
         client_dir = self.clients_root / slug
         client_dir.mkdir(parents=True, exist_ok=True)
         evidence_map = {e["field"]: e for e in result.get("evidence", [])}
+
+        # Pre-flight Audit Check: se emergono rilievi CRITICAL e non si forza, blocca l'ingestione
+        audit_findings = []
+        if "contract_audit" in evidence_map and isinstance(evidence_map["contract_audit"].get("value"), list):
+            audit_findings.extend(evidence_map["contract_audit"]["value"])
+        if "quote_audit" in evidence_map and isinstance(evidence_map["quote_audit"].get("value"), list):
+            audit_findings.extend(evidence_map["quote_audit"]["value"])
+
+        critical_findings = [f for f in audit_findings if f.get("severity") == "CRITICAL"]
+        if critical_findings and not force_audit:
+            crit_titles = "; ".join(f.get("title", "Rilievo Critico") for f in critical_findings)
+            raise ValueError(
+                f"Pre-flight audit bloccato: rilevati {len(critical_findings)} rilievi di conformità con gravità CRITICAL ({crit_titles}). "
+                f"Correggere il documento oppure rieseguire specificando --force-audit."
+            )
 
         applied_actions = []
 

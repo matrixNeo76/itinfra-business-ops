@@ -251,10 +251,10 @@ class BillingPipeline:
         }
         return batch
 
-    def generate_sdi_xml(self, batch: Dict[str, Any]) -> str:
+    def generate_sdi_xml(self, batch: Dict[str, Any], client_manifest: Optional[Dict[str, Any]] = None) -> str:
         """Genera il tracciato formale FatturaPA/SDI v1.2 (FPR12 B2B) completo di Cedente e Cessionario."""
         slug = batch.get("slug", "")
-        cmanifest = self.get_client_manifest(slug)
+        cmanifest = client_manifest or self.get_client_manifest(slug)
         cbilling = cmanifest.get("billing_info", {})
         caddr = cbilling.get("address", {})
         comp = self.config.get("company", {})
@@ -313,43 +313,86 @@ class BillingPipeline:
         ET.SubElement(sede_cess, "Provincia").text = caddr.get("province", "RM")
         ET.SubElement(sede_cess, "Nazione").text = "IT"
 
+        # Supporto sia batch completo che dizionario fattura diretto
+        draft = batch.get("invoice_draft") or batch
+        raw_lines = draft.get("lines", [])
+
         # --- BODY ---
         body = ET.SubElement(root, "FatturaElettronicaBody")
-        dati_gen = ET.SubElement(body, "DatiGenerali")
+        dati_gen = ET.SubElement(body, "DatiGenerali")        # Dati Documento
         dati_doc = ET.SubElement(dati_gen, "DatiGeneraliDocumento")
         ET.SubElement(dati_doc, "TipoDocumento").text = "TD01"
         ET.SubElement(dati_doc, "Divisa").text = comp.get("currency", "EUR")
-        ET.SubElement(dati_doc, "Data").text = batch.get("invoice_draft", {}).get("invoice_date", "")
-        ET.SubElement(dati_doc, "Numero").text = batch.get("invoice_draft", {}).get("invoice_number", "DRAFT-01")
-        tot_gross = batch.get("invoice_draft", {}).get("totals", {}).get("total_gross", 0.0)
+        ET.SubElement(dati_doc, "Data").text = draft.get("invoice_date", "")
+        ET.SubElement(dati_doc, "Numero").text = draft.get("invoice_number", "DRAFT-01")
+
+        # Calcolo totali e bollo
+        tot_gross = draft.get("totals", {}).get("total_gross")
+        if tot_gross is None:
+            tot_gross = sum(float(l.get("total_line", float(l.get("quantity", 1)) * float(l.get("unit_price", 0.0)))) for l in raw_lines)
         ET.SubElement(dati_doc, "ImportoTotaleDocumento").text = f"{tot_gross:.2f}"
+
+        # Verifica Marca da Bollo Virtuale (obbligatoria per esenti > 77.47 €)
+        exempt_total = sum(
+            float(l.get("total_line", float(l.get("quantity", 1)) * float(l.get("unit_price", 0.0))))
+            for l in raw_lines
+            if float(l.get("vat_rate", 22.0)) == 0.0
+        )
+        if exempt_total > 77.47:
+            dati_bollo = ET.SubElement(dati_doc, "DatiBollo")
+            ET.SubElement(dati_bollo, "BolloVirtuale").text = "SI"
+            ET.SubElement(dati_bollo, "ImportoBollo").text = "2.00"
 
         # Righe Dettaglio
         dati_beni = ET.SubElement(body, "DatiBeniServizi")
         vat_rate = float(comp.get("default_vat_rate", 22.0))
-        for i, line in enumerate(batch.get("invoice_draft", {}).get("lines", []), start=1):
+        has_exempt = False
+        exempt_nature = "N4"
+
+        for i, line in enumerate(raw_lines, start=1):
             dett = ET.SubElement(dati_beni, "DettaglioLinee")
             ET.SubElement(dett, "NumeroLinea").text = str(i)
             ET.SubElement(dett, "Descrizione").text = line.get("description", "")
-            ET.SubElement(dett, "Quantita").text = f"{line.get('quantity', 1):.2f}"
-            ET.SubElement(dett, "PrezzoUnitario").text = f"{line.get('unit_price', 0.0):.2f}"
-            ET.SubElement(dett, "PrezzoTotale").text = f"{line.get('total_line', 0.0):.2f}"
-            ET.SubElement(dett, "AliquotaIVA").text = f"{line.get('vat_rate', vat_rate):.2f}"
+            q_val = float(line.get('quantity', 1))
+            p_val = float(line.get('unit_price', 0.0))
+            tot_l = float(line.get('total_line', q_val * p_val))
+            ET.SubElement(dett, "Quantita").text = f"{q_val:.2f}"
+            ET.SubElement(dett, "PrezzoUnitario").text = f"{p_val:.2f}"
+            ET.SubElement(dett, "PrezzoTotale").text = f"{tot_l:.2f}"
+            l_vat = float(line.get('vat_rate', vat_rate))
+            ET.SubElement(dett, "AliquotaIVA").text = f"{l_vat:.2f}"
+            if l_vat == 0.0:
+                has_exempt = True
+                natura_code = line.get("natura") or line.get("vat_nature", "N4")
+                exempt_nature = natura_code
+                ET.SubElement(dett, "Natura").text = natura_code
 
-        # Dati Riepilogo IVA
+        # Dati Riepilogo IVA (Standard & Split Payment)
+        is_split = bool(cbilling.get("split_payment") or cmanifest.get("is_public_administration") or batch.get("is_split_payment"))
+        
+        # Riepilogo imponibile standard
         riepilogo = ET.SubElement(dati_beni, "DatiRiepilogo")
         ET.SubElement(riepilogo, "AliquotaIVA").text = f"{vat_rate:.2f}"
-        subtot = batch.get("invoice_draft", {}).get("totals", {}).get("subtotal_net", 0.0)
-        vat_amt = batch.get("invoice_draft", {}).get("totals", {}).get("vat_amount", 0.0)
+        subtot = draft.get("totals", {}).get("subtotal_net", sum(float(l.get("total_line", float(l.get("quantity", 1)) * float(l.get("unit_price", 0.0)))) for l in raw_lines if float(l.get("vat_rate", vat_rate)) > 0))
+        vat_amt = draft.get("totals", {}).get("vat_amount", round(subtot * (vat_rate / 100.0), 2))
         ET.SubElement(riepilogo, "ImponibileImporto").text = f"{subtot:.2f}"
         ET.SubElement(riepilogo, "Imposta").text = f"{vat_amt:.2f}"
-        ET.SubElement(riepilogo, "EsigibilitaIVA").text = "I" # Immediata
+        ET.SubElement(riepilogo, "EsigibilitaIVA").text = "S" if is_split else "I" # S = Split Payment, I = Immediata
+
+        # Se presenti esenti, aggiunge nodo di riepilogo esente
+        if has_exempt:
+            riep_esente = ET.SubElement(dati_beni, "DatiRiepilogo")
+            ET.SubElement(riep_esente, "AliquotaIVA").text = "0.00"
+            ET.SubElement(riep_esente, "Natura").text = exempt_nature
+            ET.SubElement(riep_esente, "ImponibileImporto").text = f"{exempt_total:.2f}"
+            ET.SubElement(riep_esente, "Imposta").text = "0.00"
+            ET.SubElement(riep_esente, "RiferimentoNormativo").text = "Operazione Esente IVA D.P.R. 633/72"
 
         # Dati Pagamento
         dati_pag = ET.SubElement(body, "DatiPagamento")
         ET.SubElement(dati_pag, "CondizioniPagamento").text = "TP02" # Completo
         dett_pag = ET.SubElement(dati_pag, "DettaglioPagamento")
-        ET.SubElement(dett_pag, "ModalitaPagamento").text = batch.get("invoice_draft", {}).get("payment_method", "MP05")
+        ET.SubElement(dett_pag, "ModalitaPagamento").text = draft.get("payment_method", "MP05")
         inst = batch.get("scadenzario", {}).get("installments", [{}])[0]
         if inst.get("due_date"):
             ET.SubElement(dett_pag, "DataScadenzaPagamento").text = inst.get("due_date")
@@ -443,6 +486,322 @@ class BillingPipeline:
                 json.dump(batch, f, indent=2, ensure_ascii=False)
             return True
         return False
+
+    def generate_sdd_xml(
+        self,
+        target_or_slug: Any,
+        batch: Optional[Dict[str, Any]] = None,
+        debtor_iban: str = "",
+        mandate_id: str = "",
+        debtor_bic: str = "",
+        execution_date: str = ""
+    ) -> str:
+        """
+        Genera il tracciato SEPA Direct Debit (SDD) in standard ISO 20022 XML (pain.008.001.02)
+        per l'incasso telematico bancario dei canoni ricorrenti (B2B/CORE).
+        Supporta sia una lista di transazioni/fatture massive che un singolo batch cliente.
+        """
+        comp = self.config.get("company", {})
+        comp_name = comp.get("name", "ITInfra Business Ops")
+        creditor_iban = comp.get("iban", "IT00X0000000000000000000000")
+        creditor_id = comp.get("creditor_id", f"IT00ZZZ{comp.get('fiscal_code', '01234567890')}")
+
+        root = ET.Element("Document", {
+            "xmlns": "urn:iso:std:iso:20022:tech:xsd:pain.008.001.02",
+            "xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance"
+        })
+        cstmr_dir_deb = ET.SubElement(root, "CstmrDrctDbtInitn")
+
+        # Modalità lista transazioni massive
+        if isinstance(target_or_slug, list):
+            tx_list = target_or_slug
+            msg_id = f"SDD-BATCH-{int(datetime.datetime.now().timestamp())}"
+            coll_date = execution_date or (datetime.date.today() + datetime.timedelta(days=5)).isoformat()
+            tot_sum = sum(float(tx.get("amount", 0.0)) for tx in tx_list)
+
+            # Group Header
+            grpHdr = ET.SubElement(cstmr_dir_deb, "GrpHdr")
+            ET.SubElement(grpHdr, "MsgId").text = msg_id
+            ET.SubElement(grpHdr, "CreDtTm").text = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+            ET.SubElement(grpHdr, "NbOfTxs").text = str(len(tx_list))
+            ET.SubElement(grpHdr, "CtrlSum").text = f"{tot_sum:.2f}"
+            initgPty = ET.SubElement(grpHdr, "InitgPty")
+            ET.SubElement(initgPty, "Nm").text = comp_name
+
+            # Payment Information
+            pmtInf = ET.SubElement(cstmr_dir_deb, "PmtInf")
+            ET.SubElement(pmtInf, "PmtInfId").text = f"PMT-{msg_id}"
+            ET.SubElement(pmtInf, "PmtMtd").text = "DD"
+            ET.SubElement(pmtInf, "NbOfTxs").text = str(len(tx_list))
+            ET.SubElement(pmtInf, "CtrlSum").text = f"{tot_sum:.2f}"
+
+            pmtTpInf = ET.SubElement(pmtInf, "PmtTpInf")
+            svcLvl = ET.SubElement(pmtTpInf, "SvcLvl")
+            ET.SubElement(svcLvl, "Cd").text = "SEPA"
+            lclInstrm = ET.SubElement(pmtTpInf, "LclInstrm")
+            ET.SubElement(lclInstrm, "Cd").text = "B2B"
+            ET.SubElement(pmtTpInf, "SeqTp").text = "RCUR"
+
+            ET.SubElement(pmtInf, "ReqdColltnDt").text = coll_date
+
+            # Creditor
+            cdtr = ET.SubElement(pmtInf, "Cdtr")
+            ET.SubElement(cdtr, "Nm").text = comp_name
+            cdtrAcct = ET.SubElement(pmtInf, "CdtrAcct")
+            cdtrId = ET.SubElement(cdtrAcct, "Id")
+            ET.SubElement(cdtrId, "IBAN").text = creditor_iban.replace(" ", "")
+
+            cdtrAgt = ET.SubElement(pmtInf, "CdtrAgt")
+            cdtrFinInst = ET.SubElement(cdtrAgt, "FinInstnId")
+            if comp.get("bic"):
+                ET.SubElement(cdtrFinInst, "BIC").text = comp.get("bic")
+            else:
+                othr_c = ET.SubElement(cdtrFinInst, "Othr")
+                ET.SubElement(othr_c, "Id").text = "NOTPROVIDED"
+
+            cdtrSchmeId = ET.SubElement(pmtInf, "CdtrSchmeId")
+            schmeId = ET.SubElement(cdtrSchmeId, "Id")
+            prvtId = ET.SubElement(schmeId, "PrvtId")
+            othr = ET.SubElement(prvtId, "Othr")
+            ET.SubElement(othr, "Id").text = creditor_id
+            schmeNm = ET.SubElement(othr, "SchmeNm")
+            ET.SubElement(schmeNm, "Prtry").text = "SEPA"
+
+            for idx, tx in enumerate(tx_list, start=1):
+                drctDbtTxInf = ET.SubElement(pmtInf, "DrctDbtTxInf")
+                pmtId = ET.SubElement(drctDbtTxInf, "PmtId")
+                ET.SubElement(pmtId, "EndToEndId").text = f"E2E-{tx.get('invoice_number', idx)}"
+
+                instdAmt = ET.SubElement(drctDbtTxInf, "InstdAmt", {"Ccy": "EUR"})
+                instdAmt.text = f"{float(tx.get('amount', 0.0)):.2f}"
+
+                drctDbtTx = ET.SubElement(drctDbtTxInf, "DrctDbtTx")
+                mndtRltdInf = ET.SubElement(drctDbtTx, "MndtRltdInf")
+                ET.SubElement(mndtRltdInf, "MndtId").text = tx.get("mandate_id", f"MND-{idx}")
+                ET.SubElement(mndtRltdInf, "DtOfSgntr").text = tx.get("mandate_date", "2025-01-01")
+
+                # Debtor
+                dbtr = ET.SubElement(drctDbtTxInf, "Dbtr")
+                ET.SubElement(dbtr, "Nm").text = tx.get("client_name", tx.get("slug", "Cliente"))
+                dbtrAcct = ET.SubElement(drctDbtTxInf, "DbtrAcct")
+                dbtrId = ET.SubElement(dbtrAcct, "Id")
+                ET.SubElement(dbtrId, "IBAN").text = str(tx.get("iban", "")).replace(" ", "")
+
+                dbtrAgt = ET.SubElement(drctDbtTxInf, "DbtrAgt")
+                dbtrFinInst = ET.SubElement(dbtrAgt, "FinInstnId")
+                if tx.get("bic"):
+                    ET.SubElement(dbtrFinInst, "BIC").text = tx["bic"]
+                else:
+                    othr_dbtr = ET.SubElement(dbtrFinInst, "Othr")
+                    ET.SubElement(othr_dbtr, "Id").text = "NOTPROVIDED"
+
+                rmtInf = ET.SubElement(drctDbtTxInf, "RmtInf")
+                ET.SubElement(rmtInf, "Ustrd").text = f"Incasso Fattura {tx.get('invoice_number', '')} - {tx.get('slug', '')}"
+
+            self._indent(root)
+            return ET.tostring(root, encoding="utf-8", xml_declaration=True).decode("utf-8")
+
+        # Modalità singolo cliente / batch
+        slug = str(target_or_slug)
+        batch = batch or {}
+        cmanifest = self.get_client_manifest(slug)
+
+        # Group Header
+        grpHdr = ET.SubElement(cstmr_dir_deb, "GrpHdr")
+        msg_id = f"SDD-{batch.get('batch_id', '001')}"
+        ET.SubElement(grpHdr, "MsgId").text = msg_id
+        ET.SubElement(grpHdr, "CreDtTm").text = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        ET.SubElement(grpHdr, "NbOfTxs").text = "1"
+        tot_gross = float(batch.get("invoice_draft", {}).get("totals", {}).get("total_gross", 0.0))
+        ET.SubElement(grpHdr, "CtrlSum").text = f"{tot_gross:.2f}"
+        initgPty = ET.SubElement(grpHdr, "InitgPty")
+        ET.SubElement(initgPty, "Nm").text = comp_name
+
+        # Payment Information
+        pmtInf = ET.SubElement(cstmr_dir_deb, "PmtInf")
+        ET.SubElement(pmtInf, "PmtInfId").text = f"PMT-{msg_id}"
+        ET.SubElement(pmtInf, "PmtMtd").text = "DD"
+        ET.SubElement(pmtInf, "NbOfTxs").text = "1"
+        ET.SubElement(pmtInf, "CtrlSum").text = f"{tot_gross:.2f}"
+
+        pmtTpInf = ET.SubElement(pmtInf, "PmtTpInf")
+        svcLvl = ET.SubElement(pmtTpInf, "SvcLvl")
+        ET.SubElement(svcLvl, "Cd").text = "SEPA"
+        lclInstrm = ET.SubElement(pmtTpInf, "LclInstrm")
+        ET.SubElement(lclInstrm, "Cd").text = "B2B"
+        ET.SubElement(pmtTpInf, "SeqTp").text = "RCUR"
+
+        reqdColltnDt = execution_date or batch.get("invoice_draft", {}).get("invoice_date", datetime.date.today().isoformat())
+        ET.SubElement(pmtInf, "ReqdColltnDt").text = reqdColltnDt
+
+        # Creditor
+        cdtr = ET.SubElement(pmtInf, "Cdtr")
+        ET.SubElement(cdtr, "Nm").text = comp_name
+        cdtrAcct = ET.SubElement(pmtInf, "CdtrAcct")
+        cdtrId = ET.SubElement(cdtrAcct, "Id")
+        ET.SubElement(cdtrId, "IBAN").text = creditor_iban.replace(" ", "")
+
+        cdtrAgt = ET.SubElement(pmtInf, "CdtrAgt")
+        cdtrFinInst = ET.SubElement(cdtrAgt, "FinInstnId")
+        if comp.get("bic"):
+            ET.SubElement(cdtrFinInst, "BIC").text = comp.get("bic")
+        else:
+            othr_c = ET.SubElement(cdtrFinInst, "Othr")
+            ET.SubElement(othr_c, "Id").text = "NOTPROVIDED"
+
+        cdtrSchmeId = ET.SubElement(pmtInf, "CdtrSchmeId")
+        schmeId = ET.SubElement(cdtrSchmeId, "Id")
+        prvtId = ET.SubElement(schmeId, "PrvtId")
+        othr = ET.SubElement(prvtId, "Othr")
+        ET.SubElement(othr, "Id").text = creditor_id
+        schmeNm = ET.SubElement(othr, "SchmeNm")
+        ET.SubElement(schmeNm, "Prtry").text = "SEPA"
+
+        # Direct Debit Transaction Information
+        drctDbtTxInf = ET.SubElement(pmtInf, "DrctDbtTxInf")
+        pmtId = ET.SubElement(drctDbtTxInf, "PmtId")
+        ET.SubElement(pmtId, "EndToEndId").text = f"E2E-{msg_id}"
+
+        instdAmt = ET.SubElement(drctDbtTxInf, "InstdAmt", {"Ccy": "EUR"})
+        instdAmt.text = f"{tot_gross:.2f}"
+
+        drctDbtTx = ET.SubElement(drctDbtTxInf, "DrctDbtTx")
+        mndtRltdInf = ET.SubElement(drctDbtTx, "MndtRltdInf")
+        m_id = mandate_id or f"MND-{slug.upper()}-01"
+        ET.SubElement(mndtRltdInf, "MndtId").text = m_id
+        ET.SubElement(mndtRltdInf, "DtOfSgntr").text = batch.get("invoice_draft", {}).get("invoice_date", "2026-01-01")
+
+        # Debtor
+        dbtr = ET.SubElement(drctDbtTxInf, "Dbtr")
+        ET.SubElement(dbtr, "Nm").text = cmanifest.get("client_name", slug)
+        dbtrAcct = ET.SubElement(drctDbtTxInf, "DbtrAcct")
+        dbtrId = ET.SubElement(dbtrAcct, "Id")
+        ET.SubElement(dbtrId, "IBAN").text = debtor_iban.replace(" ", "")
+
+        dbtrAgt = ET.SubElement(drctDbtTxInf, "DbtrAgt")
+        dbtrFinInst = ET.SubElement(dbtrAgt, "FinInstnId")
+        if debtor_bic:
+            ET.SubElement(dbtrFinInst, "BIC").text = debtor_bic
+        else:
+            othr_dbtr = ET.SubElement(dbtrFinInst, "Othr")
+            ET.SubElement(othr_dbtr, "Id").text = "NOTPROVIDED"
+
+        rmtInf = ET.SubElement(drctDbtTxInf, "RmtInf")
+        ET.SubElement(rmtInf, "Ustrd").text = f"Incasso Canone IT {batch.get('batch_id')} - {slug}"
+
+        self._indent(root)
+        return ET.tostring(root, encoding="utf-8", xml_declaration=True).decode("utf-8")
+
+    def check_dunning_status(self, target: str, reference_date: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Analizza lo scadenzario di tutte le fatture del cliente (se target è uno slug)
+        oppure calcola direttamente il livello di sollecito per una data scadenza (se target è una data YYYY-MM-DD).
+        Livelli:
+        - LEVEL_0 / LEVEL_0_CURRENT: Pagamento regolare / Non scaduto.
+        - LEVEL_1_REMINDER: Scaduta da 1 a 7 giorni (Promemoria cortese).
+        - LEVEL_2_FORMAL_NOTICE / LEVEL_2_WARNING: Insoluto da 8 a 30 giorni (Sollecito formale).
+        - LEVEL_3_LEGAL_ACTION / LEVEL_3_SUSPENSION: Insoluto > 30 giorni (Diffida con sospensione SLA).
+        """
+        ref_dt = datetime.date.fromisoformat(reference_date) if reference_date else datetime.date.today()
+
+        # Se target è una data (formato YYYY-MM-DD)
+        if len(target) == 10 and target[4] == "-" and target[7] == "-":
+            due_date = datetime.date.fromisoformat(target)
+            delta_days = (ref_dt - due_date).days
+            if delta_days > 60:
+                level = "LEVEL_3_LEGAL_ACTION"
+                suspended = True
+                action = "Inoltro pratica legale per recupero forzoso del credito. Fornitura e SLA sospesi."
+            elif delta_days > 30:
+                level = "LEVEL_3_LEGAL_ACTION"
+                suspended = True
+                action = "Diffida legale inviata. Erogazione SLA sospesa per morosita oltre 30 gg."
+            elif delta_days >= 8:
+                level = "LEVEL_2_FORMAL_NOTICE"
+                suspended = False
+                action = "Sollecito formale inviato. Avviso di possibile sospensione SLA."
+            elif delta_days > 0:
+                level = "LEVEL_1_REMINDER"
+                suspended = False
+                action = "Promemoria cortese scadenza inviato."
+            else:
+                level = "LEVEL_0"
+                suspended = False
+                action = "Fattura non ancora scaduta o regolare."
+
+            return {
+                "due_date": target,
+                "reference_date": ref_dt.isoformat(),
+                "days_overdue": max(0, delta_days),
+                "dunning_level": level,
+                "sla_suspended": suspended,
+                "recommended_action": action
+            }
+
+        # Altrimenti target è uno slug cliente
+        slug = target
+        idir = self.get_invoices_dir(slug)
+        if not idir.is_dir():
+            return {"slug": slug, "dunning_level": "LEVEL_0", "sla_suspended": False, "overdue_installments": []}
+
+        today = ref_dt
+        overdue_installments = []
+        max_overdue_days = 0
+
+        for jf in idir.glob("*.json"):
+            try:
+                with open(jf, "r", encoding="utf-8") as f:
+                    batch = json.load(f)
+                scad = batch.get("scadenzario", {})
+                for inst in scad.get("installments", []):
+                    if inst.get("status") != "paid":
+                        due_date_str = inst.get("due_date")
+                        if due_date_str:
+                            due_date = datetime.date.fromisoformat(due_date_str)
+                            delta_days = (today - due_date).days
+                            if delta_days > 0:
+                                overdue_installments.append({
+                                    "batch_id": batch.get("batch_id"),
+                                    "installment_number": inst.get("number"),
+                                    "due_date": due_date_str,
+                                    "amount": inst.get("amount"),
+                                    "days_overdue": delta_days
+                                })
+                                if delta_days > max_overdue_days:
+                                    max_overdue_days = delta_days
+            except Exception:
+                pass
+
+        if max_overdue_days > 60:
+            level = "LEVEL_3_LEGAL_ACTION"
+            suspended = True
+            action = "Inoltro pratica legale per recupero forzoso del credito. Fornitura e SLA sospesi."
+        elif max_overdue_days > 30:
+            level = "LEVEL_3_LEGAL_ACTION"
+            suspended = True
+            action = "Diffida legale inviata. Erogazione SLA sospesa per morosita oltre 30 gg."
+        elif max_overdue_days >= 8:
+            level = "LEVEL_2_FORMAL_NOTICE"
+            suspended = False
+            action = "Sollecito formale inviato. Avviso di possibile sospensione SLA."
+        elif max_overdue_days > 0:
+            level = "LEVEL_1_REMINDER"
+            suspended = False
+            action = "Promemoria cortese scadenza inviato."
+        else:
+            level = "LEVEL_0"
+            suspended = False
+            action = "Posizione contabile regolare."
+
+        return {
+            "slug": slug,
+            "dunning_level": level,
+            "sla_suspended": suspended,
+            "max_overdue_days": max_overdue_days,
+            "recommended_action": action,
+            "overdue_count": len(overdue_installments),
+            "overdue_installments": overdue_installments
+        }
 
     @staticmethod
     def _indent(elem, level=0):

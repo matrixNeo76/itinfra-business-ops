@@ -1,10 +1,12 @@
 import datetime
+import hashlib
 import math
 import yaml
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 from scripts.core.config import get_clients_dir
 from scripts.core.bridge import ITInfraBridge
+from scripts.pipelines.contracts import ContractsPipeline
 
 class ReportsPipeline:
     """Pipeline B: Rapportini di Assistenza, Time-Tracking & Ledger Debit."""
@@ -36,6 +38,119 @@ class ReportsPipeline:
             "rounded_hours": rounded_hours,
             "net_minutes": int(diff_minutes)
         }
+
+    @staticmethod
+    def calculate_tariff_multiplier(clock_in: str, clock_out: str, date_str: str) -> Dict[str, Any]:
+        """
+        Determina la fascia oraria dell'intervento e calcola il moltiplicatore tariffario:
+        - Feriale diurno (08:00 - 20:00, lun-ven): 1.0x (standard)
+        - Feriale notturno (prima delle 08:00 o dopo le 20:00): 1.20x (+20%)
+        - Festivo/Weekend diurno: 1.50x (+50%)
+        - Festivo/Weekend notturno: 1.75x (+75%)
+        """
+        d = datetime.date.fromisoformat(date_str)
+        is_weekend_or_holiday = ContractsPipeline.is_italian_holiday_or_weekend(d)
+
+        h_in = int(clock_in.split(":")[0])
+        h_out = int(clock_out.split(":")[0])
+        is_night = (h_in < 8 or h_in >= 20 or h_out > 20)
+
+        if is_weekend_or_holiday:
+            if is_night:
+                multiplier = 1.75
+                category = "festivo_notturno"
+                desc = "Intervento Festivo/Weekend Notturno (+75%)"
+            else:
+                multiplier = 1.50
+                category = "festivo_diurno"
+                desc = "Intervento Festivo/Weekend Diurno (+50%)"
+        else:
+            if is_night:
+                multiplier = 1.20
+                category = "feriale_notturno"
+                desc = "Intervento Feriale Notturno (+20%)"
+            else:
+                multiplier = 1.00
+                category = "feriale_standard"
+                desc = "Intervento Feriale Diurno Standard"
+
+        return {
+            "multiplier": multiplier,
+            "category": category,
+            "description": desc,
+            "is_weekend_or_holiday": is_weekend_or_holiday,
+            "is_night": is_night
+        }
+
+    @staticmethod
+    def seal_report_sha256(report_data: Dict[str, Any]) -> str:
+        """Calcola l'hash crittografico SHA-256 a garanzia dell'immutabilità del rapportino."""
+        payload = f"{report_data.get('report_id')}|{report_data.get('slug')}|{report_data.get('date')}|" \
+                  f"{report_data.get('clock_in')}|{report_data.get('clock_out')}|{report_data.get('technician')}|" \
+                  f"{report_data.get('total_hours_rounded')}|{report_data.get('description')}|" \
+                  f"{report_data.get('customer_sign_off', {}).get('signer_name')}|" \
+                  f"{report_data.get('customer_sign_off', {}).get('signed_at')}"
+        return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+    def generate_as_built_patch(
+        self,
+        slug: str,
+        report_data: Optional[Dict[str, Any]] = None,
+        replaced_assets: Optional[List[Dict[str, Any]]] = None,
+        report_id: str = ""
+    ) -> Optional[str]:
+        """
+        Rileva se nel rapportino sono stati installati ricambi o apparati con numero di serie
+        non ancora presenti nell'As-Built (06-As-Built.md) di itinfra e genera la proposta di riga markdown.
+        """
+        try:
+            known = self.bridge.get_known_serials(slug)
+        except Exception:
+            known = set()
+
+        rep_data = report_data or {}
+        rep_id = report_id or rep_data.get("report_id", "RAP-UNKNOWN")
+        rep_date = rep_data.get("date", datetime.date.today().isoformat())
+
+        new_items = []
+
+        if replaced_assets:
+            for a in replaced_assets:
+                sn = str(a.get("serial") or a.get("serial_number") or "").strip().upper()
+                new_items.append({
+                    "component": a.get("model") or a.get("description") or a.get("role") or "Hardware",
+                    "part_number": a.get("part_number", "N/A"),
+                    "serial_number": sn,
+                    "quantity": a.get("quantity", 1),
+                    "installed_date": rep_date,
+                    "report_id": rep_id
+                })
+        else:
+            spare_parts = rep_data.get("spare_parts", [])
+            for p in spare_parts:
+                sn = str(p.get("serial_number", "")).strip().upper()
+                if sn and sn not in known and sn not in ("-", "N/A", "NONE"):
+                    new_items.append({
+                        "component": p.get("description", "Ricambio Hardware"),
+                        "part_number": p.get("part_number", "P/N"),
+                        "serial_number": sn,
+                        "quantity": p.get("quantity", 1),
+                        "installed_date": rep_data.get("date", rep_date),
+                        "report_id": rep_id
+                    })
+
+        if not new_items:
+            return None
+
+        lines = [
+            f"<!-- REVERSE-HANDOVER-PATCH: Generato da Rapportino {rep_id} ({slug}) -->",
+            "| Componente | Part Number | Seriale (S/N) | Data Installazione | Rif. Rapportino |",
+            "|---|---|---|---|---|"
+        ]
+        for item in new_items:
+            lines.append(f"| {item['component']} | `{item['part_number']}` | `{item['serial_number']}` | {item['installed_date']} | {item['report_id']} |")
+
+        return "\n".join(lines)
 
     def list_reports(self, slug: str) -> List[Dict[str, Any]]:
         tdir = self.get_timesheets_dir(slug)
@@ -125,12 +240,16 @@ class ReportsPipeline:
             if active:
                 contract_id = active[0]["contract_id"]
 
-        debited_h = calc["rounded_hours"]
+        # Calcolo tariffazione differenziata (straordinari / festivi / notturni)
+        tariff_info = self.calculate_tariff_multiplier(clock_in, clock_out, date_str)
+        effective_hours = round(calc["rounded_hours"] * tariff_info["multiplier"], 2)
+
+        debited_h = effective_hours
         extra_h = 0.0
 
         # Se debit_contract, scala dal contratto attivo e gestisci over-budget
         if ledger_action == "debit_contract" and contract_id:
-            res_debit = cp.debit_hours(slug, contract_id, calc["rounded_hours"], rep_id)
+            res_debit = cp.debit_hours(slug, contract_id, effective_hours, rep_id)
             debited_h = res_debit["debited_contract_hours"]
             extra_h = res_debit["extra_hours"]
 
@@ -146,6 +265,12 @@ class ReportsPipeline:
             "break_minutes": break_minutes,
             "total_hours_raw": calc["raw_hours"],
             "total_hours_rounded": calc["rounded_hours"],
+            "tariff_policy": {
+                "category": tariff_info["category"],
+                "multiplier": tariff_info["multiplier"],
+                "description": tariff_info["description"],
+                "effective_billable_hours": effective_hours
+            },
             "debited_contract_hours": debited_h,
             "extra_hours": extra_h,
             "rounding_step_minutes": 30,
@@ -161,10 +286,19 @@ class ReportsPipeline:
             }
         }
 
+        # Sigillo di integrità SHA-256
+        report_data["sha256_seal"] = self.seal_report_sha256(report_data)
+
         # Salvataggio file YAML
         target_file = tdir / f"{rep_id.lower()}.yaml"
         with open(target_file, "w", encoding="utf-8") as fp:
             yaml.safe_dump(report_data, fp, sort_keys=False, allow_unicode=True)
+
+        # Rileva eventuali nuovi seriali hardware e crea patch proposta per itinfra/06-As-Built.md
+        patch_content = self.generate_as_built_patch(slug, report_data)
+        if patch_content:
+            patch_file = tdir / f"{rep_id.lower()}.as-built-patch.md"
+            patch_file.write_text(patch_content, encoding="utf-8")
 
         # Genera anche HTML interattivo di cortesia con Canvas Firma
         html_content = self.generate_printable_html(report_data)
