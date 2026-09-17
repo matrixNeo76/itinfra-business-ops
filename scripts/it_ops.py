@@ -218,9 +218,29 @@ def cmd_contract(args):
             print(f"[!] Contratto {cid} non trovato.")
         return 0
 
+    if action == "export":
+        cid = getattr(args, "contract_id", None) or getattr(args, "id", None)
+        if not cid:
+            contracts = cp.list_contracts(slug)
+            if contracts:
+                cid = contracts[0].get("contract_id", contracts[0]["_file"])
+            else:
+                print(f"[ERRORE] Nessun contratto trovato per {slug}")
+                return 1
+        fmts = args.format.split(",") if hasattr(args, "format") and args.format else None
+        paths = cp.export_contract(slug, cid, formats=fmts)
+        if paths:
+            print(f"[✓] Contratto SLA esportato con successo per {cid}:")
+            for fmt_name, p in paths.items():
+                print(f"    • {fmt_name.upper():<5}: {p}")
+        else:
+            print(f"[!] Impossibile esportare: contratto {cid} non trovato per {slug}.")
+        return 0
+
     res = cp.get_contract_summary(slug)
     print(json.dumps(res, indent=2))
     return 0
+
 
 def cmd_report(args):
     slug = args.slug.strip().lower()
@@ -267,9 +287,29 @@ def cmd_report(args):
         print(f"    File generati: {rep['report_id'].lower()}.yaml e {rep['report_id'].lower()}.html (Firma Canvas Integrata)")
         return 0
 
+    if action == "export":
+        rid = getattr(args, "report_id", None) or getattr(args, "id", None)
+        if not rid:
+            reports = rp.list_reports(slug)
+            if reports:
+                rid = reports[-1].get("report_id", reports[-1]["_file"])
+            else:
+                print(f"[ERRORE] Nessun rapportino trovato per {slug}")
+                return 1
+        fmts = args.format.split(",") if hasattr(args, "format") and args.format else None
+        paths = rp.export_report(slug, rid, formats=fmts)
+        if paths:
+            print(f"[✓] Rapportino di lavoro esportato con successo per {rid}:")
+            for fmt_name, p in paths.items():
+                print(f"    • {fmt_name.upper():<5}: {p}")
+        else:
+            print(f"[!] Impossibile esportare: rapportino {rid} non trovato per {slug}.")
+        return 0
+
     res = rp.get_ledger_summary(slug)
     print(json.dumps(res, indent=2))
     return 0
+
 
 def cmd_billing(args):
     slug = args.slug.strip().lower()
@@ -569,7 +609,77 @@ def cmd_ingest(args):
     print("=" * 70)
     return 0
 
+def cmd_export(args):
+    slug = args.slug.strip().lower()
+    doc_type = args.type.strip().lower()
+    doc_id = getattr(args, "id", None)
+    fmts = args.format.split(",") if hasattr(args, "format") and args.format else None
+
+    if doc_type in ("quote", "preventivo"):
+        qp = QuotesPipeline()
+        if not doc_id:
+            qdir = qp.get_quotes_dir(slug)
+            qfiles = sorted(qdir.glob("*.yaml"))
+            if qfiles:
+                with open(qfiles[-1], "r", encoding="utf-8") as fp:
+                    d = yaml.safe_load(fp) or {}
+                doc_id = d.get("quote_id", qfiles[-1].stem)
+            else:
+                print(f"[ERRORE] Nessun preventivo trovato per {slug}")
+                return 1
+        paths = qp.export_quote(slug, doc_id, formats=fmts)
+        if paths:
+            print(f"[✓] Preventivo commerciale esportato con logo ufficiale per {doc_id}:")
+            for fmt_name, p in paths.items():
+                print(f"    • {fmt_name.upper():<5}: {p}")
+            return 0
+        else:
+            print(f"[!] Impossibile esportare: preventivo {doc_id} non trovato per {slug}.")
+            return 1
+
+    elif doc_type in ("contract", "contratto"):
+        cp = ContractsPipeline()
+        if not doc_id:
+            cfiles = cp.list_contracts(slug)
+            if cfiles:
+                doc_id = cfiles[0].get("contract_id", cfiles[0]["_file"])
+            else:
+                print(f"[ERRORE] Nessun contratto trovato per {slug}")
+                return 1
+        paths = cp.export_contract(slug, doc_id, formats=fmts)
+        if paths:
+            print(f"[✓] Contratto SLA esportato con logo ufficiale per {doc_id}:")
+            for fmt_name, p in paths.items():
+                print(f"    • {fmt_name.upper():<5}: {p}")
+            return 0
+        else:
+            print(f"[!] Impossibile esportare: contratto {doc_id} non trovato per {slug}.")
+            return 1
+
+    elif doc_type in ("report", "rapportino"):
+        rp = ReportsPipeline()
+        if not doc_id:
+            rfiles = rp.list_reports(slug)
+            if rfiles:
+                doc_id = rfiles[-1].get("report_id", rfiles[-1]["_file"])
+            else:
+                print(f"[ERRORE] Nessun rapportino trovato per {slug}")
+                return 1
+        paths = rp.export_report(slug, doc_id, formats=fmts)
+        if paths:
+            print(f"[✓] Rapportino di lavoro esportato con logo ufficiale per {doc_id}:")
+            for fmt_name, p in paths.items():
+                print(f"    • {fmt_name.upper():<5}: {p}")
+            return 0
+        else:
+            print(f"[!] Impossibile esportare: rapportino {doc_id} non trovato per {slug}.")
+            return 1
+
+    print(f"[ERRORE] Tipo documento '{doc_type}' non supportato. Scegli tra: quote, contract, report")
+    return 1
+
 def cmd_validate(args):
+
     target_path = Path(args.target)
     if not target_path.exists():
         print(f"[ERRORE] Percorso non trovato: {target_path}")
@@ -639,15 +749,17 @@ def main():
     # contract
     p_contract = subparsers.add_parser("contract", help="Gestione contratti SLA e monte ore")
     p_contract.add_argument("slug", help="Slug cliente")
-    p_contract.add_argument("action", nargs="?", default="status", choices=["status", "balance", "renew", "audit"])
-    p_contract.add_argument("--contract-id", dest="contract_id", help="ID contratto")
+    p_contract.add_argument("action", nargs="?", default="status", choices=["status", "balance", "renew", "audit", "export"])
+    p_contract.add_argument("--contract-id", "--id", dest="contract_id", help="ID contratto")
     p_contract.add_argument("--doc", "--doc-path", dest="doc_path", help="Percorso del documento contrattuale da verificare (default: docs/severino-sla)")
+    p_contract.add_argument("--format", default="all", help="Formati di esportazione: all, pdf, docx (default: all)")
     p_contract.set_defaults(func=cmd_contract)
 
     # report
     p_report = subparsers.add_parser("report", help="Gestione rapportini e time tracking")
     p_report.add_argument("slug", help="Slug cliente")
-    p_report.add_argument("action", nargs="?", default="list", choices=["list", "balance", "new"])
+    p_report.add_argument("action", nargs="?", default="list", choices=["list", "balance", "new", "export"])
+    p_report.add_argument("--id", dest="report_id", help="ID del rapportino")
     p_report.add_argument("--tech", help="Nome tecnico incaricato")
     p_report.add_argument("--desc", help="Descrizione dettagliata intervento")
     p_report.add_argument("--in", dest="clock_in", help="Orario inizio (HH:MM)")
@@ -658,6 +770,7 @@ def main():
     p_report.add_argument("--parts", help="Ricambi nel formato CODICE:Descrizione:Qta:PrezzoUnit, separati da virgola")
     p_report.add_argument("--signed", action="store_true", help="Segna come firmato dal cliente")
     p_report.add_argument("--signer", help="Nome referente cliente firmatario")
+    p_report.add_argument("--format", default="all", help="Formati di esportazione: all, pdf, docx (default: all)")
     p_report.set_defaults(func=cmd_report)
 
     # billing
@@ -719,7 +832,16 @@ def main():
     p_quote.add_argument("--format", default="all", help="Formati di esportazione: all, html, pdf, docx (default: all)")
     p_quote.set_defaults(func=cmd_quote)
 
+    # export
+    p_export = subparsers.add_parser("export", help="Esportazione formale unificata documenti con logo ufficiale (quote, contract, report)")
+    p_export.add_argument("slug", help="Slug cliente")
+    p_export.add_argument("type", choices=["quote", "contract", "report", "preventivo", "contratto", "rapportino"], help="Tipologia di documento")
+    p_export.add_argument("id", nargs="?", help="ID documento (opzionale: se omesso esporta il documento più recente)")
+    p_export.add_argument("--format", default="all", help="Formati: all, pdf, docx, html (default: all)")
+    p_export.set_defaults(func=cmd_export)
+
     # validate
+
     p_val = subparsers.add_parser("validate", help="Valida file YAML a fronte degli schemi")
     p_val.add_argument("target", help="File o cartella da validare")
     p_val.set_defaults(func=cmd_validate)

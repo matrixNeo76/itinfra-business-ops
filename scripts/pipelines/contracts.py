@@ -190,3 +190,42 @@ class ContractsPipeline:
             except Exception:
                 pass
         return None
+
+    def export_contract(self, slug: str, contract_id: str, formats: Optional[List[str]] = None) -> Dict[str, Path]:
+        """Esporta il contratto SLA nei formati richiesti (docx, pdf). Default: tutti."""
+        from scripts.core.document_renderer import DocumentRenderer
+
+        cdir = self.get_contracts_dir(slug)
+        contract_data = None
+        for f in cdir.glob("*.yaml"):
+            try:
+                with open(f, "r", encoding="utf-8") as fp:
+                    data = yaml.safe_load(fp) or {}
+                if data.get("contract_id") == contract_id or f.stem == contract_id.lower() or f.stem == f"ctr-{slug}-2026":
+                    contract_data = data
+                    break
+            except Exception:
+                pass
+
+        if not contract_data:
+            return {}
+
+        selected_formats = [fmt.strip().lower() for fmt in formats] if formats else ["docx", "pdf"]
+        if "all" in selected_formats:
+            selected_formats = ["docx", "pdf"]
+
+        results = {}
+        cid_clean = contract_data.get("contract_id", contract_id).lower().replace(":", "_")
+
+        if "docx" in selected_formats:
+            out_docx = cdir / f"{cid_clean}.docx"
+            DocumentRenderer.render_contract_to_docx(contract_data, out_docx)
+            results["docx"] = out_docx
+
+        if "pdf" in selected_formats:
+            out_pdf = cdir / f"{cid_clean}.pdf"
+            DocumentRenderer.render_contract_to_pdf(contract_data, out_pdf)
+            results["pdf"] = out_pdf
+
+        return results
+

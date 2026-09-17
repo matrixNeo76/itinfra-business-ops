@@ -351,3 +351,43 @@ class ReportsPipeline:
 </body>
 </html>
 """
+        return html_content
+
+    def export_report(self, slug: str, report_id: str, formats: Optional[List[str]] = None) -> Dict[str, Path]:
+        """Esporta il rapportino di lavoro nei formati richiesti (docx, pdf). Default: tutti."""
+        from scripts.core.document_renderer import DocumentRenderer
+
+        tdir = self.get_timesheets_dir(slug)
+        report_data = None
+        for f in tdir.glob("*.yaml"):
+            try:
+                with open(f, "r", encoding="utf-8") as fp:
+                    data = yaml.safe_load(fp) or {}
+                if data.get("report_id") == report_id or f.stem == report_id.lower():
+                    report_data = data
+                    break
+            except Exception:
+                pass
+
+        if not report_data:
+            return {}
+
+        selected_formats = [fmt.strip().lower() for fmt in formats] if formats else ["docx", "pdf"]
+        if "all" in selected_formats:
+            selected_formats = ["docx", "pdf"]
+
+        results = {}
+        rid_clean = report_data.get("report_id", report_id).lower().replace(":", "_")
+
+        if "docx" in selected_formats:
+            out_docx = tdir / f"{rid_clean}.docx"
+            DocumentRenderer.render_report_to_docx(report_data, out_docx)
+            results["docx"] = out_docx
+
+        if "pdf" in selected_formats:
+            out_pdf = tdir / f"{rid_clean}.pdf"
+            DocumentRenderer.render_report_to_pdf(report_data, out_pdf)
+            results["pdf"] = out_pdf
+
+        return results
+
