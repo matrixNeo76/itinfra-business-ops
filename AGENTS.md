@@ -29,6 +29,7 @@ Questo è l'ambiente di lavoro per la governance operativa, commerciale, PSA, fa
 | **Stato Avanzamento Arredo** | `arredo <slug>` *(o `furniture`)* | `.\it-ops.cmd furniture <slug> status` |
 | **Calcolo Margini Preventivo** | `preventivo <slug>` *(o `quote`)* | `.\it-ops.cmd quote <slug> calculate` |
 | **Ingestione Documenti (OKF v0.2)** | `ingest <file>` | `.\it-ops.cmd ingest <file> [--slug <slug>] [--apply]` |
+| **Memoria Auto-Correttiva (OKF v0.2)** | `learn [sync\|audit\|test]` | `.\it-ops.cmd learn [list\|sync\|audit\|test]` |
 
 ---
 

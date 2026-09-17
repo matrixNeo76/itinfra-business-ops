@@ -726,7 +726,40 @@ def cmd_validate(args):
     print(f"\nRiepilogo Validazione: {total_valid} PASS, {total_errors} FAIL")
     return 0 if total_errors == 0 else 1
 
+def check_auto_sync_memory():
+    """Verifica e sincronizza la memoria con il peer se necessario."""
+    try:
+        from scripts.core.memory_engine import MemoryEngine
+        engine = MemoryEngine()
+        if engine.peer_root:
+            peer_reg_file = engine.peer_root / ".agents" / "memory" / "registry.yaml"
+            if peer_reg_file.exists() and engine.registry_file.exists():
+                if peer_reg_file.stat().st_mtime > engine.registry_file.stat().st_mtime:
+                    engine.sync_with_peer()
+    except Exception:
+        pass
+
+def cmd_learn(args):
+    """Dispatcher per il sistema di memoria auto-correttiva e apprendimento attestato OKF v0.2."""
+    from scripts.pipelines.learn import LearnPipeline
+    pipeline = LearnPipeline()
+    action = args.action
+    if action == "list":
+        return pipeline.list_nodes(domain=getattr(args, "domain", None))
+    elif action == "attest":
+        return pipeline.attest_node(args.id, attester=getattr(args, "by", "human:possumato"))
+    elif action == "compile":
+        return pipeline.compile_rules()
+    elif action == "sync":
+        return pipeline.sync_memory()
+    elif action == "audit":
+        return pipeline.audit_memory()
+    elif action == "test":
+        return pipeline.test_rules()
+    return 0
+
 def main():
+    check_auto_sync_memory()
     parser = argparse.ArgumentParser(description="itinfra-business-ops CLI Master Engine (v0.3.0)")
     subparsers = parser.add_subparsers(dest="subcommand", help="Sottocomando da eseguire")
 
@@ -854,6 +887,14 @@ def main():
     p_ingest.add_argument("--target-price", type=float, help="Prezzo di vendita desiderato (per distinte tecniche)")
     p_ingest.add_argument("--json", dest="as_json", action="store_true", help="Output in formato JSON")
     p_ingest.set_defaults(func=cmd_ingest)
+
+    # learn
+    p_learn = subparsers.add_parser("learn", help="Sistema di Memoria Auto-Correttiva & Apprendimento Attestato (OKF v0.2)")
+    p_learn.add_argument("action", nargs="?", default="list", choices=["list", "attest", "compile", "sync", "audit", "test"], help="Azione da eseguire (default: list)")
+    p_learn.add_argument("--id", help="ID del nodo di memoria (es. LES-UI-001)")
+    p_learn.add_argument("--domain", help="Filtra per dominio (core, ui, engineering, documents, technical, business_ops)")
+    p_learn.add_argument("--by", default="human:possumato", help="Certificatore attestation (default: human:possumato)")
+    p_learn.set_defaults(func=cmd_learn)
 
     args = parser.parse_args()
     if not args.subcommand:

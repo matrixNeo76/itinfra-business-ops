@@ -1,0 +1,36 @@
+version: '0.2'
+format: google-okf-v0.2
+updated_at: '2026-09-17T18:38:14.932570+00:00'
+nodes:
+  LES-UI-001:
+    file: ui/LES-UI-001.okf.md
+    domain: ui
+    tier: attested
+    title: Vincoli Dimensionali e Sandbox Iframe per Generative UI
+    attested_by: human:possumato
+    sha256: fa37b891b4cadfee4fadf75cbe45f07431e9f7c32d089cb8a41ab6f3e6969570
+    updated_at: '2026-09-17T18:38:14.196563+00:00'
+  LES-CODE-001:
+    file: engineering/LES-CODE-001.okf.md
+    domain: engineering
+    tier: attested
+    title: Gestione Escaping Script Python e Operatori PowerShell
+    attested_by: human:possumato
+    sha256: 00c64e86bb45b62b539b6dc979024bf936f17eb1451e3f55c71b4ad60473659c
+    updated_at: '2026-09-17T18:38:14.429253+00:00'
+  LES-DOC-001:
+    file: documents/LES-DOC-001.okf.md
+    domain: documents
+    tier: attested
+    title: Quadratura Contabile e Conformità Forense Preventivi e Contratti
+    attested_by: human:possumato
+    sha256: 54dfcf86e0aff497ca0465f0fe4071f2c274631843bc2ef4918730fbf84f7943
+    updated_at: '2026-09-17T18:38:14.675158+00:00'
+  LES-FASTPATH-001:
+    file: core/LES-FASTPATH-001.okf.md
+    domain: core
+    tier: attested
+    title: Zero-Search Fast-Path e Risposta Deterministica a 0 Secondi
+    attested_by: human:possumato
+    sha256: 9ed3f30e73dc3848d23079a4523428ab24d22149c2bf9bdff84e8bf0196133c9
+    updated_at: '2026-09-17T18:38:14.910910+00:00'
