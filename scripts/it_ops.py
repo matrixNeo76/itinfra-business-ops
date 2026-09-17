@@ -442,6 +442,32 @@ def cmd_quote(args):
             print(f"    Aggiornata Offerta Formale: {args.id.lower()}.html")
         return 0
 
+    if action == "audit":
+        from scripts.pipelines.quote_audit import QuoteAuditEngine
+        target_str = getattr(args, "doc_path", None)
+        target = Path(target_str) if target_str else Path("docs/viola-preventivo")
+        if not target.exists():
+            print(f"[ERRORE] Percorso preventivo non trovato: {target}")
+            return 1
+        res = QuoteAuditEngine.audit_path(target)
+        print("=" * 70)
+        print(f" 🛡️  AUDIT QUALITÀ, CONGRUITA & COMPLIANCE PREVENTIVO (Settembre 2026)")
+        print(f" Sorgente Analizzata: {res['source']}")
+        print("=" * 70)
+        print(f" Totale Rilievi Rilevati: {res['findings_count']}")
+        print(f"   • Critici (Blocker)   : {res['summary']['critical']}")
+        print(f"   • Elevati (High)      : {res['summary']['high']}")
+        print(f"   • Medi / Warning      : {res['summary']['warning']}")
+        print(f"   • Bassa priorità      : {res['summary']['low']}")
+        print("-" * 70)
+        for f in res["findings"]:
+            sev_badge = f"[{f['severity']}]"
+            print(f"\n{sev_badge:<12} {f['title']} ({f['category']})")
+            print(f"  Descrizione: {f['description']}")
+            print(f"  Azione/Fix : {f['recommendation']}")
+        print("=" * 70)
+        return 0
+
     if action == "export":
         if not args.id:
             print("[ERRORE] Specificare --id del preventivo da esportare")
@@ -498,8 +524,9 @@ def cmd_ingest(args):
     for ev in res.get("evidence", []):
         st = ev["status"]
         if st == "VERIFIED":
-            if ev["field"] == "contract_audit" and isinstance(ev["value"], list):
-                print(f"\n🛡️  AUDIT QUALITÀ & CONFORMITÀ NORMATIVA (Settembre 2026) — {len(ev['value'])} rilievi individuati:")
+            if ev["field"] in ("contract_audit", "quote_audit") and isinstance(ev["value"], list):
+                header_title = "AUDIT QUALITÀ & CONGRUITÀ PREVENTIVO (Settembre 2026)" if ev["field"] == "quote_audit" else "AUDIT QUALITÀ & CONFORMITÀ NORMATIVA (Settembre 2026)"
+                print(f"\n🛡️  {header_title} — {len(ev['value'])} rilievi individuati:")
                 for item in ev["value"]:
                     print(f"    [{item['severity']}] {item['title']} ({item['category']})")
                     print(f"        └─ {item['description']}")
@@ -680,8 +707,9 @@ def main():
     # quote
     p_quote = subparsers.add_parser("quote", help="Preventivazione e margini")
     p_quote.add_argument("slug", help="Slug cliente")
-    p_quote.add_argument("action", nargs="?", default="calculate", choices=["calculate", "add-item", "export"])
+    p_quote.add_argument("action", nargs="?", default="calculate", choices=["calculate", "add-item", "export", "audit"])
     p_quote.add_argument("--id", "--quote-id", dest="id", help="ID preventivo")
+    p_quote.add_argument("--doc", "--doc-path", dest="doc_path", help="Percorso del preventivo o cartella da verificare (default: docs/viola-preventivo)")
     p_quote.add_argument("--cat", help="Categoria merceologica (hardware_server_network, professional_services, ecc.)")
     p_quote.add_argument("--sku", help="Codice articolo / SKU")
     p_quote.add_argument("--desc", help="Descrizione articolo")

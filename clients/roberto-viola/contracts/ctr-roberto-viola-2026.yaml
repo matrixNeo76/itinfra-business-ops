@@ -1,0 +1,35 @@
+contract_id: "CTR-2026-roberto-viola"
+slug: "roberto-viola"
+status: "active"
+formula: "hours_bank" # oppure "msp_flat"
+valid_from: "2026-01-01"
+valid_to: "2026-12-31"
+
+renewal:
+  automatic: true
+  notice_period_days: 60
+
+sla:
+  tier: "high"
+  coverage_window: "08:30-18:30 Lun-Ven"
+  first_response_hours: 4
+  target_resolution_hours: 8
+
+financial:
+  recurring_fee: 0.0
+  billing_period: "annual"
+  total_hours_included: 50.0
+  consumed_hours: 0.0
+  extra_hourly_rate: 75.0
+  travel_fee_fixed: 40.0
+
+# Elenco apparati coperti (cross-check con itinfra 06-As-Built.md)
+covered_assets:
+  - serial_number: "HP-Z6G4-VIOLA-01"
+    hostname: "srv-viola-01"
+    role: "Host Hyper-V On-Premise & AI Runtime"
+    model: "HP Z6 G4 Workstation (2x Xeon Silver 4108, 128GB ECC, 4TB, RTX GPU 16GB)"
+  - serial_number: "SW-GEST-VIOLA-01"
+    hostname: "sw-lan-01"
+    role: "Switch Gestito LAN di Studio"
+    model: "Gigabit Managed Switch 24p"

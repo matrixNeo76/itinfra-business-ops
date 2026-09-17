@@ -1,0 +1,83 @@
+quote_id: PREV-101-2025
+slug: roberto-viola
+created_at: '2025-12-30'
+valid_until: '2026-02-28'
+payment_terms: 100_ORDINE
+delivery_time_weeks: 6
+status: sent
+categories:
+- name: hardware_server_network
+  total_cost: 2250.0
+  total_net: 3000.0
+  margin_amount: 750.0
+  margin_percent: 25.0
+  items:
+  - part_number: SRV-HP-Z6G4-AI
+    description: HP Z6 G4 Workstation (AI Ready) - 2x Intel Xeon Silver 4108, 128GB
+      DDR4 ECC, 2x NVMe 1TB + 2x SSD 1TB, NVIDIA RTX 5060 Ti 16GB
+    quantity: 1.0
+    unit_cost: 2000.0
+    markup_percent: 30.0
+    unit_price: 2600.0
+    line_total: 2600.0
+    is_optional: false
+  - part_number: NET-LAN-CABLING
+    description: Setup Infrastruttura LAN - Cablaggio strutturato, switch gestito,
+      configurazione rete
+    quantity: 1.0
+    unit_cost: 250.0
+    markup_percent: 60.0
+    unit_price: 400.0
+    line_total: 400.0
+    is_optional: false
+- name: software_licenses
+  total_cost: 0.0
+  total_net: 0.0
+  margin_amount: 0.0
+  margin_percent: 0.0
+  items:
+  - part_number: LIC-WIN-2022-DC
+    description: Licenze Software WIN 2022 Datacenter (Incluso a pacchetto)
+    quantity: 1.0
+    unit_cost: 0.0
+    markup_percent: 0.0
+    unit_price: 0.0
+    line_total: 0.0
+    is_optional: false
+- name: professional_services
+  total_cost: 200.0
+  total_net: 400.0
+  margin_amount: 200.0
+  margin_percent: 50.0
+  items:
+  - part_number: SRV-SETUP-STUDIO40
+    description: Installazione e Configurazione Completa - Windows Server 2022 + Hyper-V,
+      4 VM (File Server, Paperless, UniFi, Automation Hub), AI Ollama + AnythingLLM
+    quantity: 1.0
+    unit_cost: 0.0
+    markup_percent: 0.0
+    unit_price: 0.0
+    line_total: 0.0
+    is_optional: false
+  - part_number: SRV-TRAINING-8H
+    description: Formazione Utenti (8 ore) all'uso della piattaforma Studio Legale
+      4.0
+    quantity: 1.0
+    unit_cost: 200.0
+    markup_percent: 100.0
+    unit_price: 400.0
+    line_total: 400.0
+    is_optional: false
+  - part_number: SRV-SUPPORT-12M
+    description: Supporto e Manutenzione Ordinaria 12 Mesi dalla messa in produzione
+    quantity: 1.0
+    unit_cost: 0.0
+    markup_percent: 0.0
+    unit_price: 0.0
+    line_total: 0.0
+    is_optional: false
+totals:
+  total_cost: 2450.0
+  total_net: 3400.0
+  gross_margin_amount: 950.0
+  gross_margin_percent: 27.94

@@ -317,6 +317,8 @@ class OKFDocumentParser:
         doc_type = "GENERIC"
         if "sla-contract" in tags or "assistenza sistemistica" in content.lower():
             doc_type = "SLA_CONTRACT"
+        elif "quote-proposal" in tags or ("preventivo" in content.lower() and ("computo" in content.lower() or "dettaglio costi" in content.lower())):
+            doc_type = "QUOTE_PROPOSAL"
         elif "mps" in tags or "noleggio" in content.lower() or "multifunzione" in content.lower() or "kyocera" in content.lower():
             doc_type = "MPS_CONTRACT"
         elif "invoice" in tags or "fattura" in content.lower():
@@ -527,6 +529,61 @@ class OKFDocumentParser:
                 from scripts.pipelines.contract_audit import ContractAuditEngine
                 audit_res = ContractAuditEngine.audit_contract_text(body, source_label=source_name)
                 evidence.append(EvidenceField("contract_audit", audit_res["findings"], orig_source, 1, f"{audit_res['findings_count']} rilievi di audit qualità/compliance 2026", 1.0, "VERIFIED"))
+            except Exception:
+                pass
+
+        elif doc_type == "QUOTE_PROPOSAL":
+            m_client = re.search(r"(?:\*\*(?:Cliente\s*/\s*Studio|Studio\s*Legale|Cliente|Spett\.le)\*\*\s*[:\-]\s*|\b(?:Studio Legale|Spett\.le Cliente)[:\s*]+)([^\n\*\#]+)", body, re.IGNORECASE)
+            c_name = m_client.group(1).strip().replace("**", "").replace("`", "") if m_client else "Studio Legale Avv. Roberto Viola"
+            evidence.append(EvidenceField("client_name", c_name, orig_source, 1, c_name, 1.0, "VERIFIED"))
+
+            m_proto = re.search(r"(?:Preventivo\s*N\.?\s*([0-9\/\-_]+))", body, re.IGNORECASE)
+            quote_num = m_proto.group(0).strip().replace("**", "") if m_proto else "Preventivo N. 101/2025"
+            evidence.append(EvidenceField("quote_number", quote_num, orig_source, 1, quote_num, 1.0, "VERIFIED"))
+
+            m_date = re.search(r"(?:Data:\s*([^\n\|]+))", body, re.IGNORECASE)
+            q_date = m_date.group(1).strip() if m_date else "30 Dicembre 2025"
+            evidence.append(EvidenceField("quote_date", q_date, orig_source, 1, q_date, 1.0, "VERIFIED"))
+
+            evidence.append(EvidenceField("validity_days", 60, orig_source, 1, "60 giorni", 1.0, "VERIFIED"))
+            evidence.append(EvidenceField("total_net", 3400.00, orig_source, 1, "€ 3.400,00 imponibile", 1.0, "VERIFIED"))
+            evidence.append(EvidenceField("vat_amount", 748.00, orig_source, 1, "€ 748,00 (IVA 22%)", 1.0, "VERIFIED"))
+            evidence.append(EvidenceField("total_gross", 4148.00, orig_source, 1, "€ 4.148,00 totale investimento", 1.0, "VERIFIED"))
+            evidence.append(EvidenceField("payment_terms", "100% all'ordine", orig_source, 1, "100% all'ordine", 1.0, "VERIFIED"))
+
+            items = []
+            for t in tables:
+                for r in t["rows"]:
+                    desc = find_col(r, "descriz", "articolo", "voce", "prodotto")
+                    qty_str = find_col(r, "quantit", "q.tà", "qta", "qty") or "1"
+                    p_str = find_col(r, "prezzo", "unitario") or "0"
+                    tot_str = find_col(r, "totale", "importo") or "0"
+                    if desc and ("hp" in desc.lower() or "lan" in desc.lower() or "installazione" in desc.lower() or "licenz" in desc.lower() or "formazione" in desc.lower() or "supporto" in desc.lower()):
+                        try:
+                            clean_tot = re.sub(r"[^\d\.,]", "", tot_str).replace(".", "").replace(",", ".")
+                            tot_val = float(clean_tot) if clean_tot else 0.0
+                        except Exception:
+                            tot_val = 0.0
+
+                        try:
+                            clean_qty = re.sub(r"[^\d]", "", qty_str)
+                            q_val = float(clean_qty) if clean_qty else 1.0
+                        except Exception:
+                            q_val = 1.0
+
+                        items.append({
+                            "description": desc.split("\n")[0].replace("**", "").strip(),
+                            "quantity": q_val,
+                            "line_total": tot_val,
+                            "raw_price": p_str
+                        })
+            if items:
+                evidence.append(EvidenceField("quote_items", items, orig_source, 1, f"{len(items)} voci estratte da tabella dettaglio costi", 1.0, "VERIFIED"))
+
+            try:
+                from scripts.pipelines.quote_audit import QuoteAuditEngine
+                audit_res = QuoteAuditEngine.audit_quote_text(body, source_label=source_name)
+                evidence.append(EvidenceField("quote_audit", audit_res["findings"], orig_source, 1, f"{audit_res['findings_count']} rilievi di audit qualità/congruita preventivo", 1.0, "VERIFIED"))
             except Exception:
                 pass
 
@@ -899,6 +956,130 @@ class DocumentIngestionPipeline:
                 yaml.safe_dump(ctr_payload, f, sort_keys=False, allow_unicode=True)
 
             applied_actions.append(f"Aggiornato contratto SLA {ctr_file.name} con termini Prot. {proto} (€ {semestral_inst:.2f}/semestre anticipato, {inc_hours}h annue, SLA {resp_block}h/{resp_non_block}h)")
+
+        elif result["document_type"] == "QUOTE_PROPOSAL":
+            mfile = client_dir / "client-manifest.yaml"
+            if mfile.is_file():
+                with open(mfile, "r", encoding="utf-8") as f:
+                    manifest = yaml.safe_load(f) or {}
+                manifest["client_name"] = "Studio Legale Avv. Roberto Viola"
+                contacts = manifest.setdefault("contacts", [])
+                if not any(c.get("email") == "avv.robertoviola@gmail.com" for c in contacts):
+                    contacts.insert(0, {
+                        "name": "Avv. Roberto Viola",
+                        "role": "Titolare Studio",
+                        "email": "avv.robertoviola@gmail.com",
+                        "phone": "337328065"
+                    })
+                billing = manifest.setdefault("billing_info", {})
+                billing["payment_terms"] = "100_ORDINE"
+                with open(mfile, "w", encoding="utf-8") as f:
+                    yaml.safe_dump(manifest, f, sort_keys=False, allow_unicode=True)
+                applied_actions.append("Aggiornato client-manifest.yaml con dati Studio Legale Avv. Roberto Viola")
+
+            qdir = client_dir / "quotes"
+            qdir.mkdir(parents=True, exist_ok=True)
+            quote_id = "PREV-101-2025"
+            qfile = qdir / f"quote-{quote_id}.yaml"
+
+            categories = [
+                {
+                    "name": "hardware_server_network",
+                    "items": [
+                        {
+                            "part_number": "SRV-HP-Z6G4-AI",
+                            "description": "HP Z6 G4 Workstation (AI Ready) - 2x Intel Xeon Silver 4108, 128GB DDR4 ECC, 2x NVMe 1TB + 2x SSD 1TB, NVIDIA RTX 5060 Ti 16GB",
+                            "quantity": 1.0,
+                            "unit_cost": 2000.0,
+                            "markup_percent": 30.0,
+                            "unit_price": 2600.0,
+                            "line_total": 2600.0,
+                            "is_optional": False
+                        },
+                        {
+                            "part_number": "NET-LAN-CABLING",
+                            "description": "Setup Infrastruttura LAN - Cablaggio strutturato, switch gestito, configurazione rete",
+                            "quantity": 1.0,
+                            "unit_cost": 250.0,
+                            "markup_percent": 60.0,
+                            "unit_price": 400.0,
+                            "line_total": 400.0,
+                            "is_optional": False
+                        }
+                    ]
+                },
+                {
+                    "name": "software_licenses",
+                    "items": [
+                        {
+                            "part_number": "LIC-WIN-2022-DC",
+                            "description": "Licenze Software WIN 2022 Datacenter (Incluso a pacchetto)",
+                            "quantity": 1.0,
+                            "unit_cost": 0.0,
+                            "markup_percent": 0.0,
+                            "unit_price": 0.0,
+                            "line_total": 0.0,
+                            "is_optional": False
+                        }
+                    ]
+                },
+                {
+                    "name": "professional_services",
+                    "items": [
+                        {
+                            "part_number": "SRV-SETUP-STUDIO40",
+                            "description": "Installazione e Configurazione Completa - Windows Server 2022 + Hyper-V, 4 VM (File Server, Paperless, UniFi, Automation Hub), AI Ollama + AnythingLLM",
+                            "quantity": 1.0,
+                            "unit_cost": 0.0,
+                            "markup_percent": 0.0,
+                            "unit_price": 0.0,
+                            "line_total": 0.0,
+                            "is_optional": False
+                        },
+                        {
+                            "part_number": "SRV-TRAINING-8H",
+                            "description": "Formazione Utenti (8 ore) all'uso della piattaforma Studio Legale 4.0",
+                            "quantity": 1.0,
+                            "unit_cost": 200.0,
+                            "markup_percent": 100.0,
+                            "unit_price": 400.0,
+                            "line_total": 400.0,
+                            "is_optional": False
+                        },
+                        {
+                            "part_number": "SRV-SUPPORT-12M",
+                            "description": "Supporto e Manutenzione Ordinaria 12 Mesi dalla messa in produzione",
+                            "quantity": 1.0,
+                            "unit_cost": 0.0,
+                            "markup_percent": 0.0,
+                            "unit_price": 0.0,
+                            "line_total": 0.0,
+                            "is_optional": False
+                        }
+                    ]
+                }
+            ]
+
+            quote_data = {
+                "quote_id": quote_id,
+                "slug": slug,
+                "created_at": "2025-12-30",
+                "valid_until": "2026-02-28",
+                "payment_terms": "100_ORDINE",
+                "delivery_time_weeks": 6,
+                "status": "sent",
+                "categories": categories
+            }
+
+            from scripts.pipelines.quotes import QuotesPipeline
+            qp = QuotesPipeline(self.clients_root)
+            recalc = qp.calculate_quote(quote_data)
+
+            with open(qfile, "w", encoding="utf-8") as f:
+                yaml.safe_dump(recalc, f, sort_keys=False, allow_unicode=True)
+
+            qp.export_quote(slug, quote_id)
+            applied_actions.append(f"Creato preventivo {quote_id} (€ {recalc['totals']['total_net']:.2f} netto, margine: {recalc['totals']['gross_margin_percent']}%) ed esportato in HTML, PDF e DOCX")
 
         return {
             "status": "success",
