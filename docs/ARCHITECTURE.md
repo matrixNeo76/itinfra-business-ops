@@ -116,3 +116,98 @@ Il modulo Python `scripts/core/bridge.py` fornisce accesso in sola lettura agli 
 * Verifica esistenza progetto tecnico in `../itinfra/projects/<slug>/`.
 * Estrae in modo deterministico i numeri di serie hardware e gli hostname da `06-As-Built.md`.
 * Fornisce a `it-ops check <slug>` la matrice di riscontro per verificare che ogni apparato coperto da contratto SLA o oggetto di rapportino esista effettivamente nella documentazione tecnica.
+
+---
+
+## 3. Motore di Rendering & Exportazione Multi-Formato (`SPEC-16`)
+
+Il modulo `DocumentRenderer` (`scripts/core/document_renderer.py`) standardizza la produzione documentale verso l'esterno secondo la specifica **SPEC-16**, implementando:
+
+1. **Brand Identity Aure System**:
+   - Palette cromatica ufficiale: Navy (`#0A192F`), Gold (`#D4AF37`), Slate (`#334155`), Light Gray (`#F8FAFC`).
+   - Logo aziendale ufficiale vettorializzato (SVG scalabile e PNG Base64 Data URI) incorporato direttamente in intestazioni e copertine.
+   - Dati societari legali conformi (Partita IVA, REA, PEC, sede legale).
+
+2. **Tripla Esportazione Deterministica**:
+   - **HTML Interattivo Zero-CDN**: Dashboard responsive navigabile, standalone, 100% offline (nessuna risorsa remota o CDN esterna).
+   - **PDF Vettoriale A4**: Layout impaginato con interruzioni di pagina controllate (`@page`, `break-inside: avoid`), testate e piè di pagina numerati con timbro di autenticità.
+   - **Microsoft Word (.docx)**: Documento nativo modificabile con stili tipografici aziendali e tracciamento revisioni.
+
+3. **Integrazione CLI**:
+   - Eseguibile tramite `.\it-ops.cmd export <doc.okf.md> [--format all|html|pdf|docx]`.
+
+```mermaid
+flowchart LR
+    OKF["Documento OKF v0.2<br/>(docs/.../*.okf.md)"] --> RENDER["DocumentRenderer<br/>(SPEC-16 Engine)"]
+    BRAND["Brand Assets<br/>(Logo SVG, Corporate Style)"] --> RENDER
+    RENDER --> HTML["HTML Standalone<br/>(Zero-CDN Offline)"]
+    RENDER --> PDF["PDF Vettoriale A4<br/>(Pronto Stampa / Firma)"]
+    RENDER --> DOCX["Word DOCX<br/>(Editabile / Revisioni)"]
+```
+
+---
+
+## 4. Motore di Memoria Auto-Correttiva Attestata (`OKF v0.2` & `MemoryEngine`)
+
+Il modulo `MemoryEngine` (`scripts/core/memory_engine.py`) conferisce agli agenti AI (Google Antigravity, Claude Code, Cursor) una memoria persistente a lungo termine, basata su nodi di conoscenza formalizzati in standard **OKF v0.2 Concept**:
+
+1. **Ciclo di Vita a Tre Livelli di Trust (Trust Tiers)**:
+   - `draft`: Ipotesi o proposta generata dall'AI, non ancora convalidata formalmente.
+   - `verified`: Regola verificata da un operatore umano o da test automatici, ma soggetta a finestra di obsolescenza (`stale_after`).
+   - `attested`: Guardrail permanente, sigillato con hash crittografico SHA-256 e non modificabile senza ri-attestazione esplicita.
+
+2. **Anti-Tampering Crittografico**:
+   - Il calcolo dell'hash SHA-256 copre titolo, abstract semantico, categoria e punti chiave.
+   - Il comando `.\it-ops.cmd learn audit` rileva istantaneamente alterazioni non autorizzate, nodi orfani o regole scadute.
+
+3. **Compilazione Live in Direttive AI (`.agents/rules/`)**:
+   - Tramite `.\it-ops.cmd learn sync`, tutti i nodi attestati e verificati vengono compilati nel file di regole persistente `.agents/rules/01-self-correcting-memory.md`.
+   - L'agente Antigravity carica le regole a 0 secondi all'avvio della sessione, prevenendo ricorsioni degli stessi errori (es. UI scroll, omissione vincoli hardware, fast-path bypass).
+
+```mermaid
+flowchart TD
+    INC["Errore / Bug / Lezione Appresa"] --> DRAFT["Nodo OKF v0.2 (Draft)"]
+    DRAFT -->|"Audit & Test Superato"| VERIF["Nodo Verificato (Verified)"]
+    VERIF -->|"Sigillatura SHA-256"| ATTEST["Nodo Attestato (Attested)"]
+    ATTEST -->|"MemoryEngine.compile_rules()"| RULES[".agents/rules/01-self-correcting-memory.md"]
+    RULES -->|"Zero-Search Fast-Path"| AGENT["Google Antigravity AI Agent Core"]
+```
+
+---
+
+## 5. Unified Cognitive Memory Bridge (`SPEC-17`)
+
+Il modulo `CognitiveBridge` (`scripts/core/cognitive_bridge.py`) unifica l'architettura cognitiva di `itinfra` con `itinfra-business-ops`, realizzando una federazione di conoscenza continua:
+
+```mermaid
+flowchart TD
+    subgraph ITINFRA ["itinfra (Ingegneria di Rete)"]
+        L1["L1: Working Memory<br/>(Prompt Context)"] --> L2["L2: Staging Scratchpad<br/>(_global_scratchpad.md)"]
+        L2 --> L3["L3: Canonical Docs<br/>(01-RSD .. 10-RCA)"]
+    end
+
+    subgraph BRIDGE ["SPEC-17: Cognitive Bridge"]
+        LOCK["AtomicFileLock<br/>(_global_scratchpad.lock)"]
+        SCAN["MultiTenantSanitizer<br/>(Zero-Leakage Guard)"]
+        PROMOTE["promote_entry()<br/>(L2 Scratchpad ➔ Attested Node)"]
+    end
+
+    subgraph BIZOPS ["itinfra-business-ops (Governance)"]
+        MEM_ENGINE["MemoryEngine<br/>(SHA-256 Attestation)"]
+        RULES[".agents/rules/<br/>01-self-correcting-memory.md"]
+    end
+
+    L2 <-->|"Lock Concorrente Atomico"| LOCK
+    L2 -->|"Candidate Entries"| SCAN
+    SCAN -->|"Entry Bonificata"| PROMOTE
+    PROMOTE -->|"Nuovo Nodo OKF v0.2"| MEM_ENGINE
+    MEM_ENGINE -->|"Regola Universale"| RULES
+```
+
+### Garanzie Architetturali:
+1. **Concorrenza Cross-Platform (`AtomicFileLock`)**: Scritture simultanee e promozioni tra i due repository sono regolate da lock esclusivo con timeout a 10s e gestione automatica di stale lock orfani.
+2. **Zero-Leakage Multi-Tenant (`MultiTenantSanitizer`)**: Prima che qualsiasi annotazione tecnica o lezioni appresa venga promossa a guardrail globale, il sanitizer scansiona e blocca pattern sensibili: indirizzi IPv4/IPv6 privati, domini FQDN, credenziali `vault://`, codici fiscali, IBAN o ragioni sociali specifiche di singoli clienti.
+3. **Promozione Trasparente da CLI**:
+   - `.\it-ops.cmd learn promotables`: elenca tutte le voci dello scratchpad globale `itinfra` idonee alla promozione.
+   - `.\it-ops.cmd learn promote <entry_id> --code <CODE> --title "..."`: promuove la voce in nodo OKF v0.2, sigilla con SHA-256 e rigenera le regole agentiche live.
+

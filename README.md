@@ -47,13 +47,15 @@ flowchart TD
 
 | Pipeline | Ambito | Descrizione & Output |
 | :---: | :--- | :--- |
-| **A** | **Contratti Assistenza IT (SLA & Monte Ore)** | Gestione canoni fissi MSP, monte ore a scalare, scadenze, alert rinnovo (`ctr-*.yaml`). |
+| **A** | **Contratti Assistenza IT (SLA & Monte Ore)** | Gestione canoni fissi MSP, monte ore a scalare, scadenze, alert rinnovo e audit normativo 2026 (`ctr-*.yaml`). |
 | **B** | **Rapportini di Assistenza** | Compilazione intervento tecnico, tracciamento ore, arrotondamenti, firma e scarico saldo (`rap-*.yaml`). |
 | **C** | **Fatturazione & Scadenzario Attivo** | Calcolo batch fine mese, conguagli, generazione tracciato SDI v1.2 e scadenzario partite aperte (`billing_batch.json`). |
 | **D** | **Task Giornalieri Jira & Agenda** | Allineamento ticket Jira, sincronizzazione slot appuntamenti e pre-compilazione rapportini (`jira_sync.yaml`). |
-| **E** | **Preventivazione Multiprodotto** | Calcolo cost-plus con ricarichi differenziati per Hardware, VoIP, Licenze e Arredo (`quote-*.yaml`). |
+| **E** | **Preventivazione Multiprodotto & Audit** | Calcolo cost-plus con ricarichi differenziati, quadratura matematica e audit deontologico forense CNF/EU AI Act (`quote-*.yaml`). |
 | **F** | **Noleggio Multifunzione MPS (Costo Copia)** | Gestione canoni semestrali anticipati, telelettura contatori SNMP, alert consumabili toner (<15%) e conguaglio eccedenze. |
 | **G** | **Fornitura Arredo Ufficio** | Gestione commessa chiavi in mano: rilievo metrico, layout 2D/3D, campionatura, posa e verbale di collaudo con handover. |
+| **H** | **Ingestione Documentale SOTA (OKF v0.2)** | Analisi visiva nativa pixel-to-markdown di PDF, contratti e preventivi, decomposizione modulare e audit qualitativo deterministico. |
+| **I** | **Memoria Auto-Correttiva & Cognitive Bridge (SPEC-17)** | Apprendimento attestato con trust tiers, compilazione regole Antigravity e ponte federato con la memoria di `itinfra`. |
 
 ---
 
@@ -71,9 +73,19 @@ La suite include il wrapper Windows [`it-ops.cmd`](file:///c:/Users/auresystem/r
 # Cross-check deterministico con l'As-Built di itinfra
 .\it-ops.cmd check <slug>
 
-# Gestione Contratti SLA e Monte Ore
+# Gestione Contratti SLA, Monte Ore e Audit Normativo 2026
 .\it-ops.cmd contract <slug> status
 .\it-ops.cmd contract <slug> balance
+.\it-ops.cmd contract <slug> audit
+
+# Preventivi Commerciali e Audit Deontologico / Forense
+.\it-ops.cmd quote <slug> calculate
+.\it-ops.cmd quote <slug> audit
+
+# Esportazione Documentale con Logo Ufficiale (SPEC-16: DOCX, PDF A4, HTML Zero-CDN)
+.\it-ops.cmd export <slug> quote [<id>]
+.\it-ops.cmd export <slug> contract [<id>]
+.\it-ops.cmd export <slug> report [<id>]
 
 # Rapportini di Assistenza e Time Tracking
 .\it-ops.cmd report <slug> new
@@ -87,14 +99,28 @@ La suite include il wrapper Windows [`it-ops.cmd`](file:///c:/Users/auresystem/r
 
 # Commesse Arredo Ufficio
 .\it-ops.cmd furniture <slug> status
+
+# Memoria Auto-Correttiva & Cognitive Bridge (SPEC-17)
+.\it-ops.cmd learn list
+.\it-ops.cmd learn promotables
+.\it-ops.cmd learn promote <entry_id> --domain technical --id <LES-ID> --title "Titolo"
+.\it-ops.cmd learn audit
+.\it-ops.cmd learn test
+.\it-ops.cmd learn sync
 ```
 
 ---
 
-## 📑 Documentazione Formale OKF v0.2 delle Pipeline Operative
+## 📑 Specifiche Architetturali & Documentazione OKF v0.2
 
-Ciascuna pipeline è documentata con specifiche formali conformi allo standard **Open Knowledge Framework (OKF) v0.2**:
+### Specifiche di Sistema (Core Specs)
+| Specifica | Ambito Architetturale | Documento |
+| :---: | :--- | :--- |
+| **SPEC-08** | Ingestione Visiva Nativa (Pixel-to-Markdown) & OKF v0.2 | [`08-spec-visual-document-ingestion-okf.md`](docs/specs/08-spec-visual-document-ingestion-okf.md) |
+| **SPEC-16** | Enterprise Document Templates, Corporate Branding & Multi-Format Rendering | [`16-spec-enterprise-document-templates-branding.md`](docs/specs/16-spec-enterprise-document-templates-branding.md) |
+| **SPEC-17** | Unified Cognitive Memory Architecture & Cross-Repository Self-Correction Bridge | [`17-spec-unified-cognitive-memory-bridge.md`](docs/specs/17-spec-unified-cognitive-memory-bridge.md) |
 
+### Pipeline Operative OKF v0.2
 | Pipeline | Titolo Specifica OKF v0.2 | Documento |
 | :---: | :--- | :--- |
 | **📚 Master** | **Indice Master delle Pipeline Operative** | [`00-index-pipelines.md`](docs/pipelines/00-index-pipelines.md) |
@@ -118,22 +144,20 @@ itinfra-business-ops/
 ├── it-ops.cmd                 # Entrypoint batch per Windows
 ├── README.md                  # Questo documento
 ├── AGENTS.md                  # Istruzioni operative e comandi deterministici per AI
+├── GEMINI.md                  # Direttive di sistema per modelli Gemini
 ├── CLAUDE.md                  # Zero-search fast path per Claude Code
+├── .agents/                   # Customizations native per Antigravity
+│   ├── rules/                 # Regole attive compilate (Progressive Disclosure)
+│   └── memory/                # Grafo di conoscenza OKF v0.2 attestato (core, ui, doc, tech)
 ├── schemas/                   # Schemi formali YAML per validazione deterministica
-│   ├── client-manifest.schema.yaml
-│   ├── contract.schema.yaml
-│   ├── report.schema.yaml
-│   ├── billing.schema.yaml
-│   ├── jira_sync.schema.yaml
-│   ├── quote.schema.yaml
-│   ├── mps.schema.yaml
-│   └── furniture.schema.yaml
-├── templates/                 # Modelli YAML pronti per scaffolding
+├── templates/                 # Modelli YAML e asset brand (logo ufficiale Aure System)
+│   └── assets/brand/          # logo.png e logo.base64.txt per Zero-CDN rendering
 ├── scripts/                   # Motore Python CLI
-│   ├── it_ops.py              # CLI Dispatcher
-│   ├── core/                  # Config, Validator, Bridge verso itinfra
-│   └── pipelines/             # Moduli dedicati alle pipeline A-G
-├── docs/                      # Specifiche e guide operative di processo
+│   ├── it_ops.py              # CLI Dispatcher Master (v0.3.0)
+│   ├── core/                  # Engine: MemoryEngine, CognitiveBridge, DocumentRenderer, Branding
+│   └── pipelines/             # Pipeline A-I (Contratti, Rapportini, Preventivi, Learn, Ingest)
+├── tests/                     # Suite di test automatizzati (test_cognitive_bridge.py)
+├── docs/                      # Specifiche formali OKF v0.2 (SPEC-08, SPEC-16, SPEC-17)
 └── clients/                   # Repository clienti partizionati per <slug>
 ```
 

@@ -1,4 +1,6 @@
 ---
+okf_version: "0.2"
+id: "specification-enterprise-document-templates-branding-v01"
 type: "specification"
 title: "SPEC-16 — Enterprise Document Templating, Corporate Brand Identity & Zero-CDN Multi-Format Publishing"
 description: "Specifica architetturale per la standardizzazione visiva, tipografica e contabile dei documenti prodotti da ITInfra Business Ops (DOCX, PDF, HTML) con asset ufficiali di brand identity e protezione offline."

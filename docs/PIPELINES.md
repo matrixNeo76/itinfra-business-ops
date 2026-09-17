@@ -1,6 +1,6 @@
-# 🔄 Le 7 Pipeline Operative di itinfra-business-ops
+# 🔄 Le 9 Pipeline Operative di itinfra-business-ops
 
-Guida dettagliata al funzionamento deterministico delle pipeline da A a G con diagrammi di flusso ASCII.
+Guida dettagliata al funzionamento deterministico delle pipeline da A a I con diagrammi di flusso ASCII.
 
 > 📄 *Per il compendio architetturale completo, consulta [`docs/ASCII_DIAGRAMS.md`](ASCII_DIAGRAMS.md).*
 
@@ -315,4 +315,92 @@ Guida dettagliata al funzionamento deterministico delle pipeline da A a G con di
 │ • Generazione Verbale HTML Certificato │   │ • Blocco sblocco fattura saldo   │
 │ • Sblocco Rata Finale Saldo (Pip C)    │   │ • Sostituzione pezzo / regolaz.  │
 └────────────────────────────────────────┘   └──────────────────────────────────┘
+```
+
+---
+
+### Pipeline H — Ingestione Documenti SOTA (Pixel-to-Markdown) & OKF v0.2
+* **Scopo**: Acquisizione visiva nativa di documenti analogici/digitali (PDF, scansioni, preventivi, contratti cartacei) con ricostruzione deterministica delle tabelle, isolamento in pacchetti modulari OKF v0.2 e audit matematico/legale.
+* **Artefatti**: `docs/<slug>/00-overview.okf.md`, `01-*.okf.md`, `02-*.okf.md`, `03-audit-*.okf.md`
+* **Workflow**:
+  1. `Pixel-Level Visual Ingestion`: Analisi visiva nativa (Deep Thinking) con decodifica layout multicolonna, note a margine, firme e tabelle contabili.
+  2. `Modular Decomposition`: Suddivisione logica del documento in pacchetto modulare (Overview, Specifiche Tecniche, Computo Economico, Audit).
+  3. `Deterministic Auditing`: Verifica formale tramite motori di audit 2026 (`ContractAuditEngine`, `QuoteAuditEngine`) per validare quadrature al centesimo, clausole ISTAT, arrotondamenti e conformità legale.
+  4. `CLI Ingestion & Routing`: Popolamento deterministico degli artefatti gestionali del cliente (`clients/<slug>/`).
+
+```text
+┌───────────────────────────────────────────────────────────────────────────────┐
+│        PIPELINE H: INGESTIONE VISIVA SOTA (PIXEL-TO-MARKDOWN) & OKF v0.2      │
+└───────────────────────────────────────┬───────────────────────────────────────┘
+                                        │
+  [1. Acquisizione Ottica / PDF]        ▼
+  ┌─────────────────────────────────────────────────────────────────────────────┐
+  │ File Input: Cartaceo Scansionato / PDF Vettoriale Fornitore                 │
+  │ Analisi Visiva Nativa (Deep Thinking): Ricostruzione celle, firme, colonne  │
+  └─────────────────────────────────────┬───────────────────────────────────────┘
+                                        │
+  [2. Modularizzazione OKF v0.2]        ▼
+  ┌─────────────────────────────────────────────────────────────────────────────┐
+  │ Creazione Pacchetto Modulare in `docs/<slug>/`:                             │
+  │ • 00-overview.okf.md         (Identità, Frontmatter YAML, Punti Chiave)     │
+  │ • 01-specifiche-*.okf.md     (Architettura, SLA, Hardware, Clausole)        │
+  │ • 02-computo-economico.okf.md(Tabelle Prezzi, Sconti, Aliquote IVA, Totali) │
+  └─────────────────────────────────────┬───────────────────────────────────────┘
+                                        │
+  [3. Motori di Audit Deterministici]   ▼
+  ┌─────────────────────────────────────────────────────────────────────────────┐
+  │ • ContractAuditEngine: Verifica canone SLA, soglie ore, ISTAT, recesso      │
+  │ • QuoteAuditEngine: Verifica quadratura somme, coerenza IVA, margini        │
+  │ Generazione: 03-audit-<tipo>-2026.okf.md con esito PASS/FAIL e note legali  │
+  └─────────────────────────────────────┬───────────────────────────────────────┘
+                                        │
+  [4. Ingestione Operativa nei Clienti] ▼
+  ┌─────────────────────────────────────────────────────────────────────────────┐
+  │ Comando CLI: `it-ops ingest docs/<slug>/00-overview.okf.md --apply`          │
+  │ ➔ Popola `clients/<slug>/contracts/` o `clients/<slug>/quotes/`              │
+  └─────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### Pipeline I — Memoria Auto-Correttiva Attestata & Cognitive Bridge
+* **Scopo**: Prevenzione permanente delle regressioni agentiche (errori ripetuti di UI, compilazione documenti o fast-path), memorizzazione attestata SHA-256 e federazione bidirezionale con `itinfra`.
+* **Artefatti**: `docs/concepts/LES-*.okf.md`, `.agents/rules/01-self-correcting-memory.md`, `../itinfra/projects/_global_scratchpad.md`
+* **Workflow**:
+  1. `Incident Capture`: Intercettazione di anomalie comportamentali (es. UI in iframe con scrollbar, mancato MSS clamping).
+  2. `Attestation & Hashing`: Creazione nodo concettuale OKF v0.2 con classificazione Trust Tier (`attested`), revisione umana e calcolo hash crittografico SHA-256 anti-tampering.
+  3. `Live Rule Compilation`: Compilazione deterministica istantanea nel file direttive `.agents/rules/01-self-correcting-memory.md` per renderlo attivo a 0 token all'avvio sessione.
+  4. `Cognitive Bridge Federation`: Promozione guidata da L2 Staging Scratchpad (`_global_scratchpad.md`) a Guardrail Attestato con blocco atomico multipiattaforma e sanificazione multi-tenant.
+
+```text
+┌───────────────────────────────────────────────────────────────────────────────┐
+│     PIPELINE I: MEMORIA AUTO-CORRETTIVA ATTESTATA & COGNITIVE BRIDGE          │
+└───────────────────────────────────────┬───────────────────────────────────────┘
+                                        │
+  [1. Cattura Anomalia / Lezione]       ▼
+  ┌─────────────────────────────────────────────────────────────────────────────┐
+  │ Regressione o Lezione Tecnica Rilevata (Chat, CLI, Collaudo o Incident)     │
+  └─────────────────────────────────────┬───────────────────────────────────────┘
+                                        │
+  [2. Creazione Nodo OKF v0.2 & SHA-256]▼
+  ┌─────────────────────────────────────────────────────────────────────────────┐
+  │ Generazione: `docs/concepts/LES-*.okf.md`                                   │
+  │ Metadati: Trust Tier `attested`, verified: true, rule_category              │
+  │ Anti-Tampering: Hash SHA-256 calcolato sui campi semantici vincolanti       │
+  └─────────────────────────────────────┬───────────────────────────────────────┘
+                                        │
+  [3. Compilazione Automatica Regole]   ▼
+  ┌─────────────────────────────────────────────────────────────────────────────┐
+  │ Comando: `it-ops learn sync`                                                │
+  │ Output: `.agents/rules/01-self-correcting-memory.md`                        │
+  │ Effetto: Regola caricata a 0 secondi all'avvio sessione per Antigravity/AI  │
+  └─────────────────────────────────────┬───────────────────────────────────────┘
+                                        │
+  [4. SPEC-17 Cognitive Bridge (Cross-Repo itinfra)]
+                                        ▼
+  ┌─────────────────────────────────────────────────────────────────────────────┐
+  │ • Lock Concorrente: `projects/_global_scratchpad.lock`                      │
+  │ • Sanificazione: `MultiTenantSanitizer` (Zero IP, domini o credenziali)     │
+  │ • Promozione: `it-ops learn promote <id> --code LES-NET-XXX`                │
+  └─────────────────────────────────────────────────────────────────────────────┘
 ```
