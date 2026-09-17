@@ -180,6 +180,32 @@ def cmd_contract(args):
     cp = ContractsPipeline()
     action = args.action or "status"
 
+    if action == "audit":
+        from scripts.pipelines.contract_audit import ContractAuditEngine
+        target_str = getattr(args, "doc_path", None)
+        target = Path(target_str) if target_str else Path("docs/severino-sla")
+        if not target.exists():
+            print(f"[ERRORE] Percorso da verificare non trovato: {target}")
+            return 1
+        res = ContractAuditEngine.audit_path(target)
+        print("=" * 70)
+        print(f" 🛡️  AUDIT QUALITÀ & CONFORMITÀ CONTRATTUALE (Settembre 2026)")
+        print(f" Sorgente Analizzata: {res['source']}")
+        print("=" * 70)
+        print(f" Totale Rilievi Rilevati: {res['findings_count']}")
+        print(f"   • Critici (Blocker)   : {res['summary']['critical']}")
+        print(f"   • Elevati (High)      : {res['summary']['high']}")
+        print(f"   • Medi / Warning      : {res['summary']['warning']}")
+        print(f"   • Bassa priorità      : {res['summary']['low']}")
+        print("-" * 70)
+        for f in res["findings"]:
+            sev_badge = f"[{f['severity']}]"
+            print(f"\n{sev_badge:<12} {f['title']} ({f['category']})")
+            print(f"  Descrizione: {f['description']}")
+            print(f"  Azione/Fix : {f['recommendation']}")
+        print("=" * 70)
+        return 0
+
     if action == "renew":
         cid = args.contract_id
         if not cid:
@@ -443,8 +469,8 @@ def cmd_quote(args):
 
 def cmd_ingest(args):
     file_path = Path(args.file)
-    if not file_path.is_file():
-        print(f"[ERRORE] File documento non trovato: {file_path}")
+    if not file_path.exists():
+        print(f"[ERRORE] File o cartella documento non trovato: {file_path}")
         return 1
 
     ip = DocumentIngestionPipeline()
@@ -472,6 +498,14 @@ def cmd_ingest(args):
     for ev in res.get("evidence", []):
         st = ev["status"]
         if st == "VERIFIED":
+            if ev["field"] == "contract_audit" and isinstance(ev["value"], list):
+                print(f"\n🛡️  AUDIT QUALITÀ & CONFORMITÀ NORMATIVA (Settembre 2026) — {len(ev['value'])} rilievi individuati:")
+                for item in ev["value"]:
+                    print(f"    [{item['severity']}] {item['title']} ({item['category']})")
+                    print(f"        └─ {item['description']}")
+                    print(f"        └─ Raccomandazione: {item['recommendation']}")
+                print()
+                continue
             icon = "[✓ CERTIFICATO]"
             val_str = str(ev['value'])
             if len(val_str) > 60:
@@ -578,8 +612,9 @@ def main():
     # contract
     p_contract = subparsers.add_parser("contract", help="Gestione contratti SLA e monte ore")
     p_contract.add_argument("slug", help="Slug cliente")
-    p_contract.add_argument("action", nargs="?", default="status", choices=["status", "balance", "renew"])
+    p_contract.add_argument("action", nargs="?", default="status", choices=["status", "balance", "renew", "audit"])
     p_contract.add_argument("--contract-id", dest="contract_id", help="ID contratto")
+    p_contract.add_argument("--doc", "--doc-path", dest="doc_path", help="Percorso del documento contrattuale da verificare (default: docs/severino-sla)")
     p_contract.set_defaults(func=cmd_contract)
 
     # report

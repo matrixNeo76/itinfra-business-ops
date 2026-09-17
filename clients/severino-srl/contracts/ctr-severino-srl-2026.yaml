@@ -2,23 +2,23 @@ contract_id: CTR-2026-SEVERINO
 slug: severino-srl
 status: active
 formula: hours_bank
-valid_from: '2026-01-01'
-valid_to: '2026-12-31'
+valid_from: '2026-09-14'
+valid_to: '2027-09-13'
 renewal:
   automatic: true
   notice_period_days: 60
 sla:
   tier: high
-  coverage_window: 08:30-18:30 Lun-Ven
-  first_response_hours: 4
-  target_resolution_hours: 8
+  coverage_window: 10:00-17:00 Lun-Ven
+  first_response_hours: 8.0
+  target_resolution_hours: 16.0
 financial:
-  recurring_fee: 150.0
-  billing_period: monthly
-  total_hours_included: 40.0
+  recurring_fee: 1800.0
+  billing_period: semestral
+  total_hours_included: 192.0
   consumed_hours: 11.5
   extra_hourly_rate: 80.0
-  travel_fee_fixed: 35.0
+  travel_fee_fixed: 0.0
 covered_assets:
 - serial_number: CZC8492K1L
   hostname: HV-SEV01

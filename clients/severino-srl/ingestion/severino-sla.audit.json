@@ -1,0 +1,217 @@
+{
+  "document_type": "SLA_CONTRACT",
+  "source_file": "00-overview.okf.md",
+  "evidence": [
+    {
+      "field": "client_name",
+      "value": "Spett.le SEVERINO SERVICE s.r.l. (Corso Salvatore D'Amato 83, 80022 Arzano - NA, P.IVA IT10336271217).",
+      "source_file": "file://@PROPOSTA_CONTRATTO_SEVERINO_SERVICE_2026.pdf",
+      "page": 1,
+      "matched_text": "Spett.le SEVERINO SERVICE s.r.l. (Corso Salvatore D'Amato 83, 80022 Arzano - NA, P.IVA IT10336271217).",
+      "confidence": 1.0,
+      "status": "VERIFIED",
+      "notes": ""
+    },
+    {
+      "field": "vat_id",
+      "value": "07714231219",
+      "source_file": "file://@PROPOSTA_CONTRATTO_SEVERINO_SERVICE_2026.pdf",
+      "page": 1,
+      "matched_text": "07714231219",
+      "confidence": 1.0,
+      "status": "VERIFIED",
+      "notes": ""
+    },
+    {
+      "field": "contract_protocol",
+      "value": "Prot. N. 28/2026",
+      "source_file": "file://@PROPOSTA_CONTRATTO_SEVERINO_SERVICE_2026.pdf",
+      "page": 1,
+      "matched_text": "Prot. N. 28/2026",
+      "confidence": 1.0,
+      "status": "VERIFIED",
+      "notes": ""
+    },
+    {
+      "field": "address",
+      "value": "Corso Salvatore D'Amato, 83 - 80022 Arzano (NA)",
+      "source_file": "file://@PROPOSTA_CONTRATTO_SEVERINO_SERVICE_2026.pdf",
+      "page": 1,
+      "matched_text": "Corso Salvatore D'Amato, 83 - 80022 Arzano (NA)",
+      "confidence": 1.0,
+      "status": "VERIFIED",
+      "notes": ""
+    },
+    {
+      "field": "monthly_fee",
+      "value": 300.0,
+      "source_file": "file://@PROPOSTA_CONTRATTO_SEVERINO_SERVICE_2026.pdf",
+      "page": 1,
+      "matched_text": "€ 300.00 + IVA/mese",
+      "confidence": 1.0,
+      "status": "VERIFIED",
+      "notes": ""
+    },
+    {
+      "field": "annual_fee",
+      "value": 3600.0,
+      "source_file": "file://@PROPOSTA_CONTRATTO_SEVERINO_SERVICE_2026.pdf",
+      "page": 1,
+      "matched_text": "€ 3600.00 + IVA/anno",
+      "confidence": 1.0,
+      "status": "VERIFIED",
+      "notes": ""
+    },
+    {
+      "field": "semestral_installment",
+      "value": 1800.0,
+      "source_file": "file://@PROPOSTA_CONTRATTO_SEVERINO_SERVICE_2026.pdf",
+      "page": 1,
+      "matched_text": "€ 1800.00 + IVA/semestre anticipato",
+      "confidence": 1.0,
+      "status": "VERIFIED",
+      "notes": ""
+    },
+    {
+      "field": "included_days",
+      "value": 24,
+      "source_file": "file://@PROPOSTA_CONTRATTO_SEVERINO_SERVICE_2026.pdf",
+      "page": 1,
+      "matched_text": "24 giornate annue",
+      "confidence": 1.0,
+      "status": "VERIFIED",
+      "notes": ""
+    },
+    {
+      "field": "included_hours",
+      "value": 192.0,
+      "source_file": "file://@PROPOSTA_CONTRATTO_SEVERINO_SERVICE_2026.pdf",
+      "page": 1,
+      "matched_text": "192 ore (24 gg x 8 ore)",
+      "confidence": 1.0,
+      "status": "VERIFIED",
+      "notes": ""
+    },
+    {
+      "field": "response_blocking_hours",
+      "value": 8,
+      "source_file": "file://@PROPOSTA_CONTRATTO_SEVERINO_SERVICE_2026.pdf",
+      "page": 1,
+      "matched_text": "8 ore lavorative",
+      "confidence": 1.0,
+      "status": "VERIFIED",
+      "notes": ""
+    },
+    {
+      "field": "response_non_blocking_hours",
+      "value": 16,
+      "source_file": "file://@PROPOSTA_CONTRATTO_SEVERINO_SERVICE_2026.pdf",
+      "page": 1,
+      "matched_text": "16 ore lavorative",
+      "confidence": 1.0,
+      "status": "VERIFIED",
+      "notes": ""
+    },
+    {
+      "field": "contract_audit",
+      "value": [
+        {
+          "id": "ERR-ORARI",
+          "severity": "CRITICAL",
+          "category": "Contraddizione Interna",
+          "title": "Discrepanza Orari di Presidio Giornaliero",
+          "description": "Rilevateplurime finestre orarie divergenti nel testo: 10:00-17:00, 10:00-18:00 (es. Sez. 5.1 indica fino alle 17:00, Sez. 8.1 fino alle 18:00).",
+          "recommendation": "Unificare l'orario di copertura a 'lun-ven 09:00 - 18:00' o chiarire esplicitamente la differenza tra presidio telefonico e interventi tecnici."
+        },
+        {
+          "id": "ERR-TEL",
+          "severity": "WARNING",
+          "category": "Recapiti e Comunicazioni",
+          "title": "Discrepanza Numeri Mobili di Assistenza",
+          "description": "Nel documento figurano recapiti mobili differenti (333.7328065, 3337328065, 3928554426) senza specificare se uno sia per reperibilità emergenze e l'altro per contatto amministrativo.",
+          "recommendation": "Specificare il ruolo univoco di ciascun recapito (es. 'Reperibilità Urgenze: 333.7328065', 'Ufficio Tecnico: 392.8554426')."
+        },
+        {
+          "id": "ERR-PACCHETTO-AMBIGUO",
+          "severity": "CRITICAL",
+          "category": "Oggetto dell'Accordo",
+          "title": "Ambiguità Quantitativa nel Corpo Contrattuale (Sez. 6)",
+          "description": "La Sezione 6 riporta testualmente 'un pacchetto pari a n° 24 oppure 12 giornate', lasciando un'alternativa non risolta nel corpo dell'atto.",
+          "recommendation": "Rimuovere la disgiunzione 'oppure' e fissare esattamente la quantità contrattualizzata (es. '24 giornate lavorative annue')."
+        },
+        {
+          "id": "ERR-SOSTENIBILITA-ECONOMICA",
+          "severity": "CRITICAL",
+          "category": "Equilibrio Finanziario",
+          "title": "Tariffa Oraria Implicita Anomala (€ 18.75/ora)",
+          "description": "Con 24 giornate (192 ore) a € 3600.00/anno, il costo orario effettivo è di soli € 18.75/h (con trasferte incluse), largamente al di sotto dei costi operativi e dei parametri di mercato sistemistico B2B.",
+          "recommendation": "Verificare se si intendono '24 ore annue' (pari a 2 ore/mese a 150 €/h) oppure rimodulare il canone o ridurre le giornate incluse (es. 5-6 giornate/anno a € 300/mese)."
+        },
+        {
+          "id": "GAP-EXTRA-RATE",
+          "severity": "HIGH",
+          "category": "Condizioni Economiche",
+          "title": "Assenza Tariffa Oraria per Ore/Giornate Fuori Pacchetto",
+          "description": "Il contratto non stabilisce la tariffa oraria applicabile nel caso in cui il cliente esaurisca il monte ore prima della scadenza annuale.",
+          "recommendation": "Aggiungere clausola: 'Eventuali interventi eccedenti il monte pattuito saranno fatturati a consuntivo alla tariffa concordata di € 75,00 + IVA / ora'."
+        },
+        {
+          "id": "TYPO-TIMRBO",
+          "severity": "LOW",
+          "category": "Forma e Impaginazione",
+          "title": "Refuso Tipografico nel Box Firme (Pag. 8)",
+          "description": "È presente il refuso materiale 'TIMRBO E FIRMA DEL FORNITORE' anziché 'TIMBRO'.",
+          "recommendation": "Correggere la dicitura in 'TIMBRO E FIRMA DEL FORNITORE'."
+        }
+      ],
+      "source_file": "file://@PROPOSTA_CONTRATTO_SEVERINO_SERVICE_2026.pdf",
+      "page": 1,
+      "matched_text": "6 rilievi di audit qualità/compliance 2026",
+      "confidence": 1.0,
+      "status": "VERIFIED",
+      "notes": ""
+    },
+    {
+      "field": "mps_contract",
+      "value": null,
+      "source_file": "file://@PROPOSTA_CONTRATTO_SEVERINO_SERVICE_2026.pdf",
+      "page": 1,
+      "matched_text": "",
+      "confidence": 0.0,
+      "status": "NOT_FOUND",
+      "notes": "Nessun noleggio stampanti nell'artefatto OKF."
+    }
+  ],
+  "frontmatter": {
+    "type": "concept",
+    "title": "Contratto di Consulenza e Assistenza Sistemistica — Severino Service SRL (Quadro Generale)",
+    "description": "Quadro generale, identificativi contrattuali e sintesi economica della proposta di assistenza sistemistica e tecnica Prot. N. 28/2026 emessa da Aure System per Severino Service s.r.l.",
+    "generated.at": "2026-09-17T17:28:00+02:00",
+    "sources": [
+      "file://@PROPOSTA_CONTRATTO_SEVERINO_SERVICE_2026.pdf"
+    ],
+    "tags": [
+      "document-intelligence",
+      "estrazione-sota",
+      "sla-contract",
+      "severino-srl",
+      "part-0-overview"
+    ]
+  },
+  "tables_found": 5,
+  "package_dir": "severino-sla",
+  "package_files": [
+    "00-overview.okf.md",
+    "01-perimetro-sla.okf.md",
+    "02-monte-ore-condizioni.okf.md",
+    "03-audit-qualita-conformita-2026.okf.md"
+  ],
+  "summary": {
+    "document_type": "SLA_CONTRACT",
+    "total_fields_checked": 13,
+    "verified_fields": 12,
+    "not_found_fields": 1,
+    "zero_hallucination_guard_active": true,
+    "timestamp": "2026-09-17T17:38:10.798815"
+  }
+}
