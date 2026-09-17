@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<title>Fattura Elettronica DRAFT-BILL-202609-teatek-spa — T.E.A. TEK S.P.A.</title>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; margin: 30px; color: #1e293b; background: #fff; }
+  .invoice-card { max-width: 900px; margin: 0 auto; border: 1px solid #cbd5e1; border-radius: 8px; padding: 32px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
+  .header { display: flex; justify-content: space-between; border-bottom: 2px solid #2563eb; padding-bottom: 20px; margin-bottom: 24px; }
+  .box-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px; }
+  .party-box { border: 1px solid #e2e8f0; border-radius: 6px; padding: 16px; background: #f8fafc; font-size: 13px; line-height: 1.6; }
+  .party-title { font-size: 14px; font-weight: bold; color: #1e40af; text-transform: uppercase; margin-bottom: 8px; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; }
+  .table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 13px; }
+  .table th { background: #1e40af; color: white; padding: 10px; text-align: left; }
+  .summary-box { display: flex; justify-content: flex-end; margin-top: 24px; }
+  .summary-inner { width: 340px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 16px; background: #f8fafc; }
+  .grand-total { font-size: 18px; font-weight: bold; color: #1e3a8a; border-top: 2px solid #2563eb; padding-top: 8px; margin-top: 8px; display: flex; justify-content: space-between; }
+  .footer-notice { margin-top: 30px; padding: 12px; background: #eff6ff; border-left: 4px solid #2563eb; font-size: 12px; color: #1e40af; border-radius: 0 4px 4px 0; }
+  @media print { body { margin: 0; } .invoice-card { border: none; box-shadow: none; padding: 0; } }
+</style>
+</head>
+<body>
+<div class="invoice-card">
+  <div class="header">
+    <div>
+      <h1 style="margin:0; font-size:24px; color:#1e3a8a;">FATTURA ELETTRONICA</h1>
+      <div style="font-size:14px; color:#64748b; margin-top:4px;">Tipo Documento: <strong>TD01</strong> | Formato: <strong>FPR12 (B2B)</strong></div>
+      <div style="font-size:15px; font-weight:bold; margin-top:6px; color:#0f172a;">Numero: DRAFT-BILL-202609-teatek-spa</div>
+      <div style="font-size:13px; color:#64748b;">Data Emissione: 2026-09-17</div>
+    </div>
+    <div style="text-align:right; font-size:13px;">
+      <span style="display:inline-block; padding:4px 10px; background:#dbeafe; color:#1e40af; border-radius:4px; font-weight:600;">COPIA DI CORTESIA</span>
+      <div style="margin-top:10px; color:#64748b;">Codice SDI: <strong>SUBM70N</strong></div>
+      <div style='color:#64748b;'>PEC: <strong>teatek@pec.it</strong></div>
+    </div>
+  </div>
+
+  <div class="box-grid">
+    <div class="party-box">
+      <div class="party-title">Cedente / Prestatore (Fornitore)</div>
+      <strong style="font-size:14px; color:#0f172a;">ITInfra Business Operations</strong><br>
+      Via dell'Infrastruttura, 10<br>
+      20100 Milano (MI)<br>
+      P.IVA: <strong>01234567890</strong><br>
+      
+    </div>
+    <div class="party-box">
+      <div class="party-title">Cessionario / Committente (Cliente)</div>
+      <strong style="font-size:14px; color:#0f172a;">T.E.A. TEK S.P.A.</strong><br>
+      Via Santa Lucia, 36<br>
+      80132 Napoli (NA)<br>
+      P.IVA: <strong>06362981216</strong><br>
+      Codice Fiscale: 06362981216<br>
+    </div>
+  </div>
+
+  <table class="table">
+    <thead>
+      <tr>
+        <th style="width:50px; text-align:center;">N°</th>
+        <th>Descrizione Beni / Servizi</th>
+        <th style="width:60px; text-align:center;">Q.tà</th>
+        <th style="width:110px; text-align:right;">Prezzo Unit.</th>
+        <th style="width:70px; text-align:center;">IVA</th>
+        <th style="width:120px; text-align:right;">Importo</th>
+      </tr>
+    </thead>
+    <tbody>
+      
+                    <tr>
+                      <td style="padding:10px; border-bottom:1px solid #e2e8f0; text-align:center;">1</td>
+                      <td style="padding:10px; border-bottom:1px solid #e2e8f0;">Canone Assistenza IT CTR-2026-TEATEK-HA - Periodo 2026-09</td>
+                      <td style="padding:10px; border-bottom:1px solid #e2e8f0; text-align:center;">1.00</td>
+                      <td style="padding:10px; border-bottom:1px solid #e2e8f0; text-align:right;">€ 6000.00</td>
+                      <td style="padding:10px; border-bottom:1px solid #e2e8f0; text-align:center;">22%</td>
+                      <td style="padding:10px; border-bottom:1px solid #e2e8f0; text-align:right; font-weight:600;">€ 6000.00</td>
+                    </tr>
+                    
+                    <tr>
+                      <td style="padding:10px; border-bottom:1px solid #e2e8f0; text-align:center;">2</td>
+                      <td style="padding:10px; border-bottom:1px solid #e2e8f0;">Canone Noleggio Ricoh IM C3000 A3 Colore (MPS-2026-teatek-spa-01) - Periodo 2026-09</td>
+                      <td style="padding:10px; border-bottom:1px solid #e2e8f0; text-align:center;">1.00</td>
+                      <td style="padding:10px; border-bottom:1px solid #e2e8f0; text-align:right;">€ 450.00</td>
+                      <td style="padding:10px; border-bottom:1px solid #e2e8f0; text-align:center;">22%</td>
+                      <td style="padding:10px; border-bottom:1px solid #e2e8f0; text-align:right; font-weight:600;">€ 450.00</td>
+                    </tr>
+                    
+    </tbody>
+  </table>
+
+  <div class="summary-box">
+    <div class="summary-inner">
+      
+                    <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:14px;">
+                      <span>Imponibile IVA 22%:</span>
+                      <strong>€ 6450.00</strong>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:14px;">
+                      <span>Imposta IVA 22%:</span>
+                      <strong>€ 1419.00</strong>
+                    </div>
+                    
+      <div class="grand-total">
+        <span>TOTALE DOCUMENTO:</span>
+        <span>€ 7869.00</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-notice">
+    <strong>Condizioni di Pagamento & Scadenze:</strong>
+    
+                    <div style="margin-top:6px;">
+                      • Rata Scadenza: <strong>2026-10-31</strong> — Importo: <strong>€ 7869.00</strong> (Mod: MP05)
+                    </div>
+                    <div style='margin-top:8px;'>Coordinate IBAN: <code>IT41E0306903497100000008327</code></div>
+    <div style="margin-top:10px; font-size:11px; color:#64748b; border-top:1px solid #cbd5e1; padding-top:6px;">
+      Documento privo di valenza fiscale ai sensi dell'art. 21 D.P.R. 633/72. L'originale della fattura elettronica è disponibile nella Sua area riservata dell'Agenzia delle Entrate o recapitato via SDI al codice SUBM70N.
+    </div>
+  </div>
+</div>
+</body>
+</html>

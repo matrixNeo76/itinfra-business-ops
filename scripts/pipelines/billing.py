@@ -362,7 +362,9 @@ class BillingPipeline:
         return ET.tostring(root, encoding="utf-8", xml_declaration=True).decode("utf-8")
 
     def save_batch(self, slug: str, batch: Dict[str, Any]) -> Dict[str, Path]:
-        """Salva fisicamente il batch JSON e l'XML SDI nella cartella invoices del cliente."""
+        """Salva fisicamente il batch JSON, l'XML SDI e genera automaticamente le viste HTML e PDF."""
+        from scripts.core.document_renderer import DocumentRenderer
+
         idir = self.get_invoices_dir(slug)
         idir.mkdir(parents=True, exist_ok=True)
         batch_id = batch["batch_id"]
@@ -375,7 +377,42 @@ class BillingPipeline:
         xml_path = idir / f"{batch_id.lower()}.xml"
         xml_path.write_text(xml_content, encoding="utf-8")
 
-        return {"json": json_path, "xml": xml_path}
+        # Genera viste di cortesia HTML e PDF
+        html_path = DocumentRenderer.render_xml_invoice_to_html(xml_path)
+        pdf_path = DocumentRenderer.render_xml_invoice_to_pdf(xml_path)
+
+        return {
+            "json": json_path,
+            "xml": xml_path,
+            "html": html_path,
+            "pdf": pdf_path
+        }
+
+    def render_invoice(self, slug: str, invoice_or_batch_id: str) -> Dict[str, Path]:
+        """Rigenera le viste grafiche HTML e PDF di cortesia da un file XML esistente."""
+        from scripts.core.document_renderer import DocumentRenderer
+
+        idir = self.get_invoices_dir(slug)
+        target_xml = None
+
+        search_id = invoice_or_batch_id.lower()
+        for xf in idir.glob("*.xml"):
+            if search_id in xf.name.lower():
+                target_xml = xf
+                break
+
+        if not target_xml:
+            # Prova con nome file diretto
+            direct = idir / f"{search_id}.xml"
+            if direct.is_file():
+                target_xml = direct
+
+        if not target_xml or not target_xml.is_file():
+            return {}
+
+        html_path = DocumentRenderer.render_xml_invoice_to_html(target_xml)
+        pdf_path = DocumentRenderer.render_xml_invoice_to_pdf(target_xml)
+        return {"xml": target_xml, "html": html_path, "pdf": pdf_path}
 
     def mark_installment_paid(self, slug: str, batch_id: str, installment_num: int = 1, tx_id: str = "") -> bool:
         """Registra l'avvenuto incasso di una rata nello scadenzario."""

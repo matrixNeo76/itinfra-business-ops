@@ -255,10 +255,26 @@ def cmd_billing(args):
         print(f"[✓] Batch di fatturazione generato e salvato con successo:")
         print(f"    JSON Batch : {paths['json']}")
         print(f"    FatturaPA  : {paths['xml']} (SDI v1.2 FPR12)")
+        if "html" in paths:
+            print(f"    HTML View  : {paths['html']} (Copia di Cortesia)")
+        if "pdf" in paths:
+            print(f"    PDF View   : {paths['pdf']} (Copia di Cortesia A4)")
         print(f"    Totale Doc : € {batch['invoice_draft']['totals']['total_gross']:.2f}")
         print(f"    Rate Scadenzario ({len(batch['scadenzario']['installments'])} rate):")
         for inst in batch['scadenzario']['installments']:
             print(f"      • Rata {inst['number']}: € {inst['amount']:.2f} scadenza {inst['due_date']} [{inst['status'].upper()}]")
+        return 0
+
+    if action in ("view", "render"):
+        target_id = args.batch_id or args.period or ""
+        paths = bp.render_invoice(slug, target_id)
+        if paths:
+            print(f"[✓] Documenti grafici generati con successo per {target_id or slug}:")
+            print(f"    XML Sorgente : {paths.get('xml')}")
+            print(f"    HTML Visual  : {paths.get('html')}")
+            print(f"    PDF Cortesia : {paths.get('pdf')}")
+        else:
+            print(f"[!] Nessuna fattura XML trovata corrispondente a '{target_id}' per '{slug}'.")
         return 0
 
     if action == "pay":
@@ -403,10 +419,14 @@ def cmd_quote(args):
         if not args.id:
             print("[ERRORE] Specificare --id del preventivo da esportare")
             return 1
-        out = qp.export_quote_html(slug, args.id)
-        if out:
-            print(f"[✓] Proposta commerciale formale esportata con successo:")
-            print(f"    File: {out}")
+        fmts = args.format.split(",") if hasattr(args, "format") and args.format else None
+        paths = qp.export_quote(slug, args.id, formats=fmts)
+        if paths:
+            print(f"[✓] Proposta commerciale formale esportata con successo per {args.id}:")
+            for fmt_name, p in paths.items():
+                print(f"    • {fmt_name.upper():<5}: {p}")
+        else:
+            print(f"[!] Impossibile esportare: preventivo {args.id} non trovato per {slug}.")
         return 0
 
     qdir = qp.get_quotes_dir(slug)
@@ -511,11 +531,11 @@ def main():
     p_report.set_defaults(func=cmd_report)
 
     # billing
-    p_billing = subparsers.add_parser("billing", help="Batch di fatturazione e scadenziario")
+    p_billing = subparsers.add_parser("billing", help="Batch di fatturazione, scadenziario e viste cortesia")
     p_billing.add_argument("slug", help="Slug cliente")
-    p_billing.add_argument("action", nargs="?", default="summary", choices=["summary", "generate", "pay"])
+    p_billing.add_argument("action", nargs="?", default="summary", choices=["summary", "generate", "pay", "view", "render"])
     p_billing.add_argument("--period", help="Periodo contabile YYYY-MM")
-    p_billing.add_argument("--batch-id", dest="batch_id", help="ID del batch da saldare")
+    p_billing.add_argument("--batch-id", "--invoice-id", dest="batch_id", help="ID del batch o della fattura da gestire/visualizzare")
     p_billing.add_argument("--inst", type=int, default=1, help="Numero rata (default: 1)")
     p_billing.add_argument("--tx", help="Identificativo transazione bancaria / CRO")
     p_billing.set_defaults(func=cmd_billing)
@@ -565,6 +585,7 @@ def main():
     p_quote.add_argument("--cost", type=float, help="Costo acquisto unitario")
     p_quote.add_argument("--markup", type=float, default=25.0, help="Markup percentuale (default: 25%)")
     p_quote.add_argument("--qty", type=float, default=1.0, help="Quantità (default: 1.0)")
+    p_quote.add_argument("--format", default="all", help="Formati di esportazione: all, html, pdf, docx (default: all)")
     p_quote.set_defaults(func=cmd_quote)
 
     # validate

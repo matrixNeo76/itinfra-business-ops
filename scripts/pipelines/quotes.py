@@ -118,12 +118,55 @@ class QuotesPipeline:
                     with open(qf, "w", encoding="utf-8") as fp:
                         yaml.safe_dump(recalc, fp, sort_keys=False, allow_unicode=True)
 
-                    # Rigenera anche la proposta formale HTML
-                    self.export_quote_html(slug, quote_id)
+                    # Rigenera anche la proposta formale (HTML, PDF, DOCX)
+                    self.export_quote(slug, quote_id)
                     return recalc
             except Exception:
                 pass
         return None
+
+    def export_quote(self, slug: str, quote_id: str, formats: Optional[List[str]] = None) -> Dict[str, Path]:
+        """Esporta l'offerta commerciale nei formati richiesti (html, pdf, docx). Default: tutti."""
+        from scripts.core.document_renderer import DocumentRenderer
+
+        qdir = self.get_quotes_dir(slug)
+        quote_data = None
+        for qf in qdir.glob("*.yaml"):
+            try:
+                with open(qf, "r", encoding="utf-8") as fp:
+                    d = yaml.safe_load(fp) or {}
+                if d.get("quote_id") == quote_id:
+                    quote_data = self.calculate_quote(d)
+                    break
+            except Exception:
+                pass
+
+        if not quote_data:
+            return {}
+
+        selected_formats = [f.strip().lower() for f in formats] if formats else ["html", "pdf", "docx"]
+        if "all" in selected_formats:
+            selected_formats = ["html", "pdf", "docx"]
+
+        results = {}
+        base_name = quote_id.lower()
+
+        if "html" in selected_formats:
+            out_html = self.export_quote_html(slug, quote_id)
+            if out_html:
+                results["html"] = out_html
+
+        if "pdf" in selected_formats:
+            out_pdf = qdir / f"{base_name}.pdf"
+            DocumentRenderer.render_quote_to_pdf(quote_data, out_pdf)
+            results["pdf"] = out_pdf
+
+        if "docx" in selected_formats:
+            out_docx = qdir / f"{base_name}.docx"
+            DocumentRenderer.render_quote_to_docx(quote_data, out_docx)
+            results["docx"] = out_docx
+
+        return results
 
     def export_quote_html(self, slug: str, quote_id: str) -> Optional[Path]:
         """Genera un documento di offerta formale commerciale in HTML elegante."""
