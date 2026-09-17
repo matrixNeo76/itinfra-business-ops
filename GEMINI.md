@@ -28,6 +28,41 @@ Questo è l'ambiente di lavoro per la governance operativa, commerciale, PSA, fa
 | **Riepilogo Batch Fatturazione** | `fatturazione <slug>` *(o `billing`)* | `.\it-ops.cmd billing <slug> summary` |
 | **Stato Avanzamento Arredo** | `arredo <slug>` *(o `furniture`)* | `.\it-ops.cmd furniture <slug> status` |
 | **Calcolo Margini Preventivo** | `preventivo <slug>` *(o `quote`)* | `.\it-ops.cmd quote <slug> calculate` |
+| **Ingestione Documenti (OKF v0.2)** | `ingest <file>` | `.\it-ops.cmd ingest <file> [--slug <slug>] [--apply]` |
+
+---
+
+## 📸 Protocollo Obbligatorio: Analisi Visiva Nativa SOTA (Pixel-to-Markdown) & OKF v0.2
+
+Quando l'utente carica o allega un file (PDF, fattura, distinta tecnica, offerta, scansione, contratto, immagine):
+1. **Analisi Visiva Nativa (Pixel-Level)**:
+   - È **obbligatorio analizzare il documento a livello visivo nativo** (pixel-to-markdown) per preservare l'ordine di lettura corretto su colonne complesse, grafici, firme e tabelle dense.
+   - Attiva il massimo livello di **Deep Thinking** per decifrare numeri, allineamenti, sconti e specifiche.
+2. **Generazione Immediata dell'Artefatto OKF v0.2 (`.md`)**:
+   - Genera un file Artefatto Markdown conforme allo standard **OKF v0.2** composto da:
+     - **Frontmatter YAML**:
+       ```yaml
+       ---
+       type: "concept"
+       title: "[Titolo effettivo del documento]"
+       description: "[Abstract sintetico del contenuto]"
+       generated.at: "[ISO 8601 Timestamp]"
+       sources:
+         - "file://@[nome_documento.pdf]"
+       tags:
+         - "document-intelligence"
+         - "estrazione-sota"
+       ---
+       ```
+     - **Corpo del Documento Markdown**:
+       - `# Punti Chiave`: concetti ed elementi critici con indicazione della pagina originale `[Pagina X]`.
+       - `# Contenuto Semantico`: gerarchia testuale pulita con capitoli, titoli e note.
+       - `# Tabelle Estratte`: tutte le tabelle interamente ricostruite cella per cella in Markdown, senza omettere alcun dato numerico o voce.
+3. **Zero-Hallucination & Provenance Guardrail**:
+   - È **SEVERAMENTE VIETATO** inventare contratti, canoni SLA, noleggi stampanti o associare IBAN fornitore al cliente.
+   - Qualsiasi dato non fisicamente presente nel documento deve essere esplicitamente indicato come `NOT_FOUND`.
+4. **Alimentazione Deterministica delle Pipeline**:
+   - L'artefatto OKF v0.2 diventa il "gemello digitale" certificato da cui la CLI (`it-ops ingest <file.okf.md> --slug <slug> --apply`) estrae i dati per popolare anagrafiche, preventivi e commesse.
 
 ---
 

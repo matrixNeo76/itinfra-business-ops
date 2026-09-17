@@ -13,43 +13,44 @@ categories:
   items:
   - part_number: SRV-OPENSTOR-2U
     description: 2U ZFS OpenStor JovianDSS Rack Storage (iSCSI/NFS/SMB/FC) 24 Bay
-      2.5" NVMe - DUAL INTEL XEON 6 -
-    quantity: 2
+      2.5" NVMe - DUAL INTEL XEON 6 - 2x100GbE QSFP28 for metrocluster - 2*1GbE -
+      2000W Redundant PSU Titanium Level
+    quantity: 2.0
     unit_cost: 14500.0
     markup_percent: 15.12
     unit_price: 16691.69
     line_total: 33383.38
     is_optional: false
   - part_number: CPU-XEON-6507P
-    description: 'CPU / SERVER - 6507P- (Xeon® 8C/16T) - min 3,50GHz -max 4,30GHz
-      - 48M Cache - LGA4710 - TDP: 150W - MAX memoria 4TB'
-    quantity: 4
+    description: Intel Xeon 6507P (8C/16T, base 3,50GHz - turbo 4,30GHz, 48MB Cache,
+      LGA4710, TDP 150W, 88 PCIe lanes)
+    quantity: 4.0
     unit_cost: 2200.0
     markup_percent: 15.12
     unit_price: 2532.53
     line_total: 10130.12
     is_optional: false
   - part_number: RAM-32GB-DDR5
-    description: Memoria 32GB DDR5-5600 ECC REG
-    quantity: 16
+    description: 32GB DDR5-5600 ECC Registered
+    quantity: 16.0
     unit_cost: 210.0
     markup_percent: 15.11
     unit_price: 241.74
     line_total: 3867.84
     is_optional: false
   - part_number: SSD-KIOXIA-3200GB
-    description: 'Kioxia CM7-V U.3 15mm 3200 GB. SIE 3 DWPD PCIe Gen5 1x4, 2x2 Mix
-      Use - Max KIOPs: 2.700K/600K'
-    quantity: 2
+    description: Kioxia CM7-V U.3 15mm 3.200 GB SIE 3 DWPD PCIe Gen5 1x4 (ZIL Write
+      Log, fino a 2.700K IOPS)
+    quantity: 2.0
     unit_cost: 1200.0
     markup_percent: 15.12
     unit_price: 1381.38
     line_total: 2762.76
     is_optional: false
   - part_number: SSD-NVME-3840GB
-    description: 'Samsung PM9A3 3.8TB NVMe PCIe4x4 U.2 7mm 1DWPD 5YR SED Opal, Max
-      KIOPs: 1000K/180K (Read/Write),'
-    quantity: 20
+    description: Samsung PM9A3 3.8TB NVMe PCIe 4.0 x4 U.2 7mm 1 DWPD SED Opal (fino
+      a 1.000K IOPS)
+    quantity: 20.0
     unit_cost: 580.0
     markup_percent: 15.12
     unit_price: 667.67
@@ -62,13 +63,13 @@ categories:
   margin_percent: 20.08
   items:
   - part_number: OPT-WARRANTY-ONSITE
-    description: Estensione a 3 / 5 anni ON-SITE opzionale
-    quantity: 1
+    description: Estensione Garanzia a 3 Anni ON-SITE con supporto sistemistico certificato
+    quantity: 1.0
     unit_cost: 0.0
     markup_percent: 15.0
     unit_price: 0.0
     line_total: 0.0
-    is_optional: true
+    is_optional: false
   - part_number: SRV-SETUP-METROCLUSTER
     description: Installazione fisica, cablaggio ridondante 100GbE QSFP28, setup VSA
       JovianDSS e tuning VMware ESXi

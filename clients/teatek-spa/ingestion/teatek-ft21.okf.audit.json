@@ -1,0 +1,183 @@
+{
+  "document_type": "INVOICE",
+  "source_file": "teatek-ft21.okf.md",
+  "evidence": [
+    {
+      "field": "client_name",
+      "value": "T.E.A. TEK SPA",
+      "source_file": "file://@media_1789652924091.pdf",
+      "page": 1,
+      "matched_text": "T.E.A. TEK SPA",
+      "confidence": 1.0,
+      "status": "VERIFIED",
+      "notes": ""
+    },
+    {
+      "field": "vat_id",
+      "value": "IT06362981216",
+      "source_file": "file://@media_1789652924091.pdf",
+      "page": 1,
+      "matched_text": "P.IVA / C.F. `IT06362981216",
+      "confidence": 1.0,
+      "status": "VERIFIED",
+      "notes": ""
+    },
+    {
+      "field": "address",
+      "value": "Via Santa Lucia, 36 - 80132 Napoli (NA)",
+      "source_file": "file://@media_1789652924091.pdf",
+      "page": 1,
+      "matched_text": "**Sede Operativa e Fiscale**: Via Santa Lucia, 36 - 80132 Napoli (NA)",
+      "confidence": 0.95,
+      "status": "VERIFIED",
+      "notes": ""
+    },
+    {
+      "field": "payment_terms",
+      "value": "Bonifico Data Fattura. Scadenza unica `02/02/2026` per importo di `€ 1.625,53`.",
+      "source_file": "file://@media_1789652924091.pdf",
+      "page": 1,
+      "matched_text": "**Condizioni di Pagamento**: Bonifico Data Fattura. Scadenza unica `02/02/2026` per importo di `€ 1.625,53`.",
+      "confidence": 0.95,
+      "status": "VERIFIED",
+      "notes": ""
+    },
+    {
+      "field": "customer_code",
+      "value": "501.00238",
+      "source_file": "file://@media_1789652924091.pdf",
+      "page": 1,
+      "matched_text": "Codice Cliente `501.00238",
+      "confidence": 0.95,
+      "status": "VERIFIED",
+      "notes": ""
+    },
+    {
+      "field": "line_items",
+      "value": [
+        {
+          "code": "KL103",
+          "description": "`KL103`",
+          "quantity": 4.0,
+          "unit_price": 281.0,
+          "total_line": 674.4,
+          "vat_rate": 22.0
+        },
+        {
+          "code": "C80",
+          "description": "`C80`",
+          "quantity": 16.0,
+          "unit_price": 55.0,
+          "total_line": 528.0,
+          "vat_rate": 22.0
+        },
+        {
+          "code": "TRASPINST",
+          "description": "`TRASPINST`",
+          "quantity": 1.0,
+          "unit_price": 130.0,
+          "total_line": 130.0,
+          "vat_rate": 22.0
+        },
+        {
+          "code": "ITEM",
+          "description": "Totale Netto Merce",
+          "quantity": 1.0,
+          "unit_price": 0.0,
+          "total_line": 1332.4,
+          "vat_rate": 22.0
+        },
+        {
+          "code": "ITEM",
+          "description": "Spese Trasporto e Varie",
+          "quantity": 1.0,
+          "unit_price": 0.0,
+          "total_line": 0.0,
+          "vat_rate": 22.0
+        },
+        {
+          "code": "ITEM",
+          "description": "**Totale Imponibile IVA**",
+          "quantity": 1.0,
+          "unit_price": 0.0,
+          "total_line": 1332.4,
+          "vat_rate": 22.0
+        },
+        {
+          "code": "ITEM",
+          "description": "**Totale Imposta IVA (22%)**",
+          "quantity": 1.0,
+          "unit_price": 0.0,
+          "total_line": 293.13,
+          "vat_rate": 22.0
+        },
+        {
+          "code": "ITEM",
+          "description": "**Totale Fattura**",
+          "quantity": 1.0,
+          "unit_price": 0.0,
+          "total_line": 1625.53,
+          "vat_rate": 22.0
+        },
+        {
+          "code": "ITEM",
+          "description": "**Totale da Pagare**",
+          "quantity": 1.0,
+          "unit_price": 0.0,
+          "total_line": 1625.53,
+          "vat_rate": 22.0
+        }
+      ],
+      "source_file": "file://@media_1789652924091.pdf",
+      "page": 1,
+      "matched_text": "9 articoli estratti da tabella OKF",
+      "confidence": 1.0,
+      "status": "VERIFIED",
+      "notes": ""
+    },
+    {
+      "field": "sla_contract",
+      "value": null,
+      "source_file": "file://@media_1789652924091.pdf",
+      "page": 1,
+      "matched_text": "",
+      "confidence": 0.0,
+      "status": "NOT_FOUND",
+      "notes": "Nessun contratto SLA nell'artefatto OKF."
+    },
+    {
+      "field": "mps_contract",
+      "value": null,
+      "source_file": "file://@media_1789652924091.pdf",
+      "page": 1,
+      "matched_text": "",
+      "confidence": 0.0,
+      "status": "NOT_FOUND",
+      "notes": "Nessun noleggio stampanti nell'artefatto OKF."
+    }
+  ],
+  "frontmatter": {
+    "type": "concept",
+    "title": "Fattura Commerciale 1/21 — T.E.A. TEK S.P.A.",
+    "description": "Fattura commerciale di fornitura arredo ufficio (scrivanie e sedute) emessa nei confronti di T.E.A. TEK S.P.A. con dettagli fiscali, coordinate di pagamento e ordine d'acquisto ODA 4500028515.",
+    "generated.at": "2026-09-17T16:35:00Z",
+    "sources": [
+      "file://@media_1789652924091.pdf"
+    ],
+    "tags": [
+      "document-intelligence",
+      "estrazione-sota",
+      "invoice",
+      "teatek-spa"
+    ]
+  },
+  "tables_found": 2,
+  "summary": {
+    "document_type": "INVOICE",
+    "total_fields_checked": 8,
+    "verified_fields": 6,
+    "not_found_fields": 2,
+    "zero_hallucination_guard_active": true,
+    "timestamp": "2026-09-17T16:38:01.233492"
+  }
+}

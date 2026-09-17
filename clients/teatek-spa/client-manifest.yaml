@@ -16,11 +16,12 @@ billing_info:
   fiscal_code: 06362981216
   sdi_code: SUBM70N
   pec: teatek@pec.it
-  payment_terms: BONIFICO DATA FATTURA
+  payment_terms: Bonifico Data Fattura. Scadenza unica `02/02/2026` per importo di
+    `€ 1.625,53`.
   address:
-    street: VIA SANTA LUCIA, 36
+    street: Via Santa Lucia, 36 - 80132 Napoli (NA)
     zip: '80132'
-    city: NAPOLI
+    city: Napoli
     province: NA
 modules:
   it_support: false

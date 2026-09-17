@@ -1,0 +1,124 @@
+{
+  "document_type": "TECHNICAL_SPEC",
+  "source_file": "teatek-server.okf.md",
+  "evidence": [
+    {
+      "field": "config_code",
+      "value": "JMC-14DI-224N",
+      "source_file": "file://@media_1789652609375.pdf",
+      "page": 1,
+      "matched_text": "**Codice Configurazione Fornitore**: `JMC-14DI-224N",
+      "confidence": 1.0,
+      "status": "VERIFIED",
+      "notes": ""
+    },
+    {
+      "field": "manufacturer",
+      "value": "OPENSTOR",
+      "source_file": "file://@media_1789652609375.pdf",
+      "page": 1,
+      "matched_text": "**Produttore / Brand**: `OPENSTOR",
+      "confidence": 1.0,
+      "status": "VERIFIED",
+      "notes": ""
+    },
+    {
+      "field": "bill_of_materials",
+      "value": [
+        {
+          "category": "hardware_server_network",
+          "sku": "SRV-OPENSTOR-2U",
+          "description": "2U ZFS OpenStor JovianDSS Rack Storage (iSCSI/NFS/SMB/FC) 24 Bay 2.5\" NVMe - DUAL INTEL XEON 6 - 2x100GbE QSFP28 for metrocluster - 2*1GbE - 2000W Redundant PSU Titanium Level",
+          "quantity": 2.0,
+          "is_optional": false
+        },
+        {
+          "category": "hardware_server_network",
+          "sku": "CPU-XEON-6507P",
+          "description": "Intel Xeon 6507P (8C/16T, base 3,50GHz - turbo 4,30GHz, 48MB Cache, LGA4710, TDP 150W, 88 PCIe lanes)",
+          "quantity": 4.0,
+          "is_optional": false
+        },
+        {
+          "category": "hardware_server_network",
+          "sku": "RAM-32GB-DDR5",
+          "description": "32GB DDR5-5600 ECC Registered",
+          "quantity": 16.0,
+          "is_optional": false
+        },
+        {
+          "category": "hardware_server_network",
+          "sku": "SSD-KIOXIA-3200GB",
+          "description": "Kioxia CM7-V U.3 15mm 3.200 GB SIE 3 DWPD PCIe Gen5 1x4 (ZIL Write Log, fino a 2.700K IOPS)",
+          "quantity": 2.0,
+          "is_optional": false
+        },
+        {
+          "category": "hardware_server_network",
+          "sku": "SSD-NVME-3840GB",
+          "description": "Samsung PM9A3 3.8TB NVMe PCIe 4.0 x4 U.2 7mm 1 DWPD SED Opal (fino a 1.000K IOPS)",
+          "quantity": 20.0,
+          "is_optional": false
+        },
+        {
+          "category": "professional_services",
+          "sku": "OPT-WARRANTY-ONSITE",
+          "description": "Estensione Garanzia a 3 Anni ON-SITE con supporto sistemistico certificato",
+          "quantity": 1.0,
+          "is_optional": false
+        }
+      ],
+      "source_file": "file://@media_1789652609375.pdf",
+      "page": 1,
+      "matched_text": "6 componenti BOM estratti da tabella OKF",
+      "confidence": 1.0,
+      "status": "VERIFIED",
+      "notes": ""
+    },
+    {
+      "field": "sla_contract",
+      "value": null,
+      "source_file": "file://@media_1789652609375.pdf",
+      "page": 1,
+      "matched_text": "",
+      "confidence": 0.0,
+      "status": "NOT_FOUND",
+      "notes": "Nessun contratto SLA nell'artefatto OKF."
+    },
+    {
+      "field": "mps_contract",
+      "value": null,
+      "source_file": "file://@media_1789652609375.pdf",
+      "page": 1,
+      "matched_text": "",
+      "confidence": 0.0,
+      "status": "NOT_FOUND",
+      "notes": "Nessun noleggio stampanti nell'artefatto OKF."
+    }
+  ],
+  "frontmatter": {
+    "type": "concept",
+    "title": "Scheda Tecnica Configurazione — OpenStor JovianDSS Metro Cluster HA",
+    "description": "Distinta tecnica e configurazione hardware per soluzione iperconvergente ad alta disponibilità basata su 2 nodi OpenStor JovianDSS 2U 24-Bay Full NVMe, Intel Xeon 6507P, 512GB RAM e ZFS Metro Cluster.",
+    "generated.at": "2026-09-17T16:35:00Z",
+    "sources": [
+      "file://@media_1789652609375.pdf"
+    ],
+    "tags": [
+      "document-intelligence",
+      "estrazione-sota",
+      "spec-sheet",
+      "teatek-spa",
+      "openstor"
+    ]
+  },
+  "tables_found": 2,
+  "summary": {
+    "document_type": "TECHNICAL_SPEC",
+    "total_fields_checked": 5,
+    "verified_fields": 3,
+    "not_found_fields": 2,
+    "zero_hallucination_guard_active": true,
+    "timestamp": "2026-09-17T16:38:06.660195"
+  }
+}

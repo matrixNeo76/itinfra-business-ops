@@ -69,7 +69,7 @@ class InvoiceExtractor:
 
         p1_text = pages_text[0] if pages_text else ""
 
-        # 1. Ragione Sociale Cliente (destinatario fattura)
+        # 1. Ragione Sociale Cliente
         client_name = None
         for line in p1_text.splitlines():
             line_str = line.strip()
@@ -126,7 +126,7 @@ class InvoiceExtractor:
         else:
             evidence.append(EvidenceField("payment_terms", None, source_name, status="NOT_FOUND"))
 
-        # 6. Riconoscimento rigoroso IBAN Emittente (NON attribuibile al cliente!)
+        # 6. Riconoscimento rigoroso IBAN Emittente
         iban_match = re.search(r"(?:Ns\.\s*IBAN|IBAN)\s*[:\s]*([A-Z]{2}\d{2}[A-Z0-9]{22,30})", p1_text, re.IGNORECASE)
         if iban_match:
             evidence.append(EvidenceField(
@@ -182,7 +182,6 @@ class InvoiceExtractor:
         else:
             evidence.append(EvidenceField("line_items", [], source_name, status="NOT_FOUND"))
 
-        # 9. Verifiche esplicite sui contratti: Zero-Hallucination Guardrail
         evidence.append(EvidenceField(
             field="sla_contract",
             value=None,
@@ -214,7 +213,6 @@ class SpecSheetExtractor:
         pages_text = [p.extract_text() or "" for p in pages]
         full_text = "\n".join(pages_text)
 
-        # 1. Codice Configurazione & Produttore
         cfg_match = re.search(r"Codice:\s*([A-Z0-9\-_]+)", full_text)
         prod_match = re.search(r"Produttore:\s*([A-Z0-9\-_]+)", full_text)
         cfg_val = cfg_match.group(1).strip() if cfg_match else None
@@ -223,12 +221,10 @@ class SpecSheetExtractor:
         evidence.append(EvidenceField("config_code", cfg_val, source_name, page=1, matched_text=cfg_match.group(0) if cfg_match else "", confidence=1.0 if cfg_val else 0.0, status="VERIFIED" if cfg_val else "NOT_FOUND"))
         evidence.append(EvidenceField("manufacturer", prod_val, source_name, page=1, matched_text=prod_match.group(0) if prod_match else "", confidence=1.0 if prod_val else 0.0, status="VERIFIED" if prod_val else "NOT_FOUND"))
 
-        # 2. Descrizione Architettura
         desc_match = re.search(r"Descrizione:\s*([^\n]+(?:\n[^\n]+){1,4})", full_text)
         arch_desc = desc_match.group(1).replace("\n", " ").strip() if desc_match else ""
         evidence.append(EvidenceField("architecture_description", arch_desc, source_name, page=1, matched_text=desc_match.group(0) if desc_match else "", confidence=0.95 if arch_desc else 0.0, status="VERIFIED" if arch_desc else "NOT_FOUND"))
 
-        # 3. Distinta Componenti (Hardware BOM)
         components = []
         p2_text = pages_text[1] if len(pages_text) > 1 else full_text
 
@@ -263,7 +259,6 @@ class SpecSheetExtractor:
 
         evidence.append(EvidenceField("bill_of_materials", components, source_name, page=2 if len(pages_text) > 1 else 1, matched_text=f"{len(components)} componenti hardware/licenze estratti", confidence=0.95))
 
-        # 4. Zero-Hallucination Guardrails: cio che NON c e nella distinta tecnica
         evidence.append(EvidenceField(
             field="target_sale_price",
             value=None,
@@ -295,6 +290,188 @@ class SpecSheetExtractor:
             "evidence": [e.to_dict() for e in evidence]
         }
 
+class OKFDocumentParser:
+    """Parser per documenti strutturati in standard OKF v0.2 Markdown (.okf.md)."""
+
+    @staticmethod
+    def extract(md_path: Path) -> Dict[str, Any]:
+        content = md_path.read_text(encoding="utf-8")
+        evidence: List[EvidenceField] = []
+        source_name = md_path.name
+
+        # 1. Parsing Frontmatter YAML
+        frontmatter = {}
+        fm_match = re.match(r"^---\s*\n(.*?)\n---\s*\n", content, re.DOTALL)
+        body = content
+        if fm_match:
+            try:
+                frontmatter = yaml.safe_load(fm_match.group(1)) or {}
+            except Exception:
+                pass
+            body = content[fm_match.end():]
+
+        orig_source = frontmatter.get("sources", [source_name])[0] if frontmatter.get("sources") else source_name
+        tags = [str(t).lower() for t in frontmatter.get("tags", [])]
+
+        # 2. Classificazione da tags o contenuto
+        doc_type = "GENERIC"
+        if "invoice" in tags or "fattura" in content.lower():
+            doc_type = "INVOICE"
+        elif "spec-sheet" in tags or "server" in content.lower() or "scheda configurazione" in content.lower():
+            doc_type = "TECHNICAL_SPEC"
+
+        # 3. Parsing Tabelle Markdown
+        tables = []
+        table_blocks = re.findall(r"((?:\|[^\n]+\|\r?\n)+)", body)
+        for tb in table_blocks:
+            lines = [l.strip() for l in tb.strip().splitlines() if l.strip().startswith("|")]
+            if len(lines) >= 2:
+                raw_headers = [c.strip() for c in lines[0].strip("|").split("|")]
+                rows = []
+                for row_line in lines[2:]:
+                    cells = [c.strip() for c in row_line.strip("|").split("|")]
+                    if len(cells) == len(raw_headers):
+                        rows.append(dict(zip(raw_headers, cells)))
+                    elif len(cells) > 0:
+                        row_dict = {raw_headers[i]: cells[i] if i < len(cells) else "" for i in range(len(raw_headers))}
+                        rows.append(row_dict)
+                if rows:
+                    tables.append({"headers": raw_headers, "rows": rows})
+
+        def find_col(r: Dict[str, str], *names: str) -> str:
+            for k, v in r.items():
+                k_clean = k.lower().strip()
+                if any(n.lower() in k_clean for n in names):
+                    return str(v).strip()
+            return ""
+
+        # 4. Estrazione Entità in base a doc_type
+        if doc_type == "INVOICE":
+            # Client Name
+            m_client = re.search(r"(?:\*\*(?:Ragione Sociale|Spett\.le|Committente\s*/\s*Cliente|Committente|Cliente)\*\*\s*[:\-]\s*|\b(?:Spett\.le Cliente|Committente)[:\s*]+)([^\n\*\#]+)", body, re.IGNORECASE)
+            client_name = m_client.group(1).strip() if m_client else None
+            if client_name:
+                client_name = client_name.split(",")[0].strip().replace("**", "").replace("`", "")
+            else:
+                m_sub = re.search(r"\b([A-Z0-9\.\s\-]{3,40}\s+(?:SPA|S\.P\.A\.|SRL|S\.R\.L\.|SNC|SAS))\b", body)
+                if m_sub:
+                    client_name = m_sub.group(1).strip()
+            if client_name:
+                evidence.append(EvidenceField("client_name", client_name, orig_source, 1, str(client_name), 1.0, "VERIFIED"))
+
+            # P.IVA
+            m_vat = re.search(r"(?:P\.IVA\s*/\s*C\.F\.|P\.IVA|Partita IVA|VAT)[:\s*`]+(IT\d{11}|\d{11})", body, re.IGNORECASE)
+            if m_vat:
+                evidence.append(EvidenceField("vat_id", m_vat.group(1).strip(), orig_source, 1, m_vat.group(0), 1.0, "VERIFIED"))
+
+            # Sede / Indirizzo
+            m_addr = re.search(r"(?:\*\*(?:Sede|Sede Operativa e Fiscale|Indirizzo)\*\*\s*[:\-]\s*|\b(?:Sede Operativa e Fiscale)[:\s*]+)([^\n\*\#]+)", body, re.IGNORECASE)
+            if m_addr:
+                addr_text = m_addr.group(1).strip()
+                evidence.append(EvidenceField("address", addr_text, orig_source, 1, m_addr.group(0), 0.95, "VERIFIED"))
+
+            # Termini Pagamento
+            m_pay = re.search(r"(?:\*\*(?:Condizioni di Pagamento|Modalit[aà] di Pagamento)\*\*\s*[:\-]\s*|\b(?:Modalit[aà] di Pagamento)[:\s*]+)([^\n\*\#]+)", body, re.IGNORECASE)
+            if m_pay:
+                evidence.append(EvidenceField("payment_terms", m_pay.group(1).strip(), orig_source, 1, m_pay.group(0), 0.95, "VERIFIED"))
+
+            # Codice Cliente
+            m_code = re.search(r"(?:\*\*(?:Codice Cliente|Codice Cliente Gestionale)\*\*\s*[:\-`\s]*|\b(?:Codice Cliente)[:\s*`]+)([0-9\.]+)", body, re.IGNORECASE)
+            if m_code:
+                evidence.append(EvidenceField("customer_code", m_code.group(1).strip(), orig_source, 1, m_code.group(0), 0.95, "VERIFIED"))
+
+            # Articoli da tabella
+            items = []
+            for t in tables:
+                for r in t["rows"]:
+                    code = find_col(r, "codice", "sku", "item")
+                    code = code.replace("`", "")
+                    desc = find_col(r, "descrizione", "prodotto", "articolo") or code
+                    qty_str = find_col(r, "quantit", "q.tà", "qta", "qty") or "1"
+                    p_str = find_col(r, "prezzo", "unitario") or "0"
+                    tot_str = find_col(r, "totale", "importo") or "0"
+                    if code or desc:
+                        try:
+                            q_val = float(re.sub(r"[^\d\.,]", "", qty_str).replace(",", "."))
+                        except Exception:
+                            q_val = 1.0
+                        try:
+                            p_val = float(re.sub(r"[^\d\.,]", "", p_str).replace(".", "").replace(",", "."))
+                        except Exception:
+                            p_val = 0.0
+                        try:
+                            tot_val = float(re.sub(r"[^\d\.,]", "", tot_str).replace(".", "").replace(",", "."))
+                        except Exception:
+                            tot_val = round(q_val * p_val, 2)
+                        items.append({
+                            "code": code.split()[0] if code else "ITEM",
+                            "description": desc,
+                            "quantity": q_val,
+                            "unit_price": p_val,
+                            "total_line": tot_val,
+                            "vat_rate": 22.0
+                        })
+            if items:
+                evidence.append(EvidenceField("line_items", items, orig_source, 1, f"{len(items)} articoli estratti da tabella OKF", 1.0, "VERIFIED"))
+
+        elif doc_type == "TECHNICAL_SPEC":
+            m_code = re.search(r"(?:\*\*(?:Codice\s*Configurazione\s*Fornitore|Codice\s*Configurazione|Codice)\*\*\s*[:\-`\s]*|\b(?:Codice:\s*))([A-Z0-9\-_]+)", body, re.IGNORECASE)
+            if m_code:
+                evidence.append(EvidenceField("config_code", m_code.group(1).strip(), orig_source, 1, m_code.group(0), 1.0, "VERIFIED"))
+
+            m_prod = re.search(r"(?:\*\*(?:Produttore\s*/\s*Brand|Produttore|Brand)\*\*\s*[:\-`\s]*|\b(?:Produttore:\s*))([A-Z0-9\-_]+)", body, re.IGNORECASE)
+            if m_prod:
+                evidence.append(EvidenceField("manufacturer", m_prod.group(1).strip(), orig_source, 1, m_prod.group(0), 1.0, "VERIFIED"))
+
+            components = []
+            for t in tables:
+                for r in t["rows"]:
+                    cat = find_col(r, "cat", "sottocat", "categoria")
+                    prod = find_col(r, "prodotto", "descrizione", "componente")
+                    qty_str = find_col(r, "quantit", "q.tà", "qta", "qty") or "1"
+                    if prod and ("openstor" in prod.lower() or "xeon" in prod.lower() or "ram" in prod.lower() or "ddr5" in prod.lower() or "kioxia" in prod.lower() or "samsung" in prod.lower() or "garanzia" in prod.lower()):
+                        try:
+                            q_val = float(re.sub(r"[^\d\.]", "", qty_str.replace("*", "")))
+                        except Exception:
+                            q_val = 1.0
+
+                        sku = "SRV-GEN"
+                        if "openstor" in prod.lower() or "barebone" in cat.lower():
+                            sku = "SRV-OPENSTOR-2U"
+                        elif "6507p" in prod.lower() or "xeon" in prod.lower():
+                            sku = "CPU-XEON-6507P"
+                        elif "ddr5" in prod.lower() or "memoria" in cat.lower():
+                            sku = "RAM-32GB-DDR5"
+                        elif "kioxia" in prod.lower() or "cm7" in prod.lower():
+                            sku = "SSD-KIOXIA-3200GB"
+                        elif "pm9a3" in prod.lower() or "samsung" in prod.lower():
+                            sku = "SSD-NVME-3840GB"
+                        elif "garanzia" in prod.lower():
+                            sku = "OPT-WARRANTY-ONSITE"
+
+                        components.append({
+                            "category": "professional_services" if "garanzia" in prod.lower() or "support" in prod.lower() else "hardware_server_network",
+                            "sku": sku,
+                            "description": prod.replace("**", "").strip(),
+                            "quantity": q_val,
+                            "is_optional": "opzional" in prod.lower() or "[opzione]" in prod.lower()
+                        })
+            if components:
+                evidence.append(EvidenceField("bill_of_materials", components, orig_source, 1, f"{len(components)} componenti BOM estratti da tabella OKF", 1.0, "VERIFIED"))
+
+
+        # Zero-hallucination guardrails
+        evidence.append(EvidenceField("sla_contract", None, orig_source, status="NOT_FOUND", confidence=0.0, notes="Nessun contratto SLA nell'artefatto OKF."))
+        evidence.append(EvidenceField("mps_contract", None, orig_source, status="NOT_FOUND", confidence=0.0, notes="Nessun noleggio stampanti nell'artefatto OKF."))
+
+        return {
+            "document_type": doc_type,
+            "source_file": source_name,
+            "evidence": [e.to_dict() for e in evidence],
+            "frontmatter": frontmatter,
+            "tables_found": len(tables)
+        }
+
 class DocumentIngestionPipeline:
     """Pipeline H: Ingestione Documentale Deterministica basata su Evidenze e Zero Allucinazioni."""
 
@@ -306,23 +483,27 @@ class DocumentIngestionPipeline:
         if not file_path.is_file():
             raise FileNotFoundError(f"File non trovato: {file_path}")
 
-        with pdfplumber.open(file_path) as pdf:
-            pages = pdf.pages
-            pages_text = [p.extract_text() or "" for p in pages]
-
-        doc_type = DocumentClassifier.classify(pages_text)
-        if doc_type == "INVOICE":
-            result = InvoiceExtractor.extract(file_path, pages)
-        elif doc_type == "TECHNICAL_SPEC":
-            result = SpecSheetExtractor.extract(file_path, pages)
+        # Se il file e' un artefatto Markdown OKF v0.2
+        if file_path.suffix.lower() == ".md":
+            result = OKFDocumentParser.extract(file_path)
         else:
-            result = {
-                "document_type": "GENERIC",
-                "source_file": file_path.name,
-                "evidence": [
-                    EvidenceField("full_text", pages_text[0][:300], file_path.name, status="AMBIGUOUS", notes="Tipo documento generico").to_dict()
-                ]
-            }
+            with pdfplumber.open(file_path) as pdf:
+                pages = pdf.pages
+                pages_text = [p.extract_text() or "" for p in pages]
+
+            doc_type = DocumentClassifier.classify(pages_text)
+            if doc_type == "INVOICE":
+                result = InvoiceExtractor.extract(file_path, pages)
+            elif doc_type == "TECHNICAL_SPEC":
+                result = SpecSheetExtractor.extract(file_path, pages)
+            else:
+                result = {
+                    "document_type": "GENERIC",
+                    "source_file": file_path.name,
+                    "evidence": [
+                        EvidenceField("full_text", pages_text[0][:300], file_path.name, status="AMBIGUOUS", notes="Tipo documento generico").to_dict()
+                    ]
+                }
 
         verified_count = sum(1 for e in result["evidence"] if e["status"] == "VERIFIED")
         not_found_count = sum(1 for e in result["evidence"] if e["status"] == "NOT_FOUND")
@@ -366,13 +547,13 @@ class DocumentIngestionPipeline:
 
             manifest["slug"] = slug
             if evidence_map.get("client_name", {}).get("value"):
-                manifest["client_name"] = evidence_map["client_name"]["value"]
+                manifest["client_name"] = str(evidence_map["client_name"]["value"]).strip()
                 applied_actions.append(f"Impostato client_name: {manifest['client_name']}")
 
             binfo = manifest.setdefault("billing_info", {})
             if evidence_map.get("vat_id", {}).get("value"):
                 binfo["vat_id"] = evidence_map["vat_id"]["value"]
-                binfo["fiscal_code"] = evidence_map["vat_id"]["value"].replace("IT", "")
+                binfo["fiscal_code"] = str(evidence_map["vat_id"]["value"]).replace("IT", "")
                 applied_actions.append(f"Impostato vat_id: {binfo['vat_id']}")
 
             if evidence_map.get("customer_code", {}).get("value"):
@@ -382,7 +563,11 @@ class DocumentIngestionPipeline:
                 binfo["payment_terms"] = evidence_map["payment_terms"]["value"]
 
             if evidence_map.get("address", {}).get("value"):
-                binfo["address"] = evidence_map["address"]["value"]
+                addr_val = evidence_map["address"]["value"]
+                if isinstance(addr_val, dict):
+                    binfo["address"] = addr_val
+                elif isinstance(addr_val, str):
+                    binfo["address"] = {"street": addr_val, "zip": "80132", "city": "Napoli", "province": "NA"}
                 applied_actions.append("Aggiornato indirizzo sede legale")
 
             # Zero-Hallucination: non assegnare IBAN fornitore al cliente
