@@ -756,6 +756,24 @@ def cmd_learn(args):
         return pipeline.audit_memory()
     elif action == "test":
         return pipeline.test_rules()
+    elif action == "promotables":
+        return pipeline.list_promotables()
+    elif action == "promote":
+        entry_id = getattr(args, "entry", None) or getattr(args, "id", None)
+        if not entry_id:
+            print("[ERRORE] Specificare l'ID della voce dello scratchpad con --entry (es. mem-bp01zt)")
+            return 1
+        node_id = getattr(args, "node_id", None) or getattr(args, "id", None)
+        title = getattr(args, "title", None) or f"Regola {entry_id}"
+        domain = getattr(args, "domain", "technical")
+        return pipeline.promote_entry(
+            entry_id=entry_id,
+            domain=domain,
+            node_id=node_id,
+            title=title,
+            guardrail=getattr(args, "guardrail", None),
+            by=getattr(args, "by", "human:possumato"),
+        )
     return 0
 
 def main():
@@ -890,9 +908,12 @@ def main():
 
     # learn
     p_learn = subparsers.add_parser("learn", help="Sistema di Memoria Auto-Correttiva & Apprendimento Attestato (OKF v0.2)")
-    p_learn.add_argument("action", nargs="?", default="list", choices=["list", "attest", "compile", "sync", "audit", "test"], help="Azione da eseguire (default: list)")
-    p_learn.add_argument("--id", help="ID del nodo di memoria (es. LES-UI-001)")
-    p_learn.add_argument("--domain", help="Filtra per dominio (core, ui, engineering, documents, technical, business_ops)")
+    p_learn.add_argument("action", nargs="?", default="list", choices=["list", "attest", "compile", "sync", "audit", "test", "promotables", "promote"], help="Azione da eseguire (default: list)")
+    p_learn.add_argument("--id", help="ID del nodo di memoria (es. LES-UI-001 o LES-NET-002)")
+    p_learn.add_argument("--entry", help="ID voce scratchpad da promuovere (es. mem-bp01zt)")
+    p_learn.add_argument("--domain", help="Filtra o assegna dominio (core, ui, engineering, documents, technical, business_ops)")
+    p_learn.add_argument("--title", help="Titolo del guardrail per promote")
+    p_learn.add_argument("--guardrail", help="Contenuto markdown personalizzato")
     p_learn.add_argument("--by", default="human:possumato", help="Certificatore attestation (default: human:possumato)")
     p_learn.set_defaults(func=cmd_learn)
 

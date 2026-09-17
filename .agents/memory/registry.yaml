@@ -1,6 +1,6 @@
 version: '0.2'
 format: google-okf-v0.2
-updated_at: '2026-09-17T18:38:14.932570+00:00'
+updated_at: '2026-09-17T18:48:35.326846+00:00'
 nodes:
   LES-UI-001:
     file: ui/LES-UI-001.okf.md
@@ -34,3 +34,11 @@ nodes:
     attested_by: human:possumato
     sha256: 9ed3f30e73dc3848d23079a4523428ab24d22149c2bf9bdff84e8bf0196133c9
     updated_at: '2026-09-17T18:38:14.910910+00:00'
+  LES-NET-001:
+    file: technical/LES-NET-001.okf.md
+    domain: technical
+    tier: attested
+    title: Configurazione MTU 1400 e TCP MSS Clamping su Tunnel ZeroTier
+    attested_by: human:possumato
+    sha256: b6faab9a69487dc07d90fcb4a1637e6564d6923a28aae7371fc8bb6ea3b4baff
+    updated_at: '2026-09-17T18:48:35.305091+00:00'

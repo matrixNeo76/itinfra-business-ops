@@ -28,6 +28,7 @@ ROOT_DIR = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(ROOT_DIR))
 
 from scripts.core.memory_engine import MemoryEngine
+from scripts.core.cognitive_bridge import CognitiveBridge
 
 
 class LearnPipeline:
@@ -35,6 +36,7 @@ class LearnPipeline:
 
     def __init__(self, repo_root: Optional[Path] = None):
         self.engine = MemoryEngine(repo_root=repo_root)
+        self.bridge = CognitiveBridge(repo_root=self.engine.repo_root, itinfra_root=self.engine.peer_root)
 
     def list_nodes(self, domain: Optional[str] = None) -> int:
         """Elenca i nodi di memoria registrati."""
@@ -224,6 +226,57 @@ class LearnPipeline:
         print(f"Esito complessivo Eval Suite: {'✓ PASS (100%)' if overall else '❌ FAIL'}")
         return 0 if overall else 1
 
+    def list_promotables(self) -> int:
+        """Elenca le voci dello scratchpad globale di itinfra disponibili per la promozione."""
+        promotables = self.bridge.list_promotables()
+        print("📋 VOCI SCRATCHPAD GLOBALE ENTERPRISE (projects/_global_scratchpad.md)")
+        print("=" * 80)
+        print(f"{'ID':<12} | {'STATO':<14} | {'SEZIONE':<22} | {'TESTO'}")
+        print("-" * 80)
+
+        count = 0
+        for p in promotables:
+            status = f"✓ {p['promoted_to']}" if p["is_promoted"] else "⚡ PRONTO"
+            txt = p["text"]
+            if len(txt) > 34:
+                txt = txt[:31] + "..."
+            print(f"{p['id']:<12} | {status:<14} | {p['section']:<22} | {txt}")
+            if not p["is_promoted"]:
+                count += 1
+
+        print("-" * 80)
+        print(f"Voci pronte per la promozione a guardrail attestato: {count}")
+        return 0
+
+    def promote_entry(
+        self,
+        entry_id: str,
+        domain: str,
+        node_id: str,
+        title: str,
+        guardrail: Optional[str] = None,
+        by: str = "human:possumato",
+    ) -> int:
+        """Promuove una voce dello scratchpad globale a guardrail attestato per Antigravity."""
+        try:
+            res = self.bridge.promote_entry(
+                entry_id=entry_id,
+                domain=domain,
+                node_id=node_id,
+                title=title,
+                guardrail_override=guardrail,
+                attester=by,
+            )
+            print(f"🔒 Voce '{res['entry_id']}' PROMOSSA CON SUCCESSO a Guardrail Attestato:")
+            print(f"  Nodo OKF:     {res['node_id']} (Dominio: {res['domain']})")
+            print(f"  Titolo:       {res['title']}")
+            print(f"  SHA-256:      {res['sha256']}")
+            print(f"  Regole:       Compilate e sincronizzate su entrambi i repository")
+            return 0
+        except Exception as e:
+            print(f"❌ Errore durante la promozione: {e}", file=sys.stderr)
+            return 1
+
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="CLI Apprendimento & Memoria Auto-Correttiva OKF v0.2")
@@ -250,6 +303,18 @@ def main() -> int:
     # test
     subparsers.add_parser("test", help="Esegue la suite di test ed eval harness")
 
+    # promotables
+    subparsers.add_parser("promotables", help="Elenca le voci dello scratchpad globale pronte per la promozione")
+
+    # promote
+    promote_parser = subparsers.add_parser("promote", help="Promuove una voce dello scratchpad globale a guardrail attestato")
+    promote_parser.add_argument("entry", help="ID voce scratchpad (es. mem-a1b2c3d4)")
+    promote_parser.add_argument("--domain", required=True, choices=MemoryEngine.DOMAINS, help="Dominio del guardrail (es. technical, core, ui)")
+    promote_parser.add_argument("--id", required=True, help="ID della nuova lezione (es. LES-NET-002)")
+    promote_parser.add_argument("--title", required=True, help="Titolo del guardrail")
+    promote_parser.add_argument("--guardrail", help="Contenuto Markdown personalizzato del guardrail")
+    promote_parser.add_argument("--by", default="human:possumato", help="Certificatore attestation")
+
     args = parser.parse_args()
     pipeline = LearnPipeline()
 
@@ -265,6 +330,17 @@ def main() -> int:
         return pipeline.audit_memory()
     elif args.subcommand == "test":
         return pipeline.test_rules()
+    elif args.subcommand == "promotables":
+        return pipeline.list_promotables()
+    elif args.subcommand == "promote":
+        return pipeline.promote_entry(
+            entry_id=args.entry,
+            domain=args.domain,
+            node_id=args.id,
+            title=args.title,
+            guardrail=args.guardrail,
+            by=args.by,
+        )
 
     return 0
 
