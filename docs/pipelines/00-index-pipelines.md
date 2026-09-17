@@ -121,3 +121,4 @@ flowchart TD
 | [`05-pipeline-e-quotes.md`](file:///c:/Users/auresystem/repos/itinfra-business-ops/docs/pipelines/05-pipeline-e-quotes.md) | `spec-ops-pipeline-e-quotes` | Preventivazione Multiprodotto | `quote.schema.yaml` |
 | [`06-pipeline-f-mps-rental.md`](file:///c:/Users/auresystem/repos/itinfra-business-ops/docs/pipelines/06-pipeline-f-mps-rental.md) | `spec-ops-pipeline-f-mps-rental` | MPS, Costo Copia & SNMP | `mps.schema.yaml` |
 | [`07-pipeline-g-furniture.md`](file:///c:/Users/auresystem/repos/itinfra-business-ops/docs/pipelines/07-pipeline-g-furniture.md) | `spec-ops-pipeline-g-furniture` | Commesse Arredo & Collaudo | `furniture.schema.yaml` |
+| [`../ASCII_DIAGRAMS.md`](file:///c:/Users/auresystem/repos/itinfra-business-ops/docs/ASCII_DIAGRAMS.md) | `spec-ops-ascii-diagrams` | Compendio Diagrammi ASCII Hub & Pipelines | N/A |

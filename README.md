@@ -105,6 +105,7 @@ Ciascuna pipeline è documentata con specifiche formali conformi allo standard *
 | **E** | Preventivazione Multiprodotto Cost-Plus | [`05-pipeline-e-quotes.md`](docs/pipelines/05-pipeline-e-quotes.md) |
 | **F** | Noleggio Multifunzione MPS & Telemetria SNMP | [`06-pipeline-f-mps-rental.md`](docs/pipelines/06-pipeline-f-mps-rental.md) |
 | **G** | Commesse Arredo Ufficio & Collaudo Finale | [`07-pipeline-g-furniture.md`](docs/pipelines/07-pipeline-g-furniture.md) |
+| **📐 Visual** | **Compendio Diagrammi ASCII (Hub & Pipelines)** | [`docs/ASCII_DIAGRAMS.md`](docs/ASCII_DIAGRAMS.md) |
 
 ---
 

@@ -1,18 +1,125 @@
-# 🔄 Le 7 Pipeline Operative di itinfra-business-ops
+---
+okf_version: "0.2"
+id: "spec-ops-ascii-diagrams"
+title: "Diagrammi Architetturali e Operativi ASCII — itinfra & itinfra-business-ops"
+type: "specification"
+domain: "Business Operations & System Architecture"
+tags: ["okf-v0.2", "ascii-art", "diagrams", "architecture", "hub-and-spoke", "pipelines"]
+project_id: "itinfra-business-ops"
+phase: 1
+status: "approved"
+version: "1.0"
+created_at: "2026-09-17"
+updated_at: "2026-09-17"
+lang: "it"
 
-Guida dettagliata al funzionamento deterministico delle pipeline da A a G con diagrammi di flusso ASCII.
+entities:
+  - name: "ASCII Architectural Visualizations"
+    type: "specification"
+    description: "Rappresentazioni grafiche testuali ASCII/Unicode Box-Drawing universalmente leggibili in terminale, editor e web"
+  - name: "Hub-and-Spoke Federation Topology"
+    type: "pattern"
+    description: "Topologia di collegamento deterministico tra ingegneria dei sistemi (itinfra) e operations/finance (itinfra-business-ops)"
+  - name: "Pipeline Execution State Machines"
+    type: "pattern"
+    description: "Macchine a stati e flussi decisionali per le 7 pipeline di business e per il ciclo tecnico a 7 fasi di itinfra"
 
-> 📄 *Per il compendio architetturale completo, consulta [`docs/ASCII_DIAGRAMS.md`](ASCII_DIAGRAMS.md).*
+relations:
+  - targetTitle: "Indice Master delle Pipeline Operative"
+    targetId: "index-ops-pipelines-master"
+    relationType: "documents"
+    weight: 1.0
+    description: "Compendio visuale ASCII di tutte le pipeline censite nell'indice master"
+  - targetTitle: "Architettura di Repository Hub-and-Spoke"
+    targetId: "spec-ops-architecture"
+    relationType: "illustrates"
+    weight: 1.0
+    description: "Illustra l'interazione tra i due repository federati"
+---
+
+# 📐 Diagrammi ASCII Markdown: Architettura & Pipeline Operative
+
+Questo documento raccoglie tutti i **diagrammi architetturali e di flusso in formato ASCII / Unicode Box-Drawing** per:
+1. L'architettura federata **Hub-and-Spoke** tra `itinfra` e `itinfra-business-ops`.
+2. La **Pipeline Tecnica Principale di `itinfra`** (Ciclo di Vita Ingegneristico a 7 Fasi).
+3. Le **7 Pipeline di Business Operations** (da Pipeline A a Pipeline G).
+
+I diagrammi sono ottimizzati per una resa impeccabile in qualsiasi editor testuale, terminale PowerShell/Bash e visualizzatore Markdown senza dipendere da renderer esterni o connessioni di rete.
 
 ---
 
-### Pipeline A — Contratti di Assistenza IT (SLA & Monte Ore)
-* **Scopo**: Trasformare i contratti cartacei in regole deterministiche per i tecnici.
-* **Artefatti**: `clients/<slug>/contracts/ctr-*.yaml`
-* **Workflow**:
-  1. `Drafting & Quoting`: Definizione SLA, copertura apparati e monte ore/canone flat.
-  2. `Activation`: Attivazione contratto e aggancio asset As-Built.
-  3. `Monitoring`: Alert a 60/30/15 giorni dalla scadenza o al raggiungimento dell'80% del monte ore consumato.
+## 🏛️ 1. Architettura Federata Hub-and-Spoke (`itinfra` ⟷ `itinfra-business-ops`)
+
+```text
+                  ╔═══════════════════════════════════════════════╗
+                  ║           SHARED CUSTOMER SLUG                ║
+                  ║       <slug> (es. "severino-srl")             ║
+                  ╚═══════════════════════╦═══════════════════════╝
+                                          │
+                   ┌──────────────────────┴──────────────────────┐
+                   │                                             │
+                   ▼                                             ▼
+  ┌─────────────────────────────────┐           ┌─────────────────────────────────┐
+  │   REPOSITORIO TECNICO ITINFRA   │           │ REPOSITORIO ITINFRA-BUSINESS-OPS│
+  │    (Technical Ground Truth)     │           │   (Commercial / PSA / Finance)  │
+  ├─────────────────────────────────┤           ├─────────────────────────────────┤
+  │ • manifest.yaml (Progetto IT)   │           │ • client-manifest.yaml (Client) │
+  │ • 01-Assessment / 02-HLD        │           │ • contracts/ (SLA & Monte Ore)  │
+  │ • 03-LLD / 04-Network-IPAM      │           │ • timesheets/ (Rapportini Tec.) │
+  │ • 05-Runbook (Procedure Op.)    │           │ • invoices/ (Fatture SDI v1.2)  │
+  │ • 06-As-Built.md (Apparati/SN)  │◄──Read-───│ • quotes/ (Offerte Cost-Plus)   │
+  │ • 07-Test-Report / 09-Inventory │   Only    │ • mps/ (Noleggio Stampanti MPS) │
+  │ • NIS2 & ISO 27001 Compliance   │   Bridge  │ • furniture/ (Commesse Arredo)  │
+  └─────────────────────────────────┘           └─────────────────────────────────┘
+                   │                                             │
+                   ▼                                             ▼
+          CLI Ingegneristica:                           CLI Operativa & PSA:
+              `it <cmd>`                                   `it-ops <cmd>`
+```
+
+---
+
+## ⚙️ 2. Pipeline Tecnica Principale di `itinfra` (Ciclo Ingegneristico a 7 Fasi)
+
+```text
+  ┌─────────────────────────────────────────────────────────────────────────────┐
+  │                      PIPELINE PRINCIPALE ITINFRA (7 FASI)                   │
+  └──────────────────────────────────────┬──────────────────────────────────────┘
+                                         │
+  [FASE 1: Valutazione & Strategia]      ▼
+  ┌─────────────────────────────────────────────────────────────────────────────┐
+  │  01-Assessment.md (Stato Attuale)  ──►  02-HLD.md (High Level Architecture) │
+  └──────────────────────────────────────┬──────────────────────────────────────┘
+                                         │
+  [FASE 2: Ingegneria di Dettaglio]      ▼
+  ┌─────────────────────────────────────────────────────────────────────────────┐
+  │  03-LLD.md (Low Level Design)      ──►  04-Network-IPAM.md (Subnet/VLAN/IP) │
+  └──────────────────────────────────────┬──────────────────────────────────────┘
+                                         │
+  [FASE 3: Piani di Implementazione]     ▼
+  ┌─────────────────────────────────────────────────────────────────────────────┐
+  │  05-Runbook.md (Piani di Migrazione, Cut-Over e Procedure Operative)        │
+  └──────────────────────────────────────┬──────────────────────────────────────┘
+                                         │
+  [FASE 4: Collaudo & Validazione]       ▼
+  ┌─────────────────────────────────────────────────────────────────────────────┐
+  │  06-As-Built.md (Config & Serials) ──►  07-Test-Report.md (FAT/SAT & Cert)  │
+  └──────────────────────────────────────┬──────────────────────────────────────┘
+                                         │
+  [FASE 5: Consegna & Operations]        ▼
+  ┌─────────────────────────────────────────────────────────────────────────────┐
+  │  08-Handover-Operations.md         ──►  09-Handover-Inventory.md            │
+  └──────────────────────────────────────┬──────────────────────────────────────┘
+                                         │
+  [FASE 6-7: Incident & Compliance]      ▼
+  ┌─────────────────────────────────────────────────────────────────────────────┐
+  │  10-Incident-RCA.md (Post-Mortem)  ──►  Audit NIS2 & Matrice ISO 27001      │
+  └─────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 📑 3. Pipeline A — Contratti di Assistenza IT, SLA & Monte Ore
 
 ```text
 ┌───────────────────────────────────────────────────────────────────────────────┐
@@ -50,13 +157,7 @@ Guida dettagliata al funzionamento deterministico delle pipeline da A a G con di
 
 ---
 
-### Pipeline B — Rapportini di Assistenza (Time-Tracking & Ledger Debit)
-* **Scopo**: Rendicontazione degli interventi e scarico automatico del monte ore.
-* **Artefatti**: `clients/<slug>/timesheets/rap-*.yaml`
-* **Workflow**:
-  1. `Check-in / Check-out`: Timestamp con calcolo netto ore e arrotondamento automatico a 15 minuti.
-  2. `Technical Logging`: Descrizione attività e apparati impattati con verifica seriale As-Built.
-  3. `Ledger Action`: Scarico dal contratto (`debit_contract`), fatturazione a parte (`invoice_spot`) o a forfait (`included_flat`).
+## ⏱️ 4. Pipeline B — Rapportini Intervento, Firma Canvas & Ricambi
 
 ```text
 ┌───────────────────────────────────────────────────────────────────────────────┐
@@ -93,13 +194,7 @@ Guida dettagliata al funzionamento deterministico delle pipeline da A a G con di
 
 ---
 
-### Pipeline C — Fatturazione & Scadenziario Attivo
-* **Scopo**: Incasso, conguagli e scadenziario finanziario.
-* **Artefatti**: `clients/<slug>/invoices/`
-* **Workflow**:
-  1. `Aggregation`: Raggruppamento canoni ricorsivi contrattuali + rapportini spot + eccedenze copie MPS.
-  2. `FatturaPA / SDI v1.2`: Generazione tracciato XML con codice destinatario e aliquote IVA.
-  3. `Scadenzario`: Gestione scadenze a 30/60 gg d.f. f.m. con tracking incassi e solleciti.
+## 💳 5. Pipeline C — Fatturazione SDI v1.2 & Scadenzario Multi-Rata
 
 ```text
 ┌───────────────────────────────────────────────────────────────────────────────┐
@@ -137,13 +232,7 @@ Guida dettagliata al funzionamento deterministico delle pipeline da A a G con di
 
 ---
 
-### Pipeline D — Task Jira & Schedulazione Appuntamenti
-* **Scopo**: Allineamento bidirezionale tra agenda/calendario e consuntivo ore ticket.
-* **Artefatti**: `clients/<slug>/jira_sync.yaml`
-* **Workflow**:
-  1. Ricezione task Jira -> Schedulazione slot intervento a calendario.
-  2. Esecuzione intervento -> Generazione rapportino Pipeline B.
-  3. Esportazione standard RFC 5545 `.ics` per Outlook e Google Calendar.
+## 📅 6. Pipeline D — Task Jira & Schedulazione Agenda RFC 5545
 
 ```text
 ┌───────────────────────────────────────────────────────────────────────────────┐
@@ -180,13 +269,7 @@ Guida dettagliata al funzionamento deterministico delle pipeline da A a G con di
 
 ---
 
-### Pipeline E — Preventivazione Multiprodotto
-* **Scopo**: Offerte multiprodotto (Hardware, Licenze, Cablaggio, Arredo, Manodopera, Canoni) con ricarichi cost-plus.
-* **Artefatti**: `clients/<slug>/quotes/quote-*.yaml`
-* **Workflow**:
-  1. Raccolta capitolato e calcolo costi base di acquisto per categoria.
-  2. Applicazione matrice ricarichi percentuali (`markup_percent`).
-  3. Calcolo marginalità lorda, esclusione righe opzionali ed export proposta grafica HTML.
+## 📊 7. Pipeline E — Preventivazione Multiprodotto Cost-Plus
 
 ```text
 ┌───────────────────────────────────────────────────────────────────────────────┐
@@ -220,14 +303,7 @@ Guida dettagliata al funzionamento deterministico delle pipeline da A a G con di
 
 ---
 
-### Pipeline F — Noleggio Multifunzione MPS (Costo Copia Completo)
-* **Scopo**: Gestione flotta stampanti, telelettura contatori, canoni semestrali anticipati e consumabili toner.
-* **Artefatti**: `clients/<slug>/mps/mps-*.yaml`
-* **Workflow**:
-  1. `Stipula Noleggio`: Canone base semestrale anticipato + quote copie incluse (es. 6000 BN / 1500 Colore).
-  2. `Telelettura SNMP`: Rilevazione contatori totali da Printer MIB via socket UDP 161 puro.
-  3. `Alert Consumabili`: Allarme preventivo ordine toner se livello $\le 15\%$.
-  4. `Conguaglio Semestrale`: Calcolo eccedenze copie (Copie Effettive - Incluse) * tariffa unitaria.
+## 🖨️ 8. Pipeline F — Noleggio Multifunzione MPS & Telemetria SNMP
 
 ```text
 ┌───────────────────────────────────────────────────────────────────────────────┐
@@ -261,16 +337,7 @@ Guida dettagliata al funzionamento deterministico delle pipeline da A a G con di
 
 ---
 
-### Pipeline G — Fornitura Arredo da Ufficio
-* **Scopo**: Commesse complesse chiavi in mano di arredo, allestimento e pareti divisorie.
-* **Artefatti**: `clients/<slug>/furniture/arr-*.yaml`
-* **Workflow**:
-  1. `1_survey`: Rilievo metrico laser e mappatura torrette dati/elettriche.
-  2. `2_design`: Layout 2D CAD DWG e render 3D fotorealistici.
-  3. `3_sampling_approval`: Approvazione campionari finiture e tessuti.
-  4. `4_procurement`: Emissione ordini alle fabbriche produttrici.
-  5. `5_assembly`: Posa in opera e montaggio a regola d'arte.
-  6. `6_handover_approved`: Verbale di collaudo (checklist 4 punti) e firma accettazione cliente.
+## 🪑 9. Pipeline G — Commesse Arredo Ufficio & Collaudo Finale
 
 ```text
 ┌───────────────────────────────────────────────────────────────────────────────┐

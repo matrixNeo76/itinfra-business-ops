@@ -40,6 +40,75 @@ flowchart TD
 2. **Access Control (RBAC)**: I tecnici di rete sul campo non devono accedere ai dati economici e ai margini commerciali. Gli addetti contabili o commerciali non devono modificare configurazioni di rete.
 3. **Integrità dei Linter**: Gli audit tecnici (`it validate`) rimangono focalizzati sulla correttezza architetturale senza essere appesantiti da regole di fatturazione o codici SDI.
 
+### 📐 Topologia ASCII Hub-and-Spoke
+
+```text
+                  ╔═══════════════════════════════════════════════╗
+                  ║           SHARED CUSTOMER SLUG                ║
+                  ║       <slug> (es. "severino-srl")             ║
+                  ╚═══════════════════════╦═══════════════════════╝
+                                          │
+                   ┌──────────────────────┴──────────────────────┐
+                   │                                             │
+                   ▼                                             ▼
+  ┌─────────────────────────────────┐           ┌─────────────────────────────────┐
+  │   REPOSITORIO TECNICO ITINFRA   │           │ REPOSITORIO ITINFRA-BUSINESS-OPS│
+  │    (Technical Ground Truth)     │           │   (Commercial / PSA / Finance)  │
+  ├─────────────────────────────────┤           ├─────────────────────────────────┤
+  │ • manifest.yaml (Progetto IT)   │           │ • client-manifest.yaml (Client) │
+  │ • 01-Assessment / 02-HLD        │           │ • contracts/ (SLA & Monte Ore)  │
+  │ • 03-LLD / 04-Network-IPAM      │           │ • timesheets/ (Rapportini Tec.) │
+  │ • 05-Runbook (Procedure Op.)    │           │ • invoices/ (Fatture SDI v1.2)  │
+  │ • 06-As-Built.md (Apparati/SN)  │◄──Read-───│ • quotes/ (Offerte Cost-Plus)   │
+  │ • 07-Test-Report / 09-Inventory │   Only    │ • mps/ (Noleggio Stampanti MPS) │
+  │ • NIS2 & ISO 27001 Compliance   │   Bridge  │ • furniture/ (Commesse Arredo)  │
+  └─────────────────────────────────┘           └─────────────────────────────────┘
+                   │                                             │
+                   ▼                                             ▼
+          CLI Ingegneristica:                           CLI Operativa & PSA:
+              `it <cmd>`                                   `it-ops <cmd>`
+```
+
+### ⚙️ Pipeline Principale di itinfra (7 Fasi Ingegneristiche)
+
+```text
+  ┌─────────────────────────────────────────────────────────────────────────────┐
+  │                      PIPELINE PRINCIPALE ITINFRA (7 FASI)                   │
+  └──────────────────────────────────────┬──────────────────────────────────────┘
+                                         │
+  [FASE 1: Valutazione & Strategia]      ▼
+  ┌─────────────────────────────────────────────────────────────────────────────┐
+  │  01-Assessment.md (Stato Attuale)  ──►  02-HLD.md (High Level Architecture) │
+  └──────────────────────────────────────┬──────────────────────────────────────┘
+                                         │
+  [FASE 2: Ingegneria di Dettaglio]      ▼
+  ┌─────────────────────────────────────────────────────────────────────────────┐
+  │  03-LLD.md (Low Level Design)      ──►  04-Network-IPAM.md (Subnet/VLAN/IP) │
+  └──────────────────────────────────────┬──────────────────────────────────────┘
+                                         │
+  [FASE 3: Piani di Implementazione]     ▼
+  ┌─────────────────────────────────────────────────────────────────────────────┐
+  │  05-Runbook.md (Piani di Migrazione, Cut-Over e Procedure Operative)        │
+  └──────────────────────────────────────┬──────────────────────────────────────┘
+                                         │
+  [FASE 4: Collaudo & Validazione]       ▼
+  ┌─────────────────────────────────────────────────────────────────────────────┐
+  │  06-As-Built.md (Config & Serials) ──►  07-Test-Report.md (FAT/SAT & Cert)  │
+  └──────────────────────────────────────┬──────────────────────────────────────┘
+                                         │
+  [FASE 5: Consegna & Operations]        ▼
+  ┌─────────────────────────────────────────────────────────────────────────────┐
+  │  08-Handover-Operations.md         ──►  09-Handover-Inventory.md            │
+  └──────────────────────────────────────┬──────────────────────────────────────┘
+                                         │
+  [FASE 6-7: Incident & Compliance]      ▼
+  ┌─────────────────────────────────────────────────────────────────────────────┐
+  │  10-Incident-RCA.md (Post-Mortem)  ──►  Audit NIS2 & Matrice ISO 27001      │
+  └─────────────────────────────────────────────────────────────────────────────┘
+```
+
+> 📄 *Per il compendio completo di tutti i diagrammi ASCII, consulta [`docs/ASCII_DIAGRAMS.md`](ASCII_DIAGRAMS.md).*
+
 ---
 
 ## 2. Il Connettore Deterministico: `ITInfraBridge`
