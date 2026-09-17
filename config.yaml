@@ -1,0 +1,50 @@
+# ==============================================================================
+# itinfra-business-ops — Global Configuration
+# ==============================================================================
+
+# Percorso relativo o assoluto verso il repository tecnico itinfra (Ground Truth Tecnico)
+itinfra_path: "../itinfra"
+
+# Informazioni Operatore / Azienda Fornitrice
+company:
+  name: "ITInfra Business Operations"
+  vat_id: "IT01234567890"
+  fiscal_code: "01234567890"
+  sdi_code: "M5UXCR1"
+  pec: "amministrazione@pec.itinfra.local"
+  email: "billing@itinfra.local"
+  currency: "EUR"
+  default_vat_rate: 22.0
+
+# Parametri operativi e finanziari di default
+defaults:
+  payment_terms: "30_60_DF_FM" # 30/60 gg data fattura fine mese
+  rounding_minutes: 30         # Arrotondamento scatti orari nei rapportini (minuti)
+  
+  # Livelli SLA predefiniti (ore solari o lavorative)
+  sla_levels:
+    critical:
+      first_response_hours: 2
+      target_resolution_hours: 4
+      description: "Blocco totale infrastruttura o fermo produzione"
+    high:
+      first_response_hours: 4
+      target_resolution_hours: 8
+      description: "Malfunzionamento grave con degrado prestazioni"
+    standard:
+      first_response_hours: 8
+      target_resolution_hours: 24
+      description: "Richiesta ordinaria o manutenzione pianificata"
+
+  # Soglie di pre-allarme automatico
+  alerts:
+    contract_expiry_days: [60, 30, 15] # Giorni prima della scadenza contratto
+    hours_threshold_percent: 80         # Alert consumo monte ore
+    mps_toner_threshold_percent: 15     # Alert sostituzione preventiva consumabile toner
+
+# Struttura cartelle di storage
+storage:
+  clients_dir: "clients"
+  schemas_dir: "schemas"
+  templates_dir: "templates"
+  exports_dir: "exports"

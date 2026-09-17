@@ -1,0 +1,90 @@
+$schema: "http://json-schema.org/draft-07/schema#"
+title: "Client Manifest Schema"
+description: "Schema per il manifesto anagrafico e moduli attivi del cliente in itinfra-business-ops"
+type: object
+required:
+  - slug
+  - client_name
+  - billing_info
+  - modules
+properties:
+  slug:
+    type: string
+    pattern: "^[a-z0-9]+(-[a-z0-9]+)*$"
+    description: "Slug univoco condiviso con il repo tecnico itinfra"
+  client_name:
+    type: string
+    description: "Ragione sociale del cliente"
+  created_at:
+    type: string
+    format: date
+  contacts:
+    type: array
+    items:
+      type: object
+      required:
+        - name
+        - role
+        - email
+      properties:
+        name:
+          type: string
+        role:
+          type: string
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+  billing_info:
+    type: object
+    required:
+      - vat_id
+      - sdi_code
+      - pec
+      - address
+    properties:
+      vat_id:
+        type: string
+      fiscal_code:
+        type: string
+      sdi_code:
+        type: string
+      pec:
+        type: string
+      iban:
+        type: string
+      payment_terms:
+        type: string
+      address:
+        type: object
+        required:
+          - street
+          - zip
+          - city
+          - province
+        properties:
+          street:
+            type: string
+          zip:
+            type: string
+          city:
+            type: string
+          province:
+            type: string
+  modules:
+    type: object
+    required:
+      - it_support
+      - mps_rental
+      - office_furniture
+    properties:
+      it_support:
+        type: boolean
+        description: "Contratti di assistenza SLA e monte ore attivi"
+      mps_rental:
+        type: boolean
+        description: "Parco stampanti multifunzione a noleggio / costo copia attivo"
+      office_furniture:
+        type: boolean
+        description: "Commesse fornitura e posa arredo ufficio attive"

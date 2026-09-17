@@ -1,0 +1,89 @@
+$schema: "http://json-schema.org/draft-07/schema#"
+title: "IT Support Contract Schema (Pipeline A)"
+description: "Schema per contratti di assistenza SLA, canoni MSP e monte ore"
+type: object
+required:
+  - contract_id
+  - slug
+  - status
+  - formula
+  - valid_from
+  - valid_to
+  - sla
+  - financial
+properties:
+  contract_id:
+    type: string
+  slug:
+    type: string
+  status:
+    type: string
+    enum: ["draft", "active", "suspended", "expired"]
+  formula:
+    type: string
+    enum: ["msp_flat", "hours_bank", "hybrid"]
+  signed_pdf_sha256:
+    type: string
+  valid_from:
+    type: string
+    format: date
+  valid_to:
+    type: string
+    format: date
+  renewal:
+    type: object
+    properties:
+      automatic:
+        type: boolean
+      notice_period_days:
+        type: integer
+  sla:
+    type: object
+    required:
+      - tier
+      - first_response_hours
+      - target_resolution_hours
+    properties:
+      tier:
+        type: string
+        enum: ["standard", "high", "critical"]
+      coverage_window:
+        type: string
+      first_response_hours:
+        type: number
+      target_resolution_hours:
+        type: number
+  financial:
+    type: object
+    required:
+      - billing_period
+    properties:
+      recurring_fee:
+        type: number
+      billing_period:
+        type: string
+        enum: ["monthly", "quarterly", "semestral", "annual", "one_off"]
+      total_hours_included:
+        type: number
+      consumed_hours:
+        type: number
+      extra_hourly_rate:
+        type: number
+      travel_fee_fixed:
+        type: number
+  covered_assets:
+    type: array
+    items:
+      type: object
+      required:
+        - serial_number
+        - role
+      properties:
+        serial_number:
+          type: string
+        hostname:
+          type: string
+        role:
+          type: string
+        model:
+          type: string

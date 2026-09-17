@@ -1,0 +1,31 @@
+slug: "{{SLUG}}"
+client_name: "{{CLIENT_NAME}}"
+created_at: "{{CURRENT_DATE}}"
+
+contacts:
+  - name: "Referente Tecnico"
+    role: "IT Manager"
+    email: "it@{{SLUG}}.local"
+    phone: "+39 02 0000001"
+  - name: "Referente Amministrazione"
+    role: "CFO / Accounting"
+    email: "amministrazione@{{SLUG}}.local"
+    phone: "+39 02 0000002"
+
+billing_info:
+  vat_id: "IT99999999999"
+  fiscal_code: "99999999999"
+  sdi_code: "0000000"
+  pec: "amministrazione@pec.{{SLUG}}.local"
+  iban: "IT00X0000000000000000000000"
+  payment_terms: "30_60_DF_FM"
+  address:
+    street: "Via Roma, 1"
+    zip: "20100"
+    city: "Milano"
+    province: "MI"
+
+modules:
+  it_support: true
+  mps_rental: true
+  office_furniture: false

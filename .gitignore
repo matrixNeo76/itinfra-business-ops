@@ -1,0 +1,42 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.pytest_cache/
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# Environment variables & secrets
+.env
+.env.*
+secrets.yaml
+credentials.json
+
+# Logs and runtime databases
+*.log
+*.sqlite3
+*.db
+tmp/
+temp/
+
+# OS generated files
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+.DS_Store
+
+# IDEs
+.vscode/
+.idea/
+
+# Exports & staging
+exports/
+dist/
+build/

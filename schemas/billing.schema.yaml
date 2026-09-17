@@ -1,0 +1,105 @@
+$schema: "http://json-schema.org/draft-07/schema#"
+title: "Billing & Scadenzario Schema (Pipeline C)"
+description: "Schema per batch di fatturazione fine mese, righe fattura, tracciato SDI v1.2 e scadenzario partite"
+type: object
+required:
+  - batch_id
+  - slug
+  - period
+  - invoice_draft
+properties:
+  batch_id:
+    type: string
+  slug:
+    type: string
+  period:
+    type: string
+    pattern: "^[0-9]{4}-[0-9]{2}$"
+  status:
+    type: string
+    enum: ["draft", "approved", "sdi_generated", "sdi_sent", "paid", "cancelled"]
+  invoice_draft:
+    type: object
+    required:
+      - invoice_date
+      - payment_method
+      - lines
+      - totals
+    properties:
+      invoice_number:
+        type: string
+      invoice_date:
+        type: string
+        format: date
+      payment_method:
+        type: string
+      lines:
+        type: array
+        items:
+          type: object
+          required:
+            - description
+            - quantity
+            - unit_price
+            - total_line
+            - source_type
+          properties:
+            description:
+              type: string
+            quantity:
+              type: number
+            unit_price:
+              type: number
+            vat_rate:
+              type: number
+            total_line:
+              type: number
+            source_type:
+              type: string
+              enum: ["recurring_contract", "rapportino_hours", "mps_base_fee", "mps_excess_bw", "mps_excess_color", "furniture_milestone", "hardware_sale"]
+            source_ref:
+              type: string
+      totals:
+        type: object
+        required:
+          - subtotal_net
+          - vat_amount
+          - total_gross
+        properties:
+          subtotal_net:
+            type: number
+          vat_amount:
+            type: number
+          total_gross:
+            type: number
+  scadenzario:
+    type: object
+    properties:
+      overall_status:
+        type: string
+        enum: ["open", "partially_paid", "paid", "overdue"]
+      installments:
+        type: array
+        items:
+          type: object
+          required:
+            - number
+            - due_date
+            - amount
+            - status
+          properties:
+            number:
+              type: integer
+            due_date:
+              type: string
+              format: date
+            amount:
+              type: number
+            status:
+              type: string
+              enum: ["unpaid", "paid", "reminded_1", "reminded_2", "blocked"]
+            paid_date:
+              type: string
+              format: date
+            bank_transaction_id:
+              type: string

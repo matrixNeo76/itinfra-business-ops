@@ -1,0 +1,120 @@
+$schema: "http://json-schema.org/draft-07/schema#"
+title: "Managed Print Services & Rental Schema (Pipeline F)"
+description: "Schema per noleggio multifunzione, telelettura contatori SNMP, alert consumabili e costo copia"
+type: object
+required:
+  - mps_contract_id
+  - slug
+  - device_info
+  - contract_terms
+properties:
+  mps_contract_id:
+    type: string
+  slug:
+    type: string
+  status:
+    type: string
+    enum: ["provisioning", "active", "suspended", "returned"]
+  device_info:
+    type: object
+    required:
+      - model
+      - serial_number
+    properties:
+      model:
+        type: string
+      serial_number:
+        type: string
+      mac_address:
+        type: string
+      ip_address:
+        type: string
+      location:
+        type: string
+  snmp_config:
+    type: object
+    properties:
+      enabled:
+        type: boolean
+      version:
+        type: string
+        enum: ["v2c", "v3"]
+      community:
+        type: string
+      oids:
+        type: object
+        properties:
+          mono_counter:
+            type: string
+          color_counter:
+            type: string
+          toner_black_pct:
+            type: string
+          toner_cyan_pct:
+            type: string
+          toner_magenta_pct:
+            type: string
+          toner_yellow_pct:
+            type: string
+  contract_terms:
+    type: object
+    required:
+      - rental_type
+      - semestral_base_fee
+      - included_copies_semestral
+      - overage_cost_per_page
+    properties:
+      rental_type:
+        type: string
+        enum: ["direct_internal", "financial_lease_grenke", "financial_lease_bcc", "sale_cost_per_page_only"]
+      financier_contract_number:
+        type: string
+      semestral_base_fee:
+        type: number
+      included_copies_semestral:
+        type: object
+        required:
+          - mono
+          - color
+        properties:
+          mono:
+            type: integer
+          color:
+            type: integer
+      overage_cost_per_page:
+        type: object
+        required:
+          - mono
+          - color
+        properties:
+          mono:
+            type: number
+          color:
+            type: number
+  readings:
+    type: array
+    items:
+      type: object
+      required:
+        - reading_date
+        - mono_total
+        - color_total
+      properties:
+        reading_date:
+          type: string
+          format: date
+        mono_total:
+          type: integer
+        color_total:
+          type: integer
+        toner_black_percent:
+          type: integer
+        toner_cyan_percent:
+          type: integer
+        toner_magenta_percent:
+          type: integer
+        toner_yellow_percent:
+          type: integer
+        reading_method:
+          type: string
+          enum: ["snmp_auto", "manual_customer", "technician_field"]

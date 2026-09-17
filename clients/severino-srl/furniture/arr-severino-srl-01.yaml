@@ -1,0 +1,40 @@
+order_id: "ARR-2026-SEVERINO-01"
+slug: "severino-srl"
+title: "Arredo Sala Riunioni Teams Rooms e 4 Postazioni Operative"
+status: "5_assembly"
+budget_net: 9800.00
+
+stages:
+  survey:
+    date: "2026-09-02"
+    surveyor: "Arch. Luca Bianchi"
+    laser_measures_verified: true
+    data_power_points_mapped: true
+    notes: "Tavolo riunioni predisposto con passacavi centrale per Rally Bar e Touch Panel"
+
+  design:
+    dwg_reference: "CAD/SEVERINO-SALA-MTR.dwg"
+    render_3d_count: 3
+    workstations_count: 4
+    meeting_rooms_count: 1
+    approved_by_client: true
+    approved_at: "2026-09-08"
+
+  procurement:
+    factory_orders_sent: true
+    estimated_warehouse_arrival: "2026-09-14"
+
+  assembly:
+    planned_start_date: "2026-09-15"
+    assembly_team: "Montatori Professional Milano"
+    cable_trays_fitted: true
+    packaging_disposed_green: true
+
+  handover:
+    checklist:
+      desk_planarity_ok: true
+      drawer_locks_functional: true
+      finishes_scratch_free: true
+      power_data_accessible: true
+    signed_acceptance_date: "2026-09-16"
+    client_signatory: "Marco Severino"

@@ -1,0 +1,95 @@
+$schema: "http://json-schema.org/draft-07/schema#"
+title: "Field Service Report Schema (Pipeline B)"
+description: "Schema per rapportini di assistenza tecnica, time tracking e scarico monte ore"
+type: object
+required:
+  - report_id
+  - slug
+  - technician
+  - date
+  - clock_in
+  - clock_out
+  - total_hours_rounded
+  - intervention_type
+  - ledger_action
+  - description
+properties:
+  report_id:
+    type: string
+    pattern: "^RAP-[0-9]{8}-[0-9A-Za-z]+$"
+  slug:
+    type: string
+  contract_id:
+    type: string
+  ticket_id:
+    type: string
+  technician:
+    type: string
+  date:
+    type: string
+    format: date
+  clock_in:
+    type: string
+    pattern: "^[0-2][0-9]:[0-5][0-9]$"
+  clock_out:
+    type: string
+    pattern: "^[0-2][0-9]:[0-5][0-9]$"
+  break_minutes:
+    type: integer
+    default: 0
+  total_hours_raw:
+    type: number
+  total_hours_rounded:
+    type: number
+  rounding_step_minutes:
+    type: integer
+    default: 30
+  intervention_type:
+    type: string
+    enum: ["ordinary", "out_of_hours", "emergency", "remote_support"]
+  ledger_action:
+    type: string
+    enum: ["debit_contract", "invoice_spot", "included_flat"]
+  impacted_assets:
+    type: array
+    items:
+      type: object
+      required:
+        - serial_number
+      properties:
+        serial_number:
+          type: string
+        role:
+          type: string
+        description:
+          type: string
+  description:
+    type: string
+  spare_parts:
+    type: array
+    items:
+      type: object
+      required:
+        - code
+        - description
+        - quantity
+      properties:
+        code:
+          type: string
+        description:
+          type: string
+        quantity:
+          type: number
+        unit_price:
+          type: number
+  customer_sign_off:
+    type: object
+    properties:
+      signed:
+        type: boolean
+      signer_name:
+        type: string
+      signed_at:
+        type: string
+      signature_notes:
+        type: string

@@ -1,0 +1,102 @@
+$schema: "http://json-schema.org/draft-07/schema#"
+title: "Office Furniture Supply & Handover Schema (Pipeline G)"
+description: "Schema per gestione commessa fornitura arredo ufficio, rilievo, posa e verbale collaudo finale"
+type: object
+required:
+  - order_id
+  - slug
+  - title
+  - status
+  - stages
+properties:
+  order_id:
+    type: string
+  slug:
+    type: string
+  title:
+    type: string
+  status:
+    type: string
+    enum: ["1_survey", "2_design", "3_sampling_approval", "4_procurement", "5_assembly", "6_handover_approved"]
+  budget_net:
+    type: number
+  stages:
+    type: object
+    required:
+      - survey
+      - design
+      - assembly
+      - handover
+    properties:
+      survey:
+        type: object
+        properties:
+          date:
+            type: string
+            format: date
+          surveyor:
+            type: string
+          laser_measures_verified:
+            type: boolean
+          data_power_points_mapped:
+            type: boolean
+          notes:
+            type: string
+      design:
+        type: object
+        properties:
+          dwg_reference:
+            type: string
+          render_3d_count:
+            type: integer
+          workstations_count:
+            type: integer
+          meeting_rooms_count:
+            type: integer
+          approved_by_client:
+            type: boolean
+          approved_at:
+            type: string
+            format: date
+      procurement:
+        type: object
+        properties:
+          factory_orders_sent:
+            type: boolean
+          estimated_warehouse_arrival:
+            type: string
+            format: date
+      assembly:
+        type: object
+        properties:
+          planned_start_date:
+            type: string
+            format: date
+          assembly_team:
+            type: string
+          cable_trays_fitted:
+            type: boolean
+          packaging_disposed_green:
+            type: boolean
+      handover:
+        type: object
+        properties:
+          checklist:
+            type: object
+            properties:
+              desk_planarity_ok:
+                type: boolean
+              drawer_locks_functional:
+                type: boolean
+              finishes_scratch_free:
+                type: boolean
+              power_data_accessible:
+                type: boolean
+          signed_acceptance_date:
+            type: string
+            format: date
+          client_signatory:
+            type: string
+          warranty_expiry_date:
+            type: string
+            format: date

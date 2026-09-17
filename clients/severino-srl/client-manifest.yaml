@@ -1,0 +1,31 @@
+slug: "severino-srl"
+client_name: "Severino Srl"
+created_at: "2026-09-16"
+
+contacts:
+  - name: "Marco Severino"
+    role: "Direttore Operativo & IT Sponsor"
+    email: "m.severino@severinosrl.local"
+    phone: "+39 02 7891234"
+  - name: "Laura Conti"
+    role: "Responsabile Amministrazione"
+    email: "amministrazione@severinosrl.local"
+    phone: "+39 02 7891235"
+
+billing_info:
+  vat_id: "IT09876543210"
+  fiscal_code: "09876543210"
+  sdi_code: "SUBM70N"
+  pec: "amministrazione@pec.severinosrl.it"
+  iban: "IT77X0306909606100000123456"
+  payment_terms: "30_60_DF_FM"
+  address:
+    street: "Via delle Industrie, 45"
+    zip: "20851"
+    city: "Lissone"
+    province: "MB"
+
+modules:
+  it_support: true
+  mps_rental: true
+  office_furniture: true

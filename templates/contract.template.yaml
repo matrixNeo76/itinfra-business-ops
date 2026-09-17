@@ -1,0 +1,31 @@
+contract_id: "CTR-{{YEAR}}-{{SLUG}}"
+slug: "{{SLUG}}"
+status: "active"
+formula: "hours_bank" # oppure "msp_flat"
+valid_from: "{{YEAR}}-01-01"
+valid_to: "{{YEAR}}-12-31"
+
+renewal:
+  automatic: true
+  notice_period_days: 60
+
+sla:
+  tier: "high"
+  coverage_window: "08:30-18:30 Lun-Ven"
+  first_response_hours: 4
+  target_resolution_hours: 8
+
+financial:
+  recurring_fee: 0.0
+  billing_period: "annual"
+  total_hours_included: 50.0
+  consumed_hours: 0.0
+  extra_hourly_rate: 75.0
+  travel_fee_fixed: 40.0
+
+# Elenco apparati coperti (cross-check con itinfra 06-As-Built.md)
+covered_assets:
+  - serial_number: "SRV-FW-001"
+    hostname: "fw-core-01"
+    role: "Firewall Perimetrale"
+    model: "FortiGate 60F"

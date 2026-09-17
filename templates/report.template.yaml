@@ -1,0 +1,30 @@
+report_id: "RAP-{{DATE_COMPACT}}-{{ID}}"
+slug: "{{SLUG}}"
+contract_id: "CTR-{{YEAR}}-{{SLUG}}"
+ticket_id: "JIRA-1001"
+technician: "Tecnico Assegnato"
+date: "{{CURRENT_DATE}}"
+clock_in: "09:00"
+clock_out: "11:30"
+break_minutes: 0
+total_hours_raw: 2.5
+total_hours_rounded: 2.5
+rounding_step_minutes: 30
+
+intervention_type: "ordinary" # ordinary, out_of_hours, emergency, remote_support
+ledger_action: "debit_contract" # debit_contract, invoice_spot, included_flat
+
+impacted_assets:
+  - serial_number: "SRV-FW-001"
+    role: "Firewall Perimetrale"
+    description: "Verifica tunnel IPsec e rotazione certificati"
+
+description: |
+  Esecuzione manutenzione programmata:
+  - Aggiornamento policy di sicurezza e verifica routing VPN.
+  - Test connettività failover linea di backup.
+
+customer_sign_off:
+  signed: true
+  signer_name: "Responsabile IT Cliente"
+  signed_at: "{{CURRENT_DATE}} 11:35"

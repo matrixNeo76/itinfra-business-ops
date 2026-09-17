@@ -1,0 +1,56 @@
+$schema: "http://json-schema.org/draft-07/schema#"
+title: "Jira & Appointment Scheduling Schema (Pipeline D)"
+description: "Schema per sincronizzazione task Jira, slot a calendario e pre-compilazione interventi"
+type: object
+required:
+  - sync_id
+  - slug
+  - jira_issue_key
+  - summary
+properties:
+  sync_id:
+    type: string
+  slug:
+    type: string
+  jira_issue_key:
+    type: string
+    pattern: "^[A-Z0-9]+-[0-9]+$"
+  issue_type:
+    type: string
+    enum: ["Incident", "ServiceRequest", "Task", "Maintenance", "Commessa"]
+  priority:
+    type: string
+    enum: ["Lowest", "Low", "Medium", "High", "Critical"]
+  summary:
+    type: string
+  description:
+    type: string
+  assignee:
+    type: string
+  appointment:
+    type: object
+    properties:
+      start_datetime:
+        type: string
+        format: date-time
+      end_datetime:
+        type: string
+        format: date-time
+      location:
+        type: string
+      calendar_event_id:
+        type: string
+      confirmation_sent:
+        type: boolean
+  execution:
+    type: object
+    properties:
+      status:
+        type: string
+        enum: ["scheduled", "in_progress", "completed", "cancelled"]
+      rapportino_ref:
+        type: string
+      actual_time_minutes:
+        type: integer
+      jira_worklog_id:
+        type: string

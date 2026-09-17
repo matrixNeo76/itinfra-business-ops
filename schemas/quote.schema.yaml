@@ -1,0 +1,85 @@
+$schema: "http://json-schema.org/draft-07/schema#"
+title: "Multi-Product Quoting Schema (Pipeline E)"
+description: "Schema per preventivazione multiprodotto (Hardware, VoIP, Stampanti, Arredo, Licenze) con calcolo ricarichi cost-plus"
+type: object
+required:
+  - quote_id
+  - slug
+  - created_at
+  - valid_until
+  - categories
+  - totals
+properties:
+  quote_id:
+    type: string
+  slug:
+    type: string
+  status:
+    type: string
+    enum: ["draft", "sent", "accepted", "rejected", "expired"]
+  created_at:
+    type: string
+    format: date
+  valid_until:
+    type: string
+    format: date
+  payment_terms:
+    type: string
+  delivery_time_weeks:
+    type: integer
+  categories:
+    type: array
+    items:
+      type: object
+      required:
+        - name
+        - items
+      properties:
+        name:
+          type: string
+          enum: ["hardware_server_network", "voip_telephony", "printers_mfp", "office_furniture", "professional_services", "software_licenses"]
+        items:
+          type: array
+          items:
+            type: object
+            required:
+              - description
+              - quantity
+              - unit_cost
+              - markup_percent
+              - unit_price
+              - line_total
+            properties:
+              part_number:
+                type: string
+              description:
+                type: string
+              quantity:
+                type: number
+              unit_cost:
+                type: number
+              markup_percent:
+                type: number
+              unit_price:
+                type: number
+              line_total:
+                type: number
+              is_optional:
+                type: boolean
+                default: false
+  totals:
+    type: object
+    required:
+      - total_cost
+      - total_net
+      - gross_margin_amount
+      - gross_margin_percent
+    properties:
+      total_cost:
+        type: number
+      total_net:
+        type: number
+      gross_margin_amount:
+        type: number
+      gross_margin_percent:
+        type: number

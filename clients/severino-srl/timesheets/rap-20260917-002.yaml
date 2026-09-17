@@ -1,0 +1,30 @@
+report_id: "RAP-20260917-002"
+slug: "severino-srl"
+contract_id: "CTR-2026-SEVERINO"
+ticket_id: "JIRA-SEV-102"
+technician: "Mario Rossi"
+date: "2026-09-17"
+clock_in: "14:00"
+clock_out: "15:45"
+break_minutes: 0
+total_hours_raw: 1.75
+total_hours_rounded: 2.0
+rounding_step_minutes: 30
+
+intervention_type: "ordinary"
+ledger_action: "invoice_spot"
+
+impacted_assets:
+  - serial_number: "E4200891F7BC"
+    role: "Switch Core MikroTik"
+    description: "Configurazione porta ether15 per apparato Teams Rooms aggiuntivo"
+
+description: |
+  Attività extra-canone richiesta dalla direzione:
+  - Patching e configurazione VLAN dedicata su porta 15 per device MTR.
+  - Verifica assenza drop packet e test latenza.
+
+customer_sign_off:
+  signed: true
+  signer_name: "Marco Severino"
+  signed_at: "2026-09-17 15:50"

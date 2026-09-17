@@ -1,0 +1,30 @@
+report_id: "RAP-20260916-001"
+slug: "severino-srl"
+contract_id: "CTR-2026-SEVERINO"
+ticket_id: "JIRA-SEV-101"
+technician: "Mario Rossi"
+date: "2026-09-16"
+clock_in: "08:30"
+clock_out: "11:30"
+break_minutes: 0
+total_hours_raw: 3.0
+total_hours_rounded: 3.0
+rounding_step_minutes: 30
+
+intervention_type: "ordinary"
+ledger_action: "debit_contract"
+
+impacted_assets:
+  - serial_number: "CZC8492K1L"
+    role: "Host Hyper-V"
+    description: "Verifica configurazione vSwitch e passthrough SSD fs02"
+
+description: |
+  Collaudo e verifica post-attivazione host Hyper-V:
+  - Verifica avvio automatico delle 3 VM (dc01, fs01, fs02).
+  - Test connettività share SMB e sincronizzazione orario dominio AD.
+
+customer_sign_off:
+  signed: true
+  signer_name: "Marco Severino"
+  signed_at: "2026-09-16 11:35"

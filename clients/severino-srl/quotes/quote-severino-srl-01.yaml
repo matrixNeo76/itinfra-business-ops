@@ -1,0 +1,36 @@
+quote_id: "Q-2026-SEVERINO-01"
+slug: "severino-srl"
+status: "sent"
+created_at: "2026-09-10"
+valid_until: "2026-10-10"
+payment_terms: "30_60_DF_FM"
+delivery_time_weeks: 2
+
+categories:
+  - name: "hardware_server_network"
+    items:
+      - part_number: "UBI-U6-PRO"
+        description: "Access Point Ubiquiti UniFi WiFi 6 Pro PoE"
+        quantity: 2
+        unit_cost: 135.00
+        markup_percent: 25.0
+        unit_price: 168.75
+        line_total: 337.50
+        is_optional: false
+
+  - name: "professional_services"
+    items:
+      - part_number: "SRV-WIFI-SURVEY"
+        description: "Posa, certificazione canali RF e tuning roaming wireless"
+        quantity: 4
+        unit_cost: 40.00
+        markup_percent: 75.0
+        unit_price: 70.00
+        line_total: 280.00
+        is_optional: false
+
+totals:
+  total_cost: 430.00
+  total_net: 617.50
+  gross_margin_amount: 187.50
+  gross_margin_percent: 30.36

@@ -1,0 +1,47 @@
+mps_contract_id: "MPS-2026-SEVERINO-01"
+slug: "severino-srl"
+status: "active"
+
+device_info:
+  model: "Ricoh IM C2500 A3 Multifunzione Colore"
+  serial_number: "RICOH-SEV-2500-01"
+  mac_address: "00:26:73:99:88:77"
+  ip_address: "192.168.120.253"
+  location: "Ufficio Amministrazione Piano Terra"
+
+snmp_config:
+  enabled: true
+  version: "v2c"
+  community: "public"
+  oids:
+    mono_counter: "1.3.6.1.4.1.367.3.2.1.2.19.1.0"
+    color_counter: "1.3.6.1.4.1.367.3.2.1.2.19.2.0"
+    toner_black_pct: "1.3.6.1.2.1.43.11.1.1.9.1.1"
+
+contract_terms:
+  rental_type: "direct_internal"
+  semestral_base_fee: 390.00
+  included_copies_semestral:
+    mono: 4500
+    color: 900
+  overage_cost_per_page:
+    mono: 0.008
+    color: 0.060
+
+readings:
+  - reading_date: "2026-03-15"
+    mono_total: 10000
+    color_total: 2000
+    toner_black_percent: 90
+    toner_cyan_percent: 85
+    toner_magenta_percent: 80
+    toner_yellow_percent: 88
+    reading_method: "snmp_auto"
+  - reading_date: "2026-09-15"
+    mono_total: 15200
+    color_total: 3100
+    toner_black_percent: 12
+    toner_cyan_percent: 62
+    toner_magenta_percent: 58
+    toner_yellow_percent: 65
+    reading_method: "snmp_auto"

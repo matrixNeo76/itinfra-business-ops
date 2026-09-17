@@ -1,0 +1,34 @@
+contract_id: "CTR-2026-SEVERINO"
+slug: "severino-srl"
+status: "active"
+formula: "hours_bank"
+valid_from: "2026-01-01"
+valid_to: "2026-12-31"
+
+renewal:
+  automatic: true
+  notice_period_days: 60
+
+sla:
+  tier: "high"
+  coverage_window: "08:30-18:30 Lun-Ven"
+  first_response_hours: 4
+  target_resolution_hours: 8
+
+financial:
+  recurring_fee: 150.00
+  billing_period: "monthly"
+  total_hours_included: 40.0
+  consumed_hours: 8.5
+  extra_hourly_rate: 80.0
+  travel_fee_fixed: 35.0
+
+covered_assets:
+  - serial_number: "CZC8492K1L"
+    hostname: "HV-SEV01"
+    role: "Host Hyper-V Mononodo"
+    model: "HP Z4 G4 Workstation"
+  - serial_number: "E4200891F7BC"
+    hostname: "sw-core-01"
+    role: "Core Switch & Router Perimetrale"
+    model: "MikroTik CRS326-24G-2S+RM"
