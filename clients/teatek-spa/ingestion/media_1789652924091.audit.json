@@ -1,0 +1,150 @@
+{
+  "document_type": "INVOICE",
+  "source_file": "media_1789652924091.pdf",
+  "evidence": [
+    {
+      "field": "client_name",
+      "value": "T.E.A. TEK SPA",
+      "source_file": "media_1789652924091.pdf",
+      "page": 1,
+      "matched_text": "T.E.A. TEK SPA",
+      "confidence": 0.98,
+      "status": "VERIFIED",
+      "notes": ""
+    },
+    {
+      "field": "address",
+      "value": {
+        "street": "VIA SANTA LUCIA, 36",
+        "zip": "80132",
+        "city": "NAPOLI",
+        "province": "NA"
+      },
+      "source_file": "media_1789652924091.pdf",
+      "page": 1,
+      "matched_text": "VIA SANTA LUCIA, 36\n80132 NAPOLI NA",
+      "confidence": 0.98,
+      "status": "VERIFIED",
+      "notes": ""
+    },
+    {
+      "field": "vat_id",
+      "value": "IT06362981216",
+      "source_file": "media_1789652924091.pdf",
+      "page": 1,
+      "matched_text": "IT06362981216",
+      "confidence": 1.0,
+      "status": "VERIFIED",
+      "notes": ""
+    },
+    {
+      "field": "customer_code",
+      "value": "501.00238",
+      "source_file": "media_1789652924091.pdf",
+      "page": 1,
+      "matched_text": "501.00238",
+      "confidence": 0.95,
+      "status": "VERIFIED",
+      "notes": ""
+    },
+    {
+      "field": "payment_terms",
+      "value": "BONIFICO DATA FATTURA",
+      "source_file": "media_1789652924091.pdf",
+      "page": 1,
+      "matched_text": "BONIFICO DATA FATTURA",
+      "confidence": 0.95,
+      "status": "VERIFIED",
+      "notes": ""
+    },
+    {
+      "field": "issuer_iban",
+      "value": "IT41E0306903497100000008327",
+      "source_file": "media_1789652924091.pdf",
+      "page": 1,
+      "matched_text": "Ns. IBAN IT41E0306903497100000008327",
+      "confidence": 1.0,
+      "status": "VERIFIED",
+      "notes": "IBAN dell'emittente fattura per incasso bonifico. NON attribuibile come IBAN del cliente."
+    },
+    {
+      "field": "client_iban",
+      "value": null,
+      "source_file": "media_1789652924091.pdf",
+      "page": 1,
+      "matched_text": "",
+      "confidence": 1.0,
+      "status": "NOT_FOUND",
+      "notes": "Il cliente committente non ha IBAN esposto sulla fattura passiva."
+    },
+    {
+      "field": "sdi_code",
+      "value": null,
+      "source_file": "media_1789652924091.pdf",
+      "page": 1,
+      "matched_text": "",
+      "confidence": 0.0,
+      "status": "NOT_FOUND",
+      "notes": "Il codice SDI non e' stampato nel corpo della fattura cartacea/PDF (il documento rimanda al cassetto fiscale)."
+    },
+    {
+      "field": "line_items",
+      "value": [
+        {
+          "code": "KL103",
+          "description": "Scrivania da 140 gamba a U dim. cm 140x80x7",
+          "um": "NR",
+          "quantity": 4.0,
+          "unit_price": 281.0,
+          "discount_percent": 40.0,
+          "total_line": 674.4,
+          "vat_rate": 22.0
+        },
+        {
+          "code": "C80",
+          "description": "SEDIA FISSA S/BR - BLU",
+          "um": "NR",
+          "quantity": 16.0,
+          "unit_price": 55.0,
+          "discount_percent": 40.0,
+          "total_line": 528.0,
+          "vat_rate": 22.0
+        }
+      ],
+      "source_file": "media_1789652924091.pdf",
+      "page": 1,
+      "matched_text": "2 righe articoli estratte",
+      "confidence": 0.95,
+      "status": "VERIFIED",
+      "notes": ""
+    },
+    {
+      "field": "sla_contract",
+      "value": null,
+      "source_file": "media_1789652924091.pdf",
+      "page": 1,
+      "matched_text": "",
+      "confidence": 0.0,
+      "status": "NOT_FOUND",
+      "notes": "Nessun contratto di assistenza tecnica SLA o canone ricorrente menzionato nel documento."
+    },
+    {
+      "field": "mps_contract",
+      "value": null,
+      "source_file": "media_1789652924091.pdf",
+      "page": 1,
+      "matched_text": "",
+      "confidence": 0.0,
+      "status": "NOT_FOUND",
+      "notes": "Nessun noleggio stampanti multifunzione o costo copia presente nel documento."
+    }
+  ],
+  "summary": {
+    "document_type": "INVOICE",
+    "total_fields_checked": 11,
+    "verified_fields": 7,
+    "not_found_fields": 4,
+    "zero_hallucination_guard_active": true,
+    "timestamp": "2026-09-17T16:27:11.703187"
+  }
+}

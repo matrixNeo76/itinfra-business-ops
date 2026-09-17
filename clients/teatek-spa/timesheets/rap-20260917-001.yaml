@@ -1,36 +1,41 @@
-report_id: "RAP-20260917-001"
-slug: "teatek-spa"
-contract_id: "CTR-2026-TEATEK-HA"
-ticket_id: "JIRA-TEATEK-01"
-technician: "Sistemista Senior Aure System"
-date: "2026-09-17"
-clock_in: "09:00"
-clock_out: "17:00"
+report_id: RAP-20260917-001
+slug: teatek-spa
+contract_id: ''
+ticket_id: JIRA-TEATEK-01
+technician: Sistemista Senior Aure System
+date: '2026-09-17'
+clock_in: 09:00
+clock_out: '17:00'
 break_minutes: 60
 total_hours_raw: 7.0
 total_hours_rounded: 7.0
 rounding_step_minutes: 15
-
-intervention_type: "ordinary"
-ledger_action: "debit_contract"
-
+intervention_type: ordinary
+ledger_action: included_flat
 impacted_assets:
-  - serial_number: "OPENSTOR-TEATEK-NODE1"
-    role: "Hyperconverged Storage Node 1"
-    description: "Installazione fisica rack, configurazione VSA JovianDSS, creazione zpool NVMe e mirror sync 100GbE"
-  - serial_number: "OPENSTOR-TEATEK-NODE2"
-    role: "Hyperconverged Storage Node 2"
-    description: "Pairing HA Metro Cluster Active/Active, configurazione datastore VMware ESXi e collaudo failover a caldo"
+- serial_number: OPENSTOR-TEATEK-NODE1
+  role: Hyperconverged Storage Node 1
+  description: Installazione fisica rack, configurazione VSA JovianDSS, creazione
+    zpool NVMe e mirror sync 100GbE
+- serial_number: OPENSTOR-TEATEK-NODE2
+  role: Hyperconverged Storage Node 2
+  description: Pairing HA Metro Cluster Active/Active, configurazione datastore VMware
+    ESXi e collaudo failover a caldo
+description: 'Attività di messa in esercizio infrastruttura iperconvergente OpenStor:
 
-description: |
-  Attività di messa in esercizio infrastruttura iperconvergente OpenStor:
   - Posa e cablaggio interconnect 100GbE QSFP28 ridondante.
+
   - Setup Virtual Storage Appliance Open-E JovianDSS v2.14 su VMware ESXi 8.0 U2.
-  - Creazione pool ZFS su 20 dischi Samsung PM9A3 NVMe con cache ZIL Kioxia CM7-V Gen5.
+
+  - Creazione pool ZFS su 20 dischi Samsung PM9A3 NVMe con cache ZIL Kioxia CM7-V
+  Gen5.
+
   - Test simulazione guasto nodo con ripresa istantanea volumi iSCSI (Zero Downtime).
+
   - Configurazione policy snapshot ogni 30s per protezione Ransomware.
 
+  '
 customer_sign_off:
   signed: true
-  signer_name: "Felice Granisso"
-  signed_at: "2026-09-17 17:15"
+  signer_name: Felice Granisso
+  signed_at: 2026-09-17 17:15

@@ -1,104 +1,85 @@
-quote_id: "PREV-2026-001"
-slug: "teatek-spa"
-client_name: "T.E.A. TEK S.P.A."
-client_contact: "Felice Granisso"
-status: "draft"
-created_at: "2026-09-17"
-valid_until: "2026-10-17"
-payment_terms: "30_60_DF_FM"
-delivery_time_weeks: 3
+quote_id: PREV-2026-001
+slug: teatek-spa
+client_name: T.E.A. TEK S.P.A.
+created_at: '2026-09-17'
+valid_until: '2026-10-17'
+payment_terms: 30_60_DF_FM
 categories:
-  - name: "hardware_server_network"
-    items:
-      - part_number: "JMC-14DI-224N"
-        description: "OpenStor JovianDSS 2U Rack Storage 24 Bay 2.5'' Full NVMe Dual Intel Xeon 6 (2x100GbE QSFP28 Metro Cluster Sync, 2x1GbE, Redundant 2000W PSU Titanium)"
-        quantity: 2
-        unit_cost: 9500.00
-        markup_percent: 14.74
-        unit_price: 10900.00
-        line_total: 21800.00
-        is_optional: false
-      - part_number: "CPU-XEON-6507P"
-        description: "Intel Xeon 6507P (8C/16T, min 3.50GHz - max 4.30GHz, 48M Cache, LGA4710, TDP 150W)"
-        quantity: 4
-        unit_cost: 1100.00
-        markup_percent: 13.64
-        unit_price: 1250.00
-        line_total: 5000.00
-        is_optional: false
-      - part_number: "RAM-32GB-D5"
-        description: "Memoria 32GB DDR5-5600 ECC Registered (Configurazione totale 512GB RAM)"
-        quantity: 16
-        unit_cost: 215.00
-        markup_percent: 16.28
-        unit_price: 250.00
-        line_total: 4000.00
-        is_optional: false
-      - part_number: "KIOXIA-CM7V-3.2TB"
-        description: "Kioxia CM7-V U.3 15mm 3.2TB SIE 3 DWPD PCIe Gen5 1x4, 2x2 Mix Use (ZIL Write Log Cache)"
-        quantity: 2
-        unit_cost: 1150.00
-        markup_percent: 17.39
-        unit_price: 1350.00
-        line_total: 2700.00
-        is_optional: false
-      - part_number: "SAMSUNG-PM9A3-3.8TB"
-        description: "Samsung PM9A3 3.84TB NVMe PCIe 4.0 x4 U.2 7mm Enterprise 1DWPD SED Opal (76.8TB Raw Storage)"
-        quantity: 20
-        unit_cost: 585.00
-        markup_percent: 16.24
-        unit_price: 680.00
-        line_total: 13600.00
-        is_optional: false
-      - part_number: "SFP-FINISAR-10G"
-        description: "Finisar FTLX8574D3BCV 1G/10G Dual-Rate SFP+ Short Range Transceiver (10G Eth)"
-        quantity: 2
-        unit_cost: 95.00
-        markup_percent: 15.79
-        unit_price: 110.00
-        line_total: 220.00
-        is_optional: false
-
-  - name: "software_licenses"
-    items:
-      - part_number: "LIC-JOVIAN-32TB"
-        description: "Open-E JovianDSS Storage Extension 32TB License Key & HA Metro Cluster Active/Active License Included"
-        quantity: 2
-        unit_cost: 3850.00
-        markup_percent: 14.29
-        unit_price: 4400.00
-        line_total: 8800.00
-        is_optional: false
-
-  - name: "professional_services"
-    items:
-      - part_number: "SUP-JOVIAN-3Y"
-        description: "JovianDSS Premium Support 3 Anni (Tier 20 to 128TB fornito da Share Dist)"
-        quantity: 2
-        unit_cost: 2600.00
-        markup_percent: 15.38
-        unit_price: 3000.00
-        line_total: 6000.00
-        is_optional: false
-      - part_number: "SRV-CLUSTER-SETUP"
-        description: "Servizio Professionale On-Site: Installazione Rack, Cablaggio 100GbE Sync, Configurazione ZFS HA Metro Cluster, Tuning VMware ESXi e Collaudo Failover"
-        quantity: 1
-        unit_cost: 3383.33
-        markup_percent: 14.68
-        unit_price: 3880.00
-        line_total: 3880.00
-        is_optional: false
-      - part_number: "OPT-GARANZIA-NBD-3Y"
-        description: "Opzione Estensione Garanzia Storage: 3 Anni ON-SITE con formula NBD (Next Business Day)"
-        quantity: 1
-        unit_cost: 8615.00
-        markup_percent: 15.00
-        unit_price: 9907.25
-        line_total: 9907.25
-        is_optional: true
-
+- name: hardware_server_network
+  total_cost: 55160.0
+  total_net: 63497.5
+  margin_amount: 8337.5
+  margin_percent: 13.13
+  items:
+  - part_number: SRV-OPENSTOR-2U
+    description: 2U ZFS OpenStor JovianDSS Rack Storage (iSCSI/NFS/SMB/FC) 24 Bay
+      2.5" NVMe - DUAL INTEL XEON 6 -
+    quantity: 2
+    unit_cost: 14500.0
+    markup_percent: 15.12
+    unit_price: 16691.69
+    line_total: 33383.38
+    is_optional: false
+  - part_number: CPU-XEON-6507P
+    description: 'CPU / SERVER - 6507P- (Xeon® 8C/16T) - min 3,50GHz -max 4,30GHz
+      - 48M Cache - LGA4710 - TDP: 150W - MAX memoria 4TB'
+    quantity: 4
+    unit_cost: 2200.0
+    markup_percent: 15.12
+    unit_price: 2532.53
+    line_total: 10130.12
+    is_optional: false
+  - part_number: RAM-32GB-DDR5
+    description: Memoria 32GB DDR5-5600 ECC REG
+    quantity: 16
+    unit_cost: 210.0
+    markup_percent: 15.11
+    unit_price: 241.74
+    line_total: 3867.84
+    is_optional: false
+  - part_number: SSD-KIOXIA-3200GB
+    description: 'Kioxia CM7-V U.3 15mm 3200 GB. SIE 3 DWPD PCIe Gen5 1x4, 2x2 Mix
+      Use - Max KIOPs: 2.700K/600K'
+    quantity: 2
+    unit_cost: 1200.0
+    markup_percent: 15.12
+    unit_price: 1381.38
+    line_total: 2762.76
+    is_optional: false
+  - part_number: SSD-NVME-3840GB
+    description: 'Samsung PM9A3 3.8TB NVMe PCIe4x4 U.2 7mm 1DWPD 5YR SED Opal, Max
+      KIOPs: 1000K/180K (Read/Write),'
+    quantity: 20
+    unit_cost: 580.0
+    markup_percent: 15.12
+    unit_price: 667.67
+    line_total: 13353.4
+    is_optional: false
+- name: professional_services
+  total_cost: 2000.0
+  total_net: 2502.5
+  margin_amount: 502.5
+  margin_percent: 20.08
+  items:
+  - part_number: OPT-WARRANTY-ONSITE
+    description: Estensione a 3 / 5 anni ON-SITE opzionale
+    quantity: 1
+    unit_cost: 0.0
+    markup_percent: 15.0
+    unit_price: 0.0
+    line_total: 0.0
+    is_optional: true
+  - part_number: SRV-SETUP-METROCLUSTER
+    description: Installazione fisica, cablaggio ridondante 100GbE QSFP28, setup VSA
+      JovianDSS e tuning VMware ESXi
+    quantity: 1
+    unit_cost: 2000.0
+    markup_percent: 25.12
+    unit_price: 2502.5
+    line_total: 2502.5
+    is_optional: false
 totals:
-  total_cost: 57313.33
-  total_net: 66000.00
-  gross_margin_amount: 8686.67
-  gross_margin_percent: 13.16
+  total_cost: 57160.0
+  total_net: 66000.0
+  gross_margin_amount: 8840.0
+  gross_margin_percent: 13.39

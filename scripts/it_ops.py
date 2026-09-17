@@ -32,6 +32,7 @@ from scripts.pipelines.jira_sync import JiraSyncPipeline
 from scripts.pipelines.quotes import QuotesPipeline
 from scripts.pipelines.mps import MPSPipeline
 from scripts.pipelines.furniture import FurniturePipeline
+from scripts.pipelines.ingestion import DocumentIngestionPipeline
 
 def cmd_init(args):
     slug = args.slug.strip().lower()
@@ -440,6 +441,73 @@ def cmd_quote(args):
             print(f"Margine Lordo: € {calc['totals']['gross_margin_amount']:.2f} ({calc['totals']['gross_margin_percent']}%)")
     return 0
 
+def cmd_ingest(args):
+    file_path = Path(args.file)
+    if not file_path.is_file():
+        print(f"[ERRORE] File documento non trovato: {file_path}")
+        return 1
+
+    ip = DocumentIngestionPipeline()
+    slug = args.slug.strip().lower() if args.slug else None
+
+    print("=" * 70)
+    print(f" 📑 INGESTIONE DOCUMENTALE & VERIFICA EVIDENZE: {file_path.name}")
+    print("=" * 70)
+
+    try:
+        res = ip.ingest_file(file_path, slug=slug)
+    except Exception as e:
+        print(f"[!] Errore durante l'ingestione del documento: {e}")
+        return 1
+
+    if args.as_json:
+        print(json.dumps(res, indent=2, ensure_ascii=False))
+        return 0
+
+    print(f" Tipo Documento Rilevato : {res['document_type']}")
+    print(f" Protezione Allucinazioni: ATTIVA (Strict Evidence Extraction)")
+    print("-" * 70)
+
+    print("\n🔍 EVIDENZE CERTIFICATE ESTRATTE DAL DOCUMENTO:")
+    for ev in res.get("evidence", []):
+        st = ev["status"]
+        if st == "VERIFIED":
+            icon = "[✓ CERTIFICATO]"
+            val_str = str(ev['value'])
+            if len(val_str) > 60:
+                val_str = val_str[:57] + "..."
+            print(f"  {icon} {ev['field']:<25} = {val_str} (Conf: {ev['confidence']*100:.0f}%, Pag: {ev['page']})")
+            if ev.get("matched_text"):
+                snip = ev['matched_text'].replace('\n', ' ')
+                if len(snip) > 70:
+                    snip = snip[:67] + "..."
+                print(f"      └─ Evidenza testo: \"{snip}\"")
+
+    print("\n⚠️  CAMPI NON PRESENTI NEL DOCUMENTO (Zero-Hallucination Guard):")
+    for ev in res.get("evidence", []):
+        if ev["status"] == "NOT_FOUND":
+            print(f"  [-] {ev['field']:<25} : NON PRESENTE nel testo")
+            if ev.get("notes"):
+                print(f"      └─ Nota: {ev['notes']}")
+
+    if slug:
+        audit_path = ip.clients_root / slug / "ingestion" / f"{file_path.stem.lower()}.audit.json"
+        print(f"\n[✓] Report di audit peritale salvato in:")
+        print(f"    {audit_path}")
+
+    if args.apply:
+        if not slug:
+            print("\n[!] Specificare --slug per applicare i dati al cliente.")
+            return 1
+        target_price = float(args.target_price) if args.target_price else None
+        app_res = ip.apply_to_client(slug, res, target_price=target_price)
+        print(f"\n[✓] Applicazione deterministica completata su '{slug}':")
+        for act in app_res.get("applied_actions", []):
+            print(f"    • {act}")
+
+    print("=" * 70)
+    return 0
+
 def cmd_validate(args):
     target_path = Path(args.target)
     if not target_path.exists():
@@ -592,6 +660,15 @@ def main():
     p_val = subparsers.add_parser("validate", help="Valida file YAML a fronte degli schemi")
     p_val.add_argument("target", help="File o cartella da validare")
     p_val.set_defaults(func=cmd_validate)
+
+    # ingest
+    p_ingest = subparsers.add_parser("ingest", help="Ingestione deterministica PDF con verifica evidenze e audit anti-allucinazione")
+    p_ingest.add_argument("file", help="Percorso del file PDF da analizzare")
+    p_ingest.add_argument("--slug", help="Slug cliente da associare")
+    p_ingest.add_argument("--apply", action="store_true", help="Applica i dati verificati all'anagrafica o preventivo")
+    p_ingest.add_argument("--target-price", type=float, help="Prezzo di vendita desiderato (per distinte tecniche)")
+    p_ingest.add_argument("--json", dest="as_json", action="store_true", help="Output in formato JSON")
+    p_ingest.set_defaults(func=cmd_ingest)
 
     args = parser.parse_args()
     if not args.subcommand:
