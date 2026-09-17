@@ -7,30 +7,32 @@ L'anello di congiunzione deterministico è rappresentato dallo **Shared Customer
 
 ```mermaid
 flowchart TD
-    subgraph S_SLUG ["Shared Customer Slug (<slug>)"]
+    subgraph S_SLUG ["Shared Customer Slug"]
         SLUG["cliente-rossi-srl / severino-srl"]
     end
 
     subgraph TECH ["Repo Tecnico: itinfra"]
-        T_MAN["projects/<slug>/manifest.yaml"]
-        T_LLD["projects/<slug>/03-LLD.md"]
-        T_ASB["projects/<slug>/06-As-Built.md"]
-        T_INV["projects/<slug>/09-Handover-Inventory.md"]
+        T_MAN["projects/&lt;slug&gt;/manifest.yaml"]
+        T_LLD["projects/&lt;slug&gt;/03-LLD.md"]
+        T_ASB["projects/&lt;slug&gt;/06-As-Built.md"]
+        T_INV["projects/&lt;slug&gt;/09-Handover-Inventory.md"]
     end
 
     subgraph BIZ ["Repo Operativo: itinfra-business-ops"]
-        B_MAN["clients/<slug>/client-manifest.yaml"]
-        B_CTR["clients/<slug>/contracts/"]
-        B_RAP["clients/<slug>/timesheets/"]
-        B_INV["clients/<slug>/invoices/"]
-        B_MPS["clients/<slug>/mps/"]
-        B_ARR["clients/<slug>/furniture/"]
-        B_QUO["clients/<slug>/quotes/"]
+        B_MAN["clients/&lt;slug&gt;/client-manifest.yaml"]
+        B_CTR["clients/&lt;slug&gt;/contracts/"]
+        B_RAP["clients/&lt;slug&gt;/timesheets/"]
+        B_INV["clients/&lt;slug&gt;/invoices/"]
+        B_MPS["clients/&lt;slug&gt;/mps/"]
+        B_ARR["clients/&lt;slug&gt;/furniture/"]
+        B_QUO["clients/&lt;slug&gt;/quotes/"]
     end
 
-    SLUG --> TECH
-    SLUG --> BIZ
-    BIZ -.->|ITInfraBridge (Read-Only)| TECH
+    SLUG -->|"Identità Tecnica"| T_MAN
+    SLUG -->|"Identità Commerciale"| B_MAN
+    B_CTR -.->|"Cross-Check Asset As-Built"| T_ASB
+    B_RAP -.->|"Verifica Seriali Intervento"| T_ASB
+    B_MPS -.->|"Verifica Seriale Hardware"| T_ASB
 ```
 
 ### Perché Non nel Repo Tecnico (SoC & Compliance)

@@ -10,33 +10,35 @@
 L'architettura separa rigorosamente il **Ground Truth Tecnico** dal **Ground Truth Operativo & Finanziario** (Separation of Concerns):
 
 ```mermaid
-graph TD
-    subgraph Hub ["🔗 Shared Customer Slug (&lt;slug&gt;)"]
+flowchart TD
+    subgraph Hub ["🔗 Shared Customer Slug"]
         SLUG["cliente-rossi-srl"]
     end
 
-    subgraph TechRepo ["⚙️ itinfra (Ground Truth Tecnico)"]
+    subgraph TechRepo ["⚙️ itinfra — Ground Truth Tecnico"]
         direction TB
         T1["01-RSD-URS.md"]
         T2["03-LLD.md"]
-        T3["06-As-Built.md (Serials & Topology)"]
-        T4["manifest.yaml (IPAM & Inventory)"]
+        T3["06-As-Built.md — Serials & Topology"]
+        T4["manifest.yaml — IPAM & Inventory"]
     end
 
-    subgraph OpsRepo ["💼 itinfra-business-ops (Ground Truth Operativo)"]
+    subgraph OpsRepo ["💼 itinfra-business-ops — Ground Truth Operativo"]
         direction TB
         O1["Pipeline A: Contratti SLA & Monte Ore"]
-        O2["Pipeline B: Rapportini Intervento & Time-Tracking"]
-        O3["Pipeline C: Fatturazione & Scadenzario Attivo"]
-        O4["Pipeline D: Schedulazione Jira & Calendario"]
-        O5["Pipeline E: Preventivazione Multiprodotto"]
-        O6["Pipeline F: Noleggio Multifunzione MPS (Costo Copia)"]
-        O7["Pipeline G: Commesse Arredo Ufficio & Collaudo"]
+        O2["Pipeline B: Rapportini Intervento"]
+        O3["Pipeline C: Fatturazione & Scadenzario"]
+        O4["Pipeline D: Schedulazione Jira"]
+        O5["Pipeline E: Preventivazione"]
+        O6["Pipeline F: Noleggio Multifunzione MPS"]
+        O7["Pipeline G: Commesse Arredo Ufficio"]
     end
 
-    SLUG -->|Identità Tecnica| TechRepo
-    SLUG -->|Identità Operativa| OpsRepo
-    OpsRepo -.->|Cross-Check Deterministico (Read-Only)| TechRepo
+    SLUG -->|"Identità Tecnica"| T4
+    SLUG -->|"Identità Operativa"| O1
+    O1 -.->|"Cross-Check Asset As-Built"| T3
+    O2 -.->|"Verifica Seriali Intervento"| T3
+    O6 -.->|"Verifica Seriale Stampante"| T3
 ```
 
 ---
