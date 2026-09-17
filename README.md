@@ -91,6 +91,23 @@ La suite include il wrapper Windows [`it-ops.cmd`](file:///c:/Users/auresystem/r
 
 ---
 
+## 📑 Documentazione Formale OKF v0.2 delle Pipeline Operative
+
+Ciascuna pipeline è documentata con specifiche formali conformi allo standard **Open Knowledge Framework (OKF) v0.2**:
+
+| Pipeline | Titolo Specifica OKF v0.2 | Documento |
+| :---: | :--- | :--- |
+| **📚 Master** | **Indice Master delle Pipeline Operative** | [`00-index-pipelines.md`](docs/pipelines/00-index-pipelines.md) |
+| **A** | Contratti di Assistenza IT, SLA & Monte Ore | [`01-pipeline-a-contracts.md`](docs/pipelines/01-pipeline-a-contracts.md) |
+| **B** | Rapportini Intervento, Firma Canvas & Ricambi | [`02-pipeline-b-reports.md`](docs/pipelines/02-pipeline-b-reports.md) |
+| **C** | Fatturazione SDI v1.2 & Scadenzario Multi-Rata | [`03-pipeline-c-billing.md`](docs/pipelines/03-pipeline-c-billing.md) |
+| **D** | Task Jira & Schedulazione Agenda RFC 5545 | [`04-pipeline-d-jira-calendar.md`](docs/pipelines/04-pipeline-d-jira-calendar.md) |
+| **E** | Preventivazione Multiprodotto Cost-Plus | [`05-pipeline-e-quotes.md`](docs/pipelines/05-pipeline-e-quotes.md) |
+| **F** | Noleggio Multifunzione MPS & Telemetria SNMP | [`06-pipeline-f-mps-rental.md`](docs/pipelines/06-pipeline-f-mps-rental.md) |
+| **G** | Commesse Arredo Ufficio & Collaudo Finale | [`07-pipeline-g-furniture.md`](docs/pipelines/07-pipeline-g-furniture.md) |
+
+---
+
 ## 📁 Struttura del Repository
 
 ```text
