@@ -118,6 +118,12 @@ La suite include il wrapper Windows [`it-ops.cmd`](file:///c:/Users/auresystem/r
 # Gestore Skills Agente (Catalogo 300+)
 .\it-ops.cmd skills [search|list|info|install]
 
+# Orchestrazione Workflows a Stati Finiti (SPEC-21)
+.\it-ops.cmd workflow list [--slug <slug>]
+.\it-ops.cmd workflow run [monthly-closing|onboarding-to-live|incident-postmortem|quarterly-audit-231|contract-renewal] [--dry-run]
+.\it-ops.cmd workflow status <workflow_id>
+.\it-ops.cmd workflow resume <workflow_id>
+
 # Commesse Arredo Ufficio
 .\it-ops.cmd furniture <slug> status
 

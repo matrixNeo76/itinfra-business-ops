@@ -1,0 +1,32 @@
+name: Continuous Assurance & Quality Gates
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  assurance:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout itinfra-business-ops
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyyaml jsonschema
+
+      - name: Run Git Guard Checks (Secrets & Schemas & OKF)
+        run: |
+          python scripts/hooks/git_guard.py check
+
+      - name: Run Full Unit Test Suite
+        run: |
+          python -m unittest discover tests

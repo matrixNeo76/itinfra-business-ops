@@ -38,6 +38,123 @@ from scripts.pipelines.mission_control import MissionControlPipeline
 from scripts.core.swarm import Auditor231Agent, FinanceReconcilerAgent, InfrastructureSentinelAgent, ContractGuardianAgent, DeterministicSwarm
 from scripts.pipelines.quote_simulator import QuoteSimulatorPipeline
 from scripts.pipelines.daemon import MPSDaemon, SLADaemon
+from scripts.core.workflow_engine import WorkflowEngine
+from scripts.pipelines.workflow_definitions import WorkflowRegistry
+
+
+def cmd_workflow(args):
+    action = args.action
+    wf_engine = WorkflowEngine(repo_root=ROOT_DIR)
+    reg_defs = WorkflowRegistry.get_definitions()
+
+    if action == "list":
+        print("=" * 75)
+        print("  🔄 WORKFLOW DISPONIBILI & RECENTI (SPEC-21)")
+        print("=" * 75)
+        print("WORKFLOW REGISTRATI:")
+        for k, v in reg_defs.items():
+            print(f"  • {k:<22} : {v.get('name')} ({len(v.get('steps', []))} step)")
+        print("-" * 75)
+        print("ESECUZIONI RECENTI:")
+        recent = wf_engine.list_workflows(slug=args.slug, limit=15)
+        if not recent:
+            print("  (Nessuna esecuzione recente registrata)")
+        else:
+            for w in recent:
+                badge = "[✓]" if w.get("status") == "COMPLETED" else "[!]" if w.get("status") == "FAILED" else "[~]"
+                print(f"  {badge} {w.get('workflow_id'):<32} | {w.get('workflow_type'):<20} | {w.get('status'):<10} | {w.get('created_at')[:19]}")
+        print("=" * 75)
+        return 0
+
+    elif action == "run":
+        wtype = args.workflow_type
+        if not wtype:
+            print("[!] Specificare la tipologia di workflow da avviare (es. monthly-closing, onboarding-to-live)")
+            return 1
+        if wtype not in reg_defs:
+            print(f"[!] Tipologia workflow sconosciuta: {wtype}. Tipi disponibili: {list(reg_defs.keys())}")
+            return 1
+
+        wdef = reg_defs[wtype]
+        slug = args.slug or "all"
+        metadata = {}
+        if args.period:
+            metadata["period"] = args.period
+        if args.tier:
+            metadata["tier"] = args.tier
+
+        print(f"[*] Inizializzazione workflow: {wdef.get('name')} (Target: {slug})")
+        wf = wf_engine.create_workflow(
+            workflow_type=wtype,
+            slug=slug,
+            step_definitions=wdef.get("steps"),
+            metadata=metadata,
+            initiated_by="cli:operator"
+        )
+        print(f"[+] Istanza creata: {wf['workflow_id']} ({wf['total_steps']} steps)")
+
+        all_runners = WorkflowRegistry.get_runners(clients_root=get_clients_dir(), itinfra_root=get_clients_dir().parent / "itinfra")
+        type_runners = all_runners.get(wtype, {})
+
+        print(f"[*] Avvio esecuzione{' [DRY-RUN]' if args.dry_run else ''}...")
+        res = wf_engine.run_workflow(wf, type_runners, resume=args.resume, dry_run=args.dry_run)
+
+        print("-" * 75)
+        print(f"Esito Workflow: {res.get('status')} | Step: {res.get('current_step_index')}/{res.get('total_steps')}")
+        for s in res.get("steps", []):
+            s_badge = "[✓]" if s.get("status") == "DONE" else "[!]" if s.get("status") == "FAILED" else "[ ]"
+            print(f"  {s_badge} {s.get('name')}: {s.get('output_summary') or s.get('error') or s.get('status')}")
+        print("=" * 75)
+        return 0 if res.get("status") == "COMPLETED" else 1
+
+    elif action == "status":
+        wid = args.workflow_id or args.workflow_type
+        if not wid:
+            print("[!] Specificare l'identificativo workflow (es. it-ops workflow status WF-...)")
+            return 1
+        wf = wf_engine.load_workflow(wid)
+        if not wf:
+            print(f"[!] Workflow {wid} non trovato.")
+            return 1
+        print("=" * 75)
+        print(f"  DETTAGLIO WORKFLOW: {wf.get('workflow_id')}")
+        print("=" * 75)
+        print(f"  Tipo     : {wf.get('workflow_type')}")
+        print(f"  Target   : {wf.get('slug')}")
+        print(f"  Stato    : {wf.get('status')}")
+        print(f"  Creato   : {wf.get('created_at')}")
+        print(f"  Aggiornato: {wf.get('updated_at')}")
+        print("-" * 75)
+        print("STEP ESECUTIVI:")
+        for s in wf.get("steps", []):
+            s_badge = "[✓]" if s.get("status") == "DONE" else "[!]" if s.get("status") == "FAILED" else "[ ]"
+            print(f"  {s_badge} {s.get('step_id'):<25} | {s.get('status'):<10} | {s.get('name')}")
+            if s.get("output_summary"):
+                print(f"      Output: {s.get('output_summary')}")
+            if s.get("error"):
+                print(f"      Errore: {s.get('error')}")
+        print("=" * 75)
+        return 0
+
+    elif action == "resume":
+        wid = args.workflow_id or args.workflow_type
+        if not wid:
+            print("[!] Specificare l'identificativo workflow da riprendere.")
+            return 1
+        wf = wf_engine.load_workflow(wid)
+        if not wf:
+            print(f"[!] Workflow {wid} non trovato.")
+            return 1
+        wtype = wf.get("workflow_type")
+        all_runners = WorkflowRegistry.get_runners(clients_root=get_clients_dir(), itinfra_root=get_clients_dir().parent / "itinfra")
+        type_runners = all_runners.get(wtype, {})
+
+        print(f"[*] Ripresa esecuzione workflow {wid} (Tipo: {wtype})...")
+        res = wf_engine.run_workflow(wf, type_runners, resume=True, dry_run=False)
+        print(f"Esito: {res.get('status')}")
+        return 0 if res.get("status") == "COMPLETED" else 1
+
+    return 0
 
 def cmd_init(args):
     slug = args.slug.strip().lower()
@@ -1256,6 +1373,18 @@ def main():
     p_skills.add_argument("--limit", type=int, default=15, help="Limite risultati ricerca (default: 15)")
     p_skills.add_argument("--global", dest="global_install", action="store_true", help="Installa a livello globale (~/.gemini/antigravity/skills/)")
     p_skills.set_defaults(func=cmd_skills)
+
+    # workflow (SPEC-21)
+    p_wf = subparsers.add_parser("workflow", aliases=["wf"], help="Orchestrazione Workflows a Stati Finiti (SPEC-21)")
+    p_wf.add_argument("action", nargs="?", default="list", choices=["list", "run", "status", "resume"], help="Azione workflow")
+    p_wf.add_argument("workflow_type", nargs="?", help="Tipo di workflow da avviare (per run)")
+    p_wf.add_argument("--slug", help="Slug cliente target (o all)")
+    p_wf.add_argument("--workflow-id", "--id", help="ID del workflow (per status o resume)")
+    p_wf.add_argument("--period", help="Periodo contabile YYYY-MM (per monthly-closing)")
+    p_wf.add_argument("--tier", choices=["silver", "gold", "platinum"], default="gold", help="Service tier (per onboarding)")
+    p_wf.add_argument("--dry-run", action="store_true", help="Simulazione esecuzione senza scritture su disco")
+    p_wf.add_argument("--resume", action="store_true", help="Riprendi dagli step non completati")
+    p_wf.set_defaults(func=cmd_workflow)
 
     args = parser.parse_args()
     if not args.subcommand:

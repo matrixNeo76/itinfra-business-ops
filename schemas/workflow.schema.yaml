@@ -1,0 +1,63 @@
+$schema: "http://json-schema.org/draft-07/schema#"
+title: "Workflow State Schema (SPEC-21)"
+description: "Schema per lo stato persistente delle istanze di workflow"
+type: object
+required:
+  - workflow_id
+  - workflow_type
+  - slug
+  - status
+  - created_at
+  - current_step_index
+  - total_steps
+  - steps
+properties:
+  workflow_id:
+    type: string
+  workflow_type:
+    type: string
+  slug:
+    type: string
+  status:
+    type: string
+    enum: ["PENDING", "RUNNING", "PAUSED_FOR_INPUT", "COMPLETED", "FAILED", "ROLLED_BACK"]
+  created_at:
+    type: string
+  updated_at:
+    type: string
+  completed_at:
+    type: ["string", "null"]
+  initiated_by:
+    type: string
+  current_step_index:
+    type: integer
+  total_steps:
+    type: integer
+  steps:
+    type: array
+    items:
+      type: object
+      required:
+        - step_id
+        - name
+        - status
+      properties:
+        step_id:
+          type: string
+        name:
+          type: string
+        status:
+          type: string
+          enum: ["PENDING", "RUNNING", "DONE", "SKIPPED", "FAILED"]
+        started_at:
+          type: ["string", "null"]
+        completed_at:
+          type: ["string", "null"]
+        output_summary:
+          type: string
+        data:
+          type: object
+        error:
+          type: ["string", "null"]
+  metadata:
+    type: object

@@ -30,6 +30,7 @@ sys.path.insert(0, str(ROOT_DIR))
 
 from scripts.core.config import get_clients_dir, get_itinfra_dir
 from scripts.core.bridge import ITInfraBridge
+from scripts.core.workflow_engine import WorkflowEngine
 
 
 class MissionControlPipeline:
@@ -277,9 +278,13 @@ class MissionControlPipeline:
 
         avg_compliance = round(avg_compliance_accum / compliance_clients_count, 1) if compliance_clients_count > 0 else 0.0
 
+        wf_engine = WorkflowEngine(repo_root=ROOT_DIR, clients_root=self.clients_root)
+        recent_workflows = wf_engine.list_workflows(limit=5)
+
         return {
             "generated_at": datetime.datetime.now().isoformat(),
             "total_clients": len(clients_data),
+            "recent_workflows": recent_workflows,
             "global_kpis": {
                 "total_sla_hours_available": round(total_sla_hours_available, 1),
                 "total_sla_hours_consumed": round(total_sla_hours_consumed, 1),
@@ -336,7 +341,19 @@ class MissionControlPipeline:
 
             lines.append(f"{c['slug']:<20} | {sla_str:<12} | {cred_str:<10} | {mps_str:<8} | {comp_str:<6} | {br_str:<10}")
 
-        lines.append("=" * 80)
+        # Sezione Workflows Recenti (SPEC-21)
+        rw = data.get("recent_workflows", [])
+        if rw:
+            lines.append("  🔄 WORKFLOWS RECENTI & AUTOMAZIONI (SPEC-21)")
+            lines.append("-" * 80)
+            for w in rw:
+                wid = w.get("workflow_id", "")
+                wtype = w.get("workflow_type", "")
+                wstatus = w.get("status", "UNKNOWN")
+                badge = "[✓]" if wstatus == "COMPLETED" else "[!]" if wstatus == "FAILED" else "[~]"
+                lines.append(f"  {badge} {wid:<32} | {wtype:<20} | {wstatus}")
+            lines.append("=" * 80)
+
         return "\n".join(lines)
 
     def render_html(self, output_path: Optional[Path] = None) -> str:

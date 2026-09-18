@@ -1,0 +1,32 @@
+name: Nightly Sentinel & Health Check
+
+on:
+  schedule:
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+jobs:
+  sentinel:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyyaml jsonschema
+
+      - name: Run Proactive Daemons Check (MPS & SLA)
+        run: |
+          python scripts/it_ops.py daemon mps --once
+          python scripts/it_ops.py daemon sla --once
+
+      - name: Check Schema Integrity
+        run: |
+          python scripts/hooks/git_guard.py check
