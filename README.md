@@ -132,6 +132,11 @@ La suite include il wrapper Windows [`it-ops.cmd`](file:///c:/Users/auresystem/r
 .\it-ops.cmd triggers approve <action_id>
 .\it-ops.cmd triggers reject <action_id> [--reason "..."]
 
+# Gestione Crediti, Mora D.Lgs. 231/2002 & Solleciti Graduate (SPEC-24)
+.\it-ops.cmd credit status [<slug>]
+.\it-ops.cmd credit calculate --amount <euro> --due-date <YYYY-MM-DD>
+.\it-ops.cmd credit remind <slug> --invoice <num> --stage [1|2|3]
+
 # Commesse Arredo Ufficio
 .\it-ops.cmd furniture <slug> status
 
@@ -165,6 +170,7 @@ La suite include il wrapper Windows [`it-ops.cmd`](file:///c:/Users/auresystem/r
 | **SPEC-21** | State-Machine Workflow Orchestration & Continuous Lifecycle Assurance | [`21-spec-workflow-orchestration-and-lifecycle-assurance.okf.md`](docs/specs/21-spec-workflow-orchestration-and-lifecycle-assurance.okf.md) |
 | **SPEC-22** | Event-Driven Proactive Trigger System & Safe Action Gate | [`22-spec-event-driven-trigger-system-and-action-gate.okf.md`](docs/specs/22-spec-event-driven-trigger-system-and-action-gate.okf.md) |
 | **SPEC-23** | Tassonomia Architetturale Integrata: Da Determinismo Puro a Sistemi Agentici | [`23-spec-integrated-architectural-taxonomy.okf.md`](docs/specs/23-spec-integrated-architectural-taxonomy.okf.md) |
+| **SPEC-24** | Presidio di Conformità Nazionale Italiana & Triade di Estensioni ad Alto Ritorno | [`24-spec-italian-compliance-and-high-return-extensions.okf.md`](docs/specs/24-spec-italian-compliance-and-high-return-extensions.okf.md) |
 
 ### Pipeline Operative OKF v0.2
 | Pipeline | Titolo Specifica OKF v0.2 | Documento |

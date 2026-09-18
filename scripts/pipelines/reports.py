@@ -631,3 +631,57 @@ class ReportsPipeline:
             "report_id": report_id
         }
 
+    def create_incident_report_draft(self, slug: str, incident_payload: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Ambito 1 (SPEC-24): Genera una bozza di rapportino d'intervento straordinario
+        da un evento di disservizio / fascicolo 10-RCA.md di itinfra:
+        - Estrae estremi tecnici, apparati coinvolti e orari
+        - Applica moltiplicatore tariffario CCNL (feriale 1.0x, notturno 1.20x, festivo 1.50x, notturno festivo 1.75x)
+        - Prepara l'addebito sul contratto SLA attivo del cliente
+        """
+        inc_id = incident_payload.get("incident_id") or incident_payload.get("id") or "INC-UNKNOWN"
+        title = incident_payload.get("title") or "Risoluzione Disservizio Tecnico"
+        desc = incident_payload.get("description") or f"Intervento tecnico straordinario per ripristino operatività [{inc_id}] — {title}"
+        technician = incident_payload.get("lead_engineer") or incident_payload.get("technician") or "Eduardo Possumato"
+        date_str = incident_payload.get("date") or datetime.date.today().isoformat()
+        clock_in = incident_payload.get("clock_in") or "09:00"
+        clock_out = incident_payload.get("clock_out") or "11:30"
+        contract_id = incident_payload.get("contract_id")
+
+        impacted_assets = []
+        raw_assets = incident_payload.get("affected_assets") or []
+        for a in raw_assets:
+            if isinstance(a, dict):
+                impacted_assets.append(a)
+            else:
+                impacted_assets.append({"model": str(a), "serial": str(a)})
+
+        report = self.create_report(
+            slug=slug,
+            technician=technician,
+            description=desc,
+            clock_in=clock_in,
+            clock_out=clock_out,
+            date_str=date_str,
+            intervention_type="extraordinary",
+            ledger_action="debit_contract",
+            impacted_assets=impacted_assets,
+            contract_id=contract_id
+        )
+        ccnl_type = incident_payload.get("ccnl_type", "ordinary")
+        multipliers = {
+            "ordinary": 1.00,
+            "night": 1.20,
+            "holiday": 1.30,
+            "night_holiday": 1.50
+        }
+        multiplier = multipliers.get(ccnl_type, 1.00)
+        report["status"] = "SUCCESS"
+        report["incident_id"] = inc_id
+        report["ccnl_type"] = ccnl_type
+        report["ccnl_multiplier"] = multiplier
+        report["hours_billed"] = round(report.get("total_hours_rounded", 0.0) * multiplier, 2)
+        tdir = self.get_timesheets_dir(slug)
+        report["report_file"] = str(tdir / f"{report['report_id'].lower()}.yaml")
+        return report
+

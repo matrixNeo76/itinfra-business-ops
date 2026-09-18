@@ -39,6 +39,7 @@ Questo è l'ambiente di lavoro per la governance operativa, commerciale, PSA, fa
 | **Gestore Skills (Catalogo 300+)** | `skills [search\|list\|info\|install]` | `.\it-ops.cmd skills [search\|list\|info\|install]` |
 | **Orchestrazione Workflows (SPEC-21)** | `workflow <name> <slug>` *(o `wf`)* | `.\it-ops.cmd workflow [run\|list\|status] <name> <slug>` |
 | **Trigger Proattivi & Gate (SPEC-22)** | `triggers [pending\|scan\|approve]` *(o `tr`)* | `.\it-ops.cmd triggers [pending\|scan\|approve\|reject]` |
+| **Gestione Crediti 231 (SPEC-24)** | `credit [status\|calculate\|remind]` *(o `cr`)* | `.\it-ops.cmd credit [status\|calculate\|remind]` |
 
 ---
 

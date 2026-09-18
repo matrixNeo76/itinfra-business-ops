@@ -201,6 +201,62 @@ class TriggerEngine:
                 "created_at": event.get("timestamp"),
             }
 
+        # Regola 6 (SPEC-24): Disservizio Tecnico / Incident da itinfra
+        if etype == "telemetry.incident.created":
+            inc_id = payload.get("incident_id") or payload.get("id") or "INC"
+            title = payload.get("title", "Disservizio Tecnico")
+            return {
+                "action_id": f"ACT-{ts}-INCIDENT-{slug}",
+                "event_id": event.get("event_id"),
+                "slug": slug,
+                "action_type": "incident_emergency_report",
+                "title": f"Bozza Rapportino Straordinario per Disservizio {inc_id}",
+                "description": f"Rilevato fascicolo 10-RCA.md ({title}). Generare bozza rapportino con maggiorazioni CCNL e scarico ore SLA.",
+                "requires_approval": True,
+                "workflow_to_run": "incident-postmortem",
+                "target_params": payload,
+                "created_at": event.get("timestamp"),
+            }
+
+        # Regola 7 (SPEC-24): Fattura Scaduta / Sollecito ex D.Lgs. 231/2002
+        if etype == "finance.invoice.overdue":
+            inv_num = payload.get("invoice_number", "INV")
+            amt = float(payload.get("amount", 0.0))
+            days = payload.get("days_overdue", 0)
+            stage = payload.get("stage", 1)
+            tot_due = float(payload.get("total_due", amt))
+            mora = float(payload.get("interest_mora", 0.0))
+            clean_num = str(inv_num).replace("/", "-")
+            return {
+                "action_id": f"ACT-{ts}-MORA231-{slug}-{clean_num}",
+                "event_id": event.get("event_id"),
+                "slug": slug,
+                "action_type": "dlgs231_payment_reminder",
+                "title": f"Sollecito Pagamento Fattura {inv_num} ex D.Lgs. 231/2002 (Stadio {stage})",
+                "description": f"Fattura {inv_num} scaduta da {days} gg. Quota: € {amt:.2f}, Mora 231: € {mora:.2f}, Totale: € {tot_due:.2f}. Emissione lettera Stadio {stage}.",
+                "requires_approval": True,
+                "workflow_to_run": None,
+                "target_params": payload,
+                "created_at": event.get("timestamp"),
+            }
+
+        # Regola 8 (SPEC-24): Preavviso Rinnovo/Disdetta Contratto SLA/MPS
+        if etype.startswith("contract.renewal.reminder_"):
+            cid = payload.get("contract_id", "CTR")
+            days_left = payload.get("days_left", 30)
+            return {
+                "action_id": f"ACT-{ts}-RENEWAL-{slug}-{cid}",
+                "event_id": event.get("event_id"),
+                "slug": slug,
+                "action_type": "contract_renewal_proposal",
+                "title": f"Preavviso Scadenza Contratto {cid} ({days_left} gg rimasti)",
+                "description": f"Contratto {cid} in scadenza il {payload.get('valid_to')}. Avviare trattativa di rinnovo indicizzato o formalizzare disdetta.",
+                "requires_approval": True,
+                "workflow_to_run": "contract-renewal",
+                "target_params": payload,
+                "created_at": event.get("timestamp"),
+            }
+
         return None
 
     def list_events(self, slug: Optional[str] = None, limit: int = 50) -> List[Dict[str, Any]]:
@@ -275,6 +331,36 @@ class TriggerEngine:
                 )
                 runners = WorkflowRegistry.get_runners(clients_root=self.clients_root, itinfra_root=self.itinfra_root).get(wf_name, {})
                 wf_res = wf_engine.run_workflow(wf_instance, runners, resume=False, dry_run=False)
+
+        # Azioni specifiche senza workflow o con post-processing (SPEC-24)
+        act_type = target_action.get("action_type")
+        if act_type == "incident_emergency_report":
+            try:
+                from scripts.pipelines.reports import ReportsPipeline
+                rp = ReportsPipeline(clients_root=self.clients_root)
+                rp.create_incident_report_draft(
+                    slug=target_action.get("slug"),
+                    incident_payload=target_action.get("target_params", {})
+                )
+            except Exception:
+                pass
+        elif act_type == "dlgs231_payment_reminder":
+            try:
+                from scripts.core.italian_compliance import ItalianComplianceGuard
+                tparams = target_action.get("target_params", {})
+                stg = tparams.get("stage", 1)
+                letter = ItalianComplianceGuard.generate_reminder_letter(
+                    slug=target_action.get("slug"),
+                    invoice_data=tparams,
+                    stage=stg
+                )
+                inv_dir = self.clients_root / target_action.get("slug") / "invoices"
+                inv_dir.mkdir(parents=True, exist_ok=True)
+                inum = str(tparams.get("invoice_number", "INV")).replace("/", "-")
+                out_file = inv_dir / f"sollecito-stadio{stg}-{inum}.txt"
+                out_file.write_text(letter, encoding="utf-8")
+            except Exception:
+                pass
 
         # Salva stato aggiornato delle azioni pendenti
         self._save_pending_actions(remaining_actions)
@@ -397,5 +483,41 @@ class TriggerEngine:
                         payload={"uncontracted_devices": unc},
                     )
                     emitted.append(evt)
+
+            # 4. Scansione Incident in itinfra 10-RCA.md (SPEC-24)
+            pdir = self.itinfra_root / "projects" / cl
+            rca_path = pdir / "10-RCA.md"
+            if rca_path.is_file():
+                try:
+                    import re
+                    rca_text = rca_path.read_text(encoding="utf-8")
+                    if "INC-" in rca_text or "Disservizio" in rca_text or "Incident" in rca_text:
+                        m = re.search(r'(INC-[A-Za-z0-9-]+)', rca_text)
+                        inc_id = m.group(1) if m else f"INC-{cl}"
+                        evt = self.emit_event(
+                            event_type="telemetry.incident.created",
+                            slug=cl,
+                            source="scanner:itinfra_rca",
+                            payload={
+                                "incident_id": inc_id,
+                                "title": f"Disservizio documentato in itinfra/projects/{cl}/10-RCA.md",
+                                "date": datetime.date.today().isoformat(),
+                                "lead_engineer": "Eduardo Possumato",
+                                "affected_assets": [f"Switch-Core-{cl}"],
+                                "description": f"Intervento straordinario per risoluzione guasto [{inc_id}]"
+                            }
+                        )
+                        emitted.append(evt)
+                except Exception:
+                    pass
+
+        # 5. Scansione Crediti & Fatture Overdue (SPEC-24)
+        try:
+            from scripts.pipelines.daemon import CreditDaemon
+            cd = CreditDaemon(clients_root=self.clients_root)
+            c_res = cd.check_all()
+            # Gli alert emettono già gli eventi corrispondenti
+        except Exception:
+            pass
 
         return emitted

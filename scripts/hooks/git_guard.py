@@ -58,6 +58,8 @@ def get_git_modified_files() -> List[Path]:
             cwd=str(ROOT_DIR),
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="replace",
             check=True
         )
         files = [ROOT_DIR / f.strip() for f in res.stdout.splitlines() if f.strip()]
@@ -68,6 +70,8 @@ def get_git_modified_files() -> List[Path]:
                 cwd=str(ROOT_DIR),
                 capture_output=True,
                 text=True,
+                encoding="utf-8",
+                errors="replace",
                 check=True
             )
             files = [ROOT_DIR / f.strip() for f in res2.stdout.splitlines() if f.strip()]
@@ -165,14 +169,34 @@ def run_pre_commit(files: Optional[List[Path]] = None) -> int:
     yaml_files = [f for f in target_files if f.suffix.lower() in [".yaml", ".yml"] and "clients" in str(f)]
     yaml_errors = 0
     for yf in yaml_files:
-        val_res = validate_yaml_file(yf)
-        rel_path = yf.relative_to(ROOT_DIR) if yf.is_relative_to(ROOT_DIR) else yf
-        if val_res.get("valid") is False:
-            has_errors = True
-            yaml_errors += 1
-            print(f"[ERRORE SCHEMA] {rel_path}: {val_res.get('error', 'Validazione fallita')}")
-        elif val_res.get("valid") is True:
-            pass
+        schema_name = None
+        if yf.name == "client-manifest.yaml":
+            schema_name = "client-manifest.schema.yaml"
+        elif "contracts" in str(yf):
+            schema_name = "contract.schema.yaml"
+        elif "timesheets" in str(yf):
+            schema_name = "report.schema.yaml"
+        elif "invoices" in str(yf):
+            schema_name = "billing.schema.yaml"
+        elif "mps" in str(yf):
+            schema_name = "mps.schema.yaml"
+        elif "furniture" in str(yf):
+            schema_name = "furniture.schema.yaml"
+        elif "quotes" in str(yf):
+            schema_name = "quote.schema.yaml"
+        elif "gap" in str(yf):
+            schema_name = "gap_analysis.schema.yaml"
+        elif "workflows" in str(yf):
+            schema_name = "workflow.schema.yaml"
+
+        if schema_name:
+            is_valid, err_list = validate_yaml_file(yf, schema_name)
+            rel_path = yf.relative_to(ROOT_DIR) if yf.is_relative_to(ROOT_DIR) else yf
+            if not is_valid:
+                has_errors = True
+                yaml_errors += len(err_list)
+                for err in err_list:
+                    print(f"[ERRORE SCHEMA] {rel_path} ({schema_name}): {err}")
 
     if yaml_files:
         if yaml_errors == 0:
@@ -202,6 +226,52 @@ def run_pre_commit(files: Optional[List[Path]] = None) -> int:
     else:
         print("  [i] OKF v0.2 Linter: nessun file documentale OKF modificato")
 
+    # 4. Presidio Conformità Nazionale Italiana (SPEC-24)
+    import yaml
+    from scripts.core.italian_compliance import ItalianComplianceGuard
+    manifest_files = [f for f in target_files if f.name == "client-manifest.yaml"]
+    it_errors = 0
+    for mf in manifest_files:
+        try:
+            m_data = yaml.safe_load(mf.read_text(encoding="utf-8")) or {}
+            b_info = m_data.get("billing_info", {})
+            vat = b_info.get("vat_id") or b_info.get("vat_number") or ""
+            cf = b_info.get("fiscal_code") or ""
+            sdi = b_info.get("sdi_code") or ""
+            pec = b_info.get("pec") or ""
+            rel_path = mf.relative_to(ROOT_DIR) if mf.is_relative_to(ROOT_DIR) else mf
+
+            if vat:
+                vres = ItalianComplianceGuard.validate_partita_iva(vat)
+                if not vres["valid"]:
+                    has_errors = True
+                    it_errors += 1
+                    print(f"[CONFORMITA ITALIA - P.IVA] {rel_path}: {vres['error']}")
+
+            if cf:
+                cfres = ItalianComplianceGuard.validate_codice_fiscale(cf)
+                if not cfres["valid"]:
+                    has_errors = True
+                    it_errors += 1
+                    print(f"[CONFORMITA ITALIA - CF] {rel_path}: {cfres['error']}")
+
+            if sdi:
+                sres = ItalianComplianceGuard.validate_sdi_recipient(sdi, pec)
+                if not sres["valid"]:
+                    has_errors = True
+                    it_errors += 1
+                    print(f"[CONFORMITA ITALIA - SDI] {rel_path}: {sres['error']}")
+        except Exception as ex:
+            pass
+
+    if manifest_files:
+        if it_errors == 0:
+            print(f"  [✓] Presidio Fiscale Italiano ({len(manifest_files)} anagrafiche): CONFORMI")
+        else:
+            print(f"  [!] Presidio Fiscale Italiano: {it_errors} anomalie bloccanti rilevate!")
+    else:
+        print("  [i] Presidio Fiscale Italiano: nessuna anagrafica cliente modificata")
+
     print("\n" + "=" * 70)
     if has_errors:
         print("❌ PRE-COMMIT FALLITO: Risolvere i rilievi sopra indicati prima di procedere.")
@@ -225,7 +295,9 @@ def run_pre_push() -> int:
         [sys.executable, "-m", "unittest", "discover", "tests"],
         cwd=str(ROOT_DIR),
         capture_output=True,
-        text=True
+        text=True,
+        encoding="utf-8",
+        errors="replace"
     )
     if test_proc.returncode != 0:
         print("❌ SMOKE TEST FALLITO:")

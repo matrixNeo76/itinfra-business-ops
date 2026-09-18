@@ -15,8 +15,8 @@ contacts:
   email: amministrazione@roberto-viola.local
   phone: +39 02 0000002
 billing_info:
-  vat_id: IT99999999999
-  fiscal_code: '99999999999'
+  vat_id: IT12345678903
+  fiscal_code: VLIRRT75A01F205A
   sdi_code: '0000000'
   pec: amministrazione@pec.roberto-viola.local
   iban: IT00X0000000000000000000000

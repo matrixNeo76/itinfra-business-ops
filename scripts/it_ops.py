@@ -50,7 +50,7 @@ def cmd_triggers(args):
 
     if action == "list":
         print("=" * 75)
-        print("  ⚡ REGOLE & TRIGGER OPERATIVI CONFIGURATI (SPEC-22)")
+        print("  ⚡ REGOLE & TRIGGER OPERATIVI CONFIGURATI (SPEC-22, SPEC-24)")
         print("=" * 75)
         print("SORGENTI & EVENTI:")
         print("  • telemetry.mps.consumable_low  -> Riordino consumabile OEM (Gate: APPROVAL)")
@@ -58,6 +58,9 @@ def cmd_triggers(args):
         print("  • itinfra.asbuilt.changed       -> Riconciliazione SLA apparati (Gate: APPROVAL)")
         print("  • documents.incoming.dropped    -> Ingestione visiva SOTA (Gate: AUTO)")
         print("  • temporal.billing.preflight    -> Pre-Flight chiusura mensile (Gate: AUTO)")
+        print("  • telemetry.incident.created    -> Bozza rapportino emergenza CCNL (Gate: APPROVAL)")
+        print("  • finance.invoice.overdue       -> Sollecito mora D.Lgs. 231/2002 (Gate: APPROVAL)")
+        print("  • contract.renewal.*            -> Avviso rinnovo contrattuale SLA (Gate: APPROVAL)")
         print("=" * 75)
         return 0
 
@@ -1264,6 +1267,94 @@ def cmd_skills(args):
         print(f"[ERRORE] Azione '{action}' non valida per skills.")
         return 1
 
+
+def cmd_credit(args):
+    """Gestione Crediti, Scadenzario e Recupero ex D.Lgs. 231/2002 (SPEC-24)."""
+    import datetime
+    from scripts.core.italian_compliance import ItalianComplianceGuard
+    from scripts.pipelines.daemon import CreditDaemon
+    slug = getattr(args, "slug", None)
+    action = getattr(args, "action", "status") or "status"
+
+    if action == "status":
+        cd = CreditDaemon()
+        res = cd.check_all()
+        client_alerts = [a for a in res.get("alerts", []) if not slug or a.get("slug") == slug]
+        print("=" * 80)
+        print(f"  🇮🇹 STATO CREDITI & SCADENZARIO D.LGS. 231/2002 (Target: {slug or 'Tutti'})")
+        print("=" * 80)
+        if not client_alerts:
+            print("  [✓] Nessun credito insoluto oltre 7 giorni o contratto in scadenza critica.")
+        else:
+            for a in client_alerts:
+                print(f"  [{a.get('severity')}] {a.get('slug').upper()} | {a.get('type')}")
+                print(f"      Dettaglio: {a.get('message')}")
+                if a.get("type") == "INVOICE_OVERDUE":
+                    print(f"      Sorte Capitale: € {a.get('amount'):.2f} | Interessi Mora 231: € {a.get('interest_mora'):.2f} | Spese: € {a.get('lump_sum_fee'):.2f}")
+                    print(f"      TOTALE DOVUTO : € {a.get('total_due'):.2f} (Stadio {a.get('stage')})")
+                print("-" * 80)
+        print("=" * 80)
+        return 0
+
+    elif action == "calculate":
+        amount = getattr(args, "amount", None) or 1000.0
+        due_date = getattr(args, "due_date", None) or (datetime.date.today() - datetime.timedelta(days=30)).isoformat()
+        calc = ItalianComplianceGuard.calculate_dlgs231_interest(amount, due_date)
+        print("=" * 80)
+        print("  🇮🇹 SIMULAZIONE CALCOLO INTERESSI DI MORA D.LGS. 231/2002")
+        print("=" * 80)
+        print(f"  Sorte Capitale     : € {calc.get('amount_capital'):.2f}")
+        print(f"  Data Scadenza      : {calc.get('due_date')}")
+        print(f"  Data Riferimento   : {calc.get('reference_date')}")
+        print(f"  Giorni di Ritardo  : {calc.get('days_overdue')} giorni")
+        print(f"  Tasso BCE Base     : {calc.get('bce_rate_pct'):.2f}%")
+        print(f"  Maggiorazione Leg. : +{calc.get('legal_spread_pct'):.2f}%")
+        print(f"  Tasso Totale Mora  : {calc.get('total_mora_rate_pct'):.2f}% annuo")
+        print(f"  Interessi Maturati : € {calc.get('interest_mora'):.2f}")
+        print(f"  Spese Forfettarie  : € {calc.get('lump_sum_fee'):.2f} (ex Art. 6 D.Lgs. 231/2002)")
+        print("-" * 80)
+        print(f"  TOTALE DA ESIGERE  : € {calc.get('total_due_dlgs231'):.2f}")
+        print(f"  Base Giuridica     : {calc.get('legal_basis')}")
+        print("=" * 80)
+        return 0
+
+    elif action == "remind":
+        inv_num = getattr(args, "invoice", None) or "FATT-001"
+        stage = getattr(args, "stage", 1) or 1
+        amount = getattr(args, "amount", None) or 1500.0
+        due_date = getattr(args, "due_date", None) or (datetime.date.today() - datetime.timedelta(days=20)).isoformat()
+        inv_data = {
+            "client_name": slug.replace("-", " ").title() if slug else "Cliente S.r.l.",
+            "invoice_number": inv_num,
+            "invoice_date": (datetime.date.today() - datetime.timedelta(days=50)).isoformat(),
+            "due_date": due_date,
+            "amount": amount
+        }
+        letter = ItalianComplianceGuard.generate_reminder_letter(slug or "cliente", inv_data, stage=stage)
+        print(letter)
+        return 0
+
+    return 0
+
+def cmd_daemon(args):
+    """Esecuzione demoni di monitoraggio in background (SPEC-20, SPEC-24)."""
+    dtype = args.daemon_type
+    once = getattr(args, "once", False)
+    interval = getattr(args, "interval", 3600) or 3600
+
+    from scripts.pipelines.daemon import MPSDaemon, SLADaemon, CreditDaemon
+    if dtype == "mps":
+        d = MPSDaemon()
+        d.run_loop(interval_seconds=interval, once=once)
+    elif dtype == "sla":
+        d = SLADaemon()
+        d.run_loop(interval_seconds=interval, once=once)
+    elif dtype == "credit":
+        d = CreditDaemon()
+        d.run_loop(interval_seconds=interval, once=once)
+    return 0
+
+
 def main():
     check_auto_sync_memory()
     parser = argparse.ArgumentParser(description="itinfra-business-ops CLI Master Engine (v0.3.0)")
@@ -1451,9 +1542,9 @@ def main():
     p_agent.add_argument("--json", action="store_true", help="Output in formato JSON")
     p_agent.set_defaults(func=cmd_agent)
 
-    # daemon (SPEC-20)
-    p_daemon = subparsers.add_parser("daemon", help="Demoni di monitoraggio proattivo in background (SPEC-20)")
-    p_daemon.add_argument("service", choices=["mps", "sla"], help="Servizio demone da avviare")
+    # daemon (SPEC-20, SPEC-24)
+    p_daemon = subparsers.add_parser("daemon", help="Demoni di monitoraggio proattivo in background (SPEC-20, SPEC-24)")
+    p_daemon.add_argument("daemon_type", choices=["mps", "sla", "credit"], help="Tipo demone da avviare")
     p_daemon.add_argument("--interval", type=int, default=3600, help="Intervallo di scansione in secondi (default: 3600)")
     p_daemon.add_argument("--once", action="store_true", help="Esegui un unico ciclo di controllo e termina")
     p_daemon.set_defaults(func=cmd_daemon)
@@ -1490,7 +1581,19 @@ def main():
     p_trig.add_argument("--by", default="human:possumato", help="Operatore autorizzatore (default: human:possumato)")
     p_trig.set_defaults(func=cmd_triggers)
 
+
+    # credit (SPEC-24)
+    p_cred = subparsers.add_parser("credit", aliases=["cr"], help="Gestione Crediti & Recupero ex D.Lgs. 231/2002 (SPEC-24)")
+    p_cred.add_argument("action", nargs="?", default="status", choices=["status", "calculate", "remind"], help="Azione credit")
+    p_cred.add_argument("slug", nargs="?", help="Slug cliente (opzionale)")
+    p_cred.add_argument("--invoice", help="Numero fattura (per remind)")
+    p_cred.add_argument("--stage", type=int, choices=[1, 2, 3], default=1, help="Stadio sollecito (1: Cortesia, 2: Mora 231, 3: Diffida c.c.)")
+    p_cred.add_argument("--amount", type=float, help="Importo capitale per simulazione calculate")
+    p_cred.add_argument("--due-date", help="Data scadenza YYYY-MM-DD per calculate")
+    p_cred.set_defaults(func=cmd_credit)
+
     args = parser.parse_args()
+
     if not args.subcommand:
         parser.print_help()
         return 0

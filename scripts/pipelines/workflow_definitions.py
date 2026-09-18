@@ -87,6 +87,38 @@ class WorkflowRegistry:
                     {"step_id": "calculate_renewal_quote", "name": "Calcolo Proposta Cost-Plus con Adeguamento ISTAT"},
                     {"step_id": "export_proposal_pdf", "name": "Emissione Offerta Contrattuale PDF Formale"},
                 ]
+            },
+            "dr-drill": {
+                "name": "Esercitazione Annuale Disaster Recovery (GDPR Art. 32 / 231)",
+                "description": "Verifica integrità backup, ripristino sandbox, calcolo RTO/RPO e rilascio verbale OdV",
+                "steps": [
+                    {"step_id": "audit_backup", "name": "Ispezione Catalogo Backup & Immutabilità"},
+                    {"step_id": "staging_restore", "name": "Ripristino in Ambiente Sandbox Isolato"},
+                    {"step_id": "data_integrity", "name": "Verifica Integrità Checksum SHA-256 & Servizi"},
+                    {"step_id": "rto_rpo_calc", "name": "Misurazione e Certificazione RTO / RPO"},
+                    {"step_id": "odv_certificate", "name": "Emissione Verbale Ufficiale OdV 231 / DPO"},
+                ]
+            },
+            "firmware-upgrade": {
+                "name": "Ciclo di Aggiornamento Firmware Apparati di Rete",
+                "description": "Backup nel vault, verifica hash OEM, installazione safe-mode e smoke test",
+                "steps": [
+                    {"step_id": "preflight_backup", "name": "Esportazione Backup Configurazione nel Vault"},
+                    {"step_id": "hash_check", "name": "Verifica Immagine Firmware con SHA-256 Ufficiale"},
+                    {"step_id": "safe_deploy", "name": "Deploy Firmware in Modalità Safe-Mode con Auto-Revert"},
+                    {"step_id": "smoke_test", "name": "Smoke Test di Connettività, Routing e Tunnel VPN"},
+                    {"step_id": "commit_or_rollback", "name": "Consolidamento Permanente o Ripristino Rapido"},
+                ]
+            },
+            "hardware-decommissioning-raee": {
+                "name": "Dismissione Sicura Hardware & Formulario RAEE (D.Lgs. 49/2014)",
+                "description": "Identificazione apparato, cancellazione sicura NIST 800-88, distacco As-Built e FIR RAEE",
+                "steps": [
+                    {"step_id": "identify_asset", "name": "Ispezione Seriale & Censimento As-Built / SLA"},
+                    {"step_id": "nist_sanitize", "name": "Sanificazione Sicura Supporti NIST SP 800-88 Purge"},
+                    {"step_id": "asbuilt_detach", "name": "Distacco Apparato da As-Built e Canone SLA"},
+                    {"step_id": "raee_fir_generation", "name": "Emissione Formulario Identificazione Rifiuti RAEE"},
+                ]
             }
         }
 
@@ -108,6 +140,8 @@ class WorkflowRegistry:
         onboard_pipe = OnboardPipeline(clients_root=croot, itinfra_root=iroot)
         gap_pipe = GapAnalysisPipeline(workspace_root=croot.parent)
         bridge = ITInfraBridge(itinfra_root=iroot, clients_root=croot)
+        from scripts.pipelines.technical_workflows import TechnicalWorkflowRunners
+        tw_runners = TechnicalWorkflowRunners(clients_root=croot, itinfra_root=iroot)
 
         # ---------------------------------------------------------------------
         # 1. monthly-closing runners
@@ -384,5 +418,25 @@ class WorkflowRegistry:
                 "quantify_extra_budget": ren_step_extra,
                 "calculate_renewal_quote": ren_step_quote,
                 "export_proposal_pdf": ren_step_export,
+            },
+            "dr-drill": {
+                "audit_backup": lambda wf, d: tw_runners.run_dr_drill_step("audit_backup", wf, d),
+                "staging_restore": lambda wf, d: tw_runners.run_dr_drill_step("staging_restore", wf, d),
+                "data_integrity": lambda wf, d: tw_runners.run_dr_drill_step("data_integrity", wf, d),
+                "rto_rpo_calc": lambda wf, d: tw_runners.run_dr_drill_step("rto_rpo_calc", wf, d),
+                "odv_certificate": lambda wf, d: tw_runners.run_dr_drill_step("odv_certificate", wf, d),
+            },
+            "firmware-upgrade": {
+                "preflight_backup": lambda wf, d: tw_runners.run_firmware_upgrade_step("preflight_backup", wf, d),
+                "hash_check": lambda wf, d: tw_runners.run_firmware_upgrade_step("hash_check", wf, d),
+                "safe_deploy": lambda wf, d: tw_runners.run_firmware_upgrade_step("safe_deploy", wf, d),
+                "smoke_test": lambda wf, d: tw_runners.run_firmware_upgrade_step("smoke_test", wf, d),
+                "commit_or_rollback": lambda wf, d: tw_runners.run_firmware_upgrade_step("commit_or_rollback", wf, d),
+            },
+            "hardware-decommissioning-raee": {
+                "identify_asset": lambda wf, d: tw_runners.run_decommissioning_step("identify_asset", wf, d),
+                "nist_sanitize": lambda wf, d: tw_runners.run_decommissioning_step("nist_sanitize", wf, d),
+                "asbuilt_detach": lambda wf, d: tw_runners.run_decommissioning_step("asbuilt_detach", wf, d),
+                "raee_fir_generation": lambda wf, d: tw_runners.run_decommissioning_step("raee_fir_generation", wf, d),
             }
         }

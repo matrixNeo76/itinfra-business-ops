@@ -11,8 +11,8 @@ contacts:
   email: amministrazione@severinosrl.local
   phone: +39 02 7891235
 billing_info:
-  vat_id: IT09876543210
-  fiscal_code: 09876543210
+  vat_id: IT09876543217
+  fiscal_code: "09876543217"
   sdi_code: SUBM70N
   pec: amministrazione@pec.severinosrl.it
   iban: IT77X0306909606100000123456
