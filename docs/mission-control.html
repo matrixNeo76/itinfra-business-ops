@@ -3,148 +3,1079 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Aure System — Mission Control & Continuous Assurance Dashboard</title>
+<title>Aure System — Enterprise Cockpit 360° & Mission Control</title>
 <style>
   :root {
-    --bg-main: #0b1329;
-    --bg-card: #132247;
-    --bg-row-hover: #1c3266;
-    --border-color: #243c74;
+    --bg-main: #070d1e;
+    --bg-card: #0f1c3f;
+    --bg-card-sub: #162858;
+    --bg-row-hover: #1c336e;
+    --border-color: #223c7c;
+    --border-highlight: #3b82f6;
     --text-primary: #f8fafc;
     --text-muted: #94a3b8;
     --accent-cyan: #38bdf8;
+    --accent-blue: #3b82f6;
     --accent-emerald: #10b981;
     --accent-amber: #f59e0b;
     --accent-rose: #f43f5e;
+    --accent-purple: #a855f7;
+    --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   }
-  * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
-  body { background-color: var(--bg-main); color: var(--text-primary); padding: 24px; }
-  .container { max-width: 1300px; margin: 0 auto; }
-  .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border-color); padding-bottom: 20px; margin-bottom: 24px; }
-  .brand { font-size: 24px; font-weight: 800; color: #fff; letter-spacing: -0.5px; }
-  .brand span { color: var(--accent-cyan); }
-  .subhead { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
-  .badge { padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; text-transform: uppercase; display: inline-block; }
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: var(--font-family); }
+  body { background-color: var(--bg-main); color: var(--text-primary); padding: 20px; line-height: 1.5; font-size: 13px; }
+  .container { max-width: 1440px; margin: 0 auto; }
+  
+  /* Header */
+  .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border-color); padding-bottom: 18px; margin-bottom: 20px; }
+  .brand-group { display: flex; align-items: center; gap: 14px; }
+  .logo-box { width: 44px; height: 44px; background: linear-gradient(135deg, #0284c7, #2563eb); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 900; color: #fff; box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4); }
+  .brand-title { font-size: 22px; font-weight: 800; color: #fff; letter-spacing: -0.5px; }
+  .brand-title span { color: var(--accent-cyan); }
+  .brand-subtitle { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+  .system-status { text-align: right; }
+
+  /* KPI Ribbon */
+  .kpi-ribbon { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-bottom: 22px; }
+  .kpi-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 10px; padding: 16px; transition: transform 0.15s ease, border-color 0.15s ease; cursor: pointer; }
+  .kpi-card:hover { transform: translateY(-2px); border-color: var(--accent-cyan); }
+  .kpi-header { display: flex; justify-content: space-between; align-items: center; font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+  .kpi-value { font-size: 26px; font-weight: 800; color: #fff; line-height: 1.1; }
+  .kpi-footer { font-size: 11px; color: var(--text-muted); margin-top: 8px; display: flex; justify-content: space-between; }
+
+  /* Navigation Tabs */
+  .tabs-nav { display: flex; gap: 8px; border-bottom: 2px solid var(--border-color); margin-bottom: 20px; overflow-x: auto; padding-bottom: 2px; }
+  .tab-btn { background: transparent; border: none; color: var(--text-muted); font-size: 12px; font-weight: 700; padding: 10px 16px; border-radius: 8px 8px 0 0; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.15s ease; border-bottom: 2px solid transparent; margin-bottom: -2px; }
+  .tab-btn:hover { color: #fff; background: rgba(56, 189, 248, 0.08); }
+  .tab-btn.active { color: var(--accent-cyan); border-bottom-color: var(--accent-cyan); background: var(--bg-card); }
+  .tab-badge { background: var(--accent-rose); color: #fff; font-size: 10px; font-weight: 800; padding: 1px 6px; border-radius: 10px; }
+
+  /* Tab Panes */
+  .tab-pane { display: none; }
+  .tab-pane.active { display: block; animation: fadeIn 0.2s ease-in-out; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* Sections & Cards */
+  .section-box { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 10px; padding: 20px; margin-bottom: 20px; }
+  .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid rgba(34, 60, 124, 0.6); padding-bottom: 10px; }
+  .section-title { font-size: 15px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 8px; }
+
+  /* Tables */
+  table { width: 100%; border-collapse: collapse; text-align: left; font-size: 12px; }
+  th { background: rgba(7, 13, 30, 0.6); padding: 10px 12px; color: var(--text-muted); text-transform: uppercase; font-size: 10px; letter-spacing: 0.5px; border-bottom: 2px solid var(--border-color); }
+  td { padding: 12px; border-bottom: 1px solid rgba(34, 60, 124, 0.5); vertical-align: middle; }
+  tr:hover { background-color: var(--bg-row-hover); }
+
+  /* Badges */
+  .badge { padding: 3px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; text-transform: uppercase; display: inline-flex; align-items: center; gap: 4px; }
   .badge-success { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid #10b981; }
   .badge-warning { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid #f59e0b; }
   .badge-danger { background: rgba(244, 63, 94, 0.15); color: #fb7185; border: 1px solid #f43f5e; }
   .badge-info { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid #38bdf8; }
-  .badge-secondary { background: rgba(148, 163, 184, 0.15); color: #cbd5e1; border: 1px solid #64748b; }
-  
-  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 28px; }
-  .kpi-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 18px; }
-  .kpi-title { font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px; }
-  .kpi-value { font-size: 26px; font-weight: 800; color: #fff; }
-  .kpi-sub { font-size: 12px; color: var(--text-muted); margin-top: 6px; }
+  .badge-purple { background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid #a855f7; }
+  .badge-neutral { background: rgba(148, 163, 184, 0.15); color: #cbd5e1; border: 1px solid #64748b; }
 
-  .section { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 20px; margin-bottom: 24px; }
-  .section-title { font-size: 16px; font-weight: 700; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }
-  
-  table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; }
-  th { background: rgba(11, 19, 41, 0.6); padding: 12px 14px; color: var(--text-muted); text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px; border-bottom: 2px solid var(--border-color); }
-  td { padding: 14px; border-bottom: 1px solid rgba(36, 60, 116, 0.5); vertical-align: middle; }
-  tr:hover { background-color: var(--bg-row-hover); }
+  /* Buttons */
+  .btn { padding: 6px 12px; border-radius: 6px; font-size: 11px; font-weight: 700; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.15s ease; }
+  .btn-primary { background: #0284c7; color: #fff; }
+  .btn-primary:hover { background: #0369a1; }
+  .btn-success { background: #10b981; color: #fff; }
+  .btn-success:hover { background: #059669; }
+  .btn-danger { background: #f43f5e; color: #fff; }
+  .btn-danger:hover { background: #e11d48; }
+  .btn-secondary { background: #1e293b; color: #94a3b8; border: 1px solid #334155; }
+  .btn-secondary:hover { background: #334155; color: #fff; }
 
-  .footer { text-align: center; font-size: 12px; color: var(--text-muted); padding: 20px 0; border-top: 1px solid var(--border-color); }
+  /* Search & Filter Bar */
+  .filter-bar { display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+  .search-input { background: var(--bg-card-sub); border: 1px solid var(--border-color); border-radius: 6px; padding: 8px 12px; color: #fff; font-size: 12px; min-width: 260px; outline: none; }
+  .search-input:focus { border-color: var(--accent-cyan); }
+  .filter-chip { background: var(--bg-card-sub); border: 1px solid var(--border-color); color: var(--text-muted); padding: 6px 12px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; }
+  .filter-chip.active { background: var(--accent-cyan); color: #070d1e; border-color: var(--accent-cyan); font-weight: 700; }
+
+  /* Cards Grid */
+  .cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 14px; }
+  .action-gate-card { background: var(--bg-card-sub); border: 1px solid var(--border-color); border-radius: 8px; padding: 16px; border-left: 4px solid var(--accent-rose); }
+  .action-gate-card.warning { border-left-color: var(--accent-amber); }
+  .action-gate-card.info { border-left-color: var(--accent-cyan); }
+
+  /* Stepper FSM */
+  .stepper { display: flex; align-items: center; gap: 6px; margin-top: 10px; overflow-x: auto; padding: 6px 0; }
+  .step-node { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; }
+  .step-dot { width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 900; }
+  .step-line { width: 24px; height: 2px; background: var(--border-color); }
+  .step-line.done { background: var(--accent-emerald); }
+
+  /* Progress Bar */
+  .progress-bar-bg { width: 100%; height: 8px; background: rgba(7, 13, 30, 0.6); border-radius: 4px; overflow: hidden; margin-top: 4px; }
+  .progress-bar-fill { height: 100%; border-radius: 4px; transition: width 0.3s ease; }
+
+  /* Modals */
+  .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.75); display: none; align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(4px); }
+  .modal-overlay.open { display: flex; }
+  .modal-box { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; width: 90%; max-width: 720px; max-height: 85vh; overflow-y: auto; padding: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.6); position: relative; }
+  .modal-close { position: absolute; top: 16px; right: 16px; background: transparent; border: none; color: var(--text-muted); font-size: 18px; cursor: pointer; }
+
+  /* Toast Notification */
+  .toast { position: fixed; bottom: 20px; right: 20px; background: #10b981; color: #022c22; padding: 12px 20px; border-radius: 8px; font-weight: 700; font-size: 12px; display: none; box-shadow: 0 10px 25px rgba(0,0,0,0.4); z-index: 2000; animation: slideIn 0.2s ease-out; }
+  .toast.show { display: block; }
+  @keyframes slideIn { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+  .footer { text-align: center; font-size: 11px; color: var(--text-muted); padding: 24px 0; border-top: 1px solid var(--border-color); margin-top: 30px; }
 </style>
 </head>
 <body>
 <div class="container">
+
+  <!-- Header -->
   <div class="header">
-    <div>
-      <div class="brand">AURE <span>SYSTEM</span> &bull; Mission Control</div>
-      <div class="subhead">Centrale Esecutiva di Continuous Assurance, SLA PSA, Billing, MPS & Conformità D.Lgs. 231/2001</div>
+    <div class="brand-group">
+      <div class="logo-box">AS</div>
+      <div>
+        <div class="brand-title">AURE <span>SYSTEM</span> &bull; Enterprise Cockpit 360°</div>
+        <div class="brand-subtitle">Centrale di Continuous Assurance, SLA PSA, Safe Action Gate, Workflows FSM & Presidio Normativo Italiano (v0.3.5)</div>
+      </div>
     </div>
-    <div style="text-align: right;">
-      <span class="badge badge-success">SISTEMA DETERMINISTICO OPERATIVO</span>
-      <div class="subhead">18 September 2026 - 19:24:00</div>
-    </div>
-  </div>
-
-  <div class="kpi-grid">
-    <div class="kpi-card">
-      <div class="kpi-title">Monte Ore SLA Disponibile</div>
-      <div class="kpi-value" style="color: var(--accent-emerald);">280.5h</div>
-      <div class="kpi-sub">Consumate: 11.5h totali</div>
-    </div>
-    <div class="kpi-card">
-      <div class="kpi-title">Crediti Aperti da Incassare</div>
-      <div class="kpi-value" style="color: var(--accent-cyan);">€1,003.57</div>
-      <div class="kpi-sub">Ore spot pendenti: 0.0h</div>
-    </div>
-    <div class="kpi-card">
-      <div class="kpi-title">Parco Multifunzione MPS</div>
-      <div class="kpi-value">4</div>
-      <div class="kpi-sub">Allarmi Toner Bassi: <b style="color: var(--accent-rose);">1</b></div>
-    </div>
-    <div class="kpi-card">
-      <div class="kpi-title">Conformità Media 231 / ISO</div>
-      <div class="kpi-value" style="color: var(--accent-amber);">65.9%</div>
-      <div class="kpi-sub">Audit e gap remediation attivi</div>
+    <div class="system-status">
+      <span class="badge badge-success"><span style="width:6px; height:6px; border-radius:50%; background:#10b981; display:inline-block;"></span> DETERMINISTICO OPERATIVO</span>
+      <div id="live-clock" style="font-size: 11px; color: var(--text-muted); margin-top: 4px;"></div>
     </div>
   </div>
 
-  <div class="section">
-    <div class="section-title">
-      <span>Matrice di Monitoraggio Clienti 360°</span>
-      <span style="font-size: 12px; color: var(--text-muted);">4 Clienti a Sistema</span>
-    </div>
-    <table>
-      <thead>
-        <tr>
-          <th>Cliente & Tier</th>
-          <th>SLA Monte Ore</th>
-          <th>Contabilità & Fatture</th>
-          <th>Stato MPS & Toner</th>
-          <th>Conformità 231</th>
-          <th>Bridge itinfra</th>
-        </tr>
-      </thead>
-      <tbody>
-        
-            <tr>
-                <td style="font-weight: 600; color: #38bdf8;">Studio Legale Avv. Roberto Viola<br><span style="font-size: 11px; color: #94a3b8;">roberto-viola &bull; Tier STANDARD</span></td>
-                <td><span class="badge badge-success">50.0h / 50.0h (100.0%)</span></td>
-                <td>€0.00<br><span style="font-size: 11px; color: #94a3b8;">Da fatturare: 0.0h</span></td>
-                <td><span class="badge badge-success">1 apparati</span></td>
-                <td><span class="badge badge-info">0.0% (0 vulns)</span></td>
-                <td><span class="badge badge-warning">WARNING</span></td>
-            </tr>
-            
-            <tr>
-                <td style="font-weight: 600; color: #38bdf8;">Severino Srl<br><span style="font-size: 11px; color: #94a3b8;">severino-srl &bull; Tier STANDARD</span></td>
-                <td><span class="badge badge-success">180.5h / 192.0h (94.0%)</span></td>
-                <td>€1,003.57<br><span style="font-size: 11px; color: #94a3b8;">Da fatturare: 0.0h</span></td>
-                <td><span class="badge badge-danger">1 apparati (1 toner bassi)</span></td>
-                <td><span class="badge badge-info">0.0% (0 vulns)</span></td>
-                <td><span class="badge badge-warning">WARNING</span></td>
-            </tr>
-            
-            <tr>
-                <td style="font-weight: 600; color: #38bdf8;">T.E.A. TEK SPA<br><span style="font-size: 11px; color: #94a3b8;">teatek-spa &bull; Tier STANDARD</span></td>
-                <td><span class="badge badge-warning">0.0h / 0.0h (0.0%)</span></td>
-                <td>€0.00<br><span style="font-size: 11px; color: #94a3b8;">Da fatturare: 0.0h</span></td>
-                <td><span class="badge badge-success">1 apparati</span></td>
-                <td><span class="badge badge-info">0.0% (0 vulns)</span></td>
-                <td><span class="badge badge-warning">WARNING</span></td>
-            </tr>
-            
-            <tr>
-                <td style="font-weight: 600; color: #38bdf8;">Unisped AG S.a.s.<br><span style="font-size: 11px; color: #94a3b8;">unisped-ag-sas &bull; Tier STANDARD</span></td>
-                <td><span class="badge badge-success">50.0h / 50.0h (100.0%)</span></td>
-                <td>€0.00<br><span style="font-size: 11px; color: #94a3b8;">Da fatturare: 0.0h</span></td>
-                <td><span class="badge badge-success">1 apparati</span></td>
-                <td><span class="badge badge-warning">65.94% (5 vulns)</span></td>
-                <td><span class="badge badge-warning">WARNING</span></td>
-            </tr>
-            
-      </tbody>
-    </table>
+  <!-- KPI Ribbon -->
+  <div class="kpi-ribbon" id="kpi-ribbon">
+    <!-- Popolato dinamicamente da JS -->
   </div>
 
+  <!-- Navigation Tabs -->
+  <div class="tabs-nav">
+    <button class="tab-btn active" onclick="switchTab('tab-overview')"><span>📊</span> 1. Panoramica 360°</button>
+    <button class="tab-btn" onclick="switchTab('tab-gate')"><span>🛡️</span> 2. Safe Action Gate <span id="gate-tab-badge" class="tab-badge" style="display:none;">0</span></button>
+    <button class="tab-btn" onclick="switchTab('tab-workflows')"><span>🔄</span> 3. Workflows FSM</button>
+    <button class="tab-btn" onclick="switchTab('tab-credit')"><span>⚖️</span> 4. Crediti & Mora 231</button>
+    <button class="tab-btn" onclick="switchTab('tab-compliance')"><span>🇮🇹</span> 5. Presidio Italiano & CCNL</button>
+    <button class="tab-btn" onclick="switchTab('tab-client-drill')"><span>🏢</span> 6. Scheda Cliente 360°</button>
+    <button class="tab-btn" onclick="switchTab('tab-swarm')"><span>🤖</span> 7. Swarm & Demoni</button>
+    <button class="tab-btn" onclick="switchTab('tab-technical')"><span>⚙️</span> 8. Hub itinfra & RAEE</button>
+  </div>
+
+  <!-- TAB 1: PANORAMICA 360° & MATRICE CLIENTI -->
+  <div id="tab-overview" class="tab-pane active">
+    <div class="section-box">
+      <div class="section-header">
+        <div class="section-title"><span>Matrice Operativa Clienti Aure System</span></div>
+        <div style="font-size: 11px; color: var(--text-muted);"><span id="clients-count-label">0</span> Clienti Monitorati</div>
+      </div>
+      
+      <div class="filter-bar">
+        <input type="text" id="overview-search" class="search-input" placeholder="🔍 Cerca cliente, slug, tier..." oninput="filterOverviewTable()">
+        <button class="filter-chip active" onclick="setOverviewFilter('all', this)">Tutti</button>
+        <button class="filter-chip" onclick="setOverviewFilter('sla_alert', this)">Allarmi SLA</button>
+        <button class="filter-chip" onclick="setOverviewFilter('toner_alert', this)">Allarmi Toner</button>
+        <button class="filter-chip" onclick="setOverviewFilter('overdue', this)">Insoluti 231</button>
+        <button class="filter-chip" onclick="setOverviewFilter('gap_231', this)">Audit 231</button>
+      </div>
+
+      <div style="overflow-x: auto;">
+        <table id="overview-table">
+          <thead>
+            <tr>
+              <th>Cliente & Anagrafica</th>
+              <th>SLA Monte Ore</th>
+              <th>Contabilità & Crediti</th>
+              <th>Parco MPS & Toner</th>
+              <th>Conformità 231</th>
+              <th>Hub itinfra</th>
+              <th>Azioni</th>
+            </tr>
+          </thead>
+          <tbody id="overview-tbody">
+            <!-- Popolato dinamicamente da JS -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 2: SAFE ACTION GATE (SPEC-22) -->
+  <div id="tab-gate" class="tab-pane">
+    <div class="section-box">
+      <div class="section-header">
+        <div class="section-title"><span>Presidio Human-in-the-Loop — Safe Action Gate (SPEC-22)</span></div>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn btn-secondary" onclick="copyCliCmd('.\\it-ops.cmd triggers scan')">🔍 Scansione Trigger Ora</button>
+        </div>
+      </div>
+      <p style="color: var(--text-muted); font-size: 12px; margin-bottom: 16px;">
+        Il <strong>Safe Action Gate</strong> intercetta tutti gli eventi operativi (esaurimento monte ore, toner critici, fatture scadute, incidenti tecnici)
+        e richiede esplicita autorizzazione prima di compiere effetti collaterali verso clienti, fornitori o contratti.
+      </p>
+      <div id="action-gate-container" class="cards-grid">
+        <!-- Popolato dinamicamente da JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 3: WORKFLOWS FSM (SPEC-21, SPEC-24) -->
+  <div id="tab-workflows" class="tab-pane">
+    <div class="section-box">
+      <div class="section-header">
+        <div class="section-title"><span>Workflow State Machine & Orchestratore FSM</span></div>
+      </div>
+      <div class="cards-grid" style="margin-bottom: 24px;">
+        <div style="background: var(--bg-card-sub); border: 1px solid var(--border-color); border-radius: 8px; padding: 16px;">
+          <div style="font-weight: 700; color: var(--accent-cyan); margin-bottom: 6px;">Idempotenza & Checkpointing</div>
+          <div style="font-size: 11px; color: var(--text-muted);">Ogni step viene salvato atomicamente su file YAML. In caso di interruzione, la ripresa (resume) parte esattamente dall'ultimo checkpoint intatto.</div>
+        </div>
+        <div style="background: var(--bg-card-sub); border: 1px solid var(--border-color); border-radius: 8px; padding: 16px;">
+          <div style="font-weight: 700; color: var(--accent-emerald); margin-bottom: 6px;">Audit Trail Crittografico</div>
+          <div style="font-size: 11px; color: var(--text-muted);">Tutti gli output di transizione calcolano SHA-256 su context ed eventi per garantire la conformità al Modello 231 e GDPR.</div>
+        </div>
+      </div>
+
+      <div class="section-title" style="margin-bottom: 12px; font-size: 13px;"><span>Cronologia Esecuzioni Recenti</span></div>
+      <div id="workflows-list">
+        <!-- Popolato dinamicamente da JS -->
+      </div>
+
+      <div class="section-title" style="margin-top: 24px; margin-bottom: 12px; font-size: 13px;"><span>Catalogo Workflow Disponibili</span></div>
+      <div id="workflow-catalog-grid" class="cards-grid">
+        <!-- Popolato da JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 4: CREDITI & MORA D.LGS. 231/2002 (SPEC-24) -->
+  <div id="tab-credit" class="tab-pane">
+    <div class="section-box">
+      <div class="section-header">
+        <div class="section-title"><span>Recupero Crediti & Calcolo Interessi di Mora ex D.Lgs. 231/2002</span></div>
+        <button class="btn btn-secondary" onclick="copyCliCmd('.\\it-ops.cmd credit calculate')">📊 Ricalcola Scadenzario</button>
+      </div>
+
+      <!-- Aging Banner -->
+      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px;">
+        <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid #10b981; border-radius: 8px; padding: 14px; text-align: center;">
+          <div style="font-size: 10px; text-transform: uppercase; color: #34d399; font-weight: 700;">0 - 30 Giorni (Bonario)</div>
+          <div id="aging-0-30" style="font-size: 20px; font-weight: 800; color: #fff; margin-top: 4px;">€0.00</div>
+        </div>
+        <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid #f59e0b; border-radius: 8px; padding: 14px; text-align: center;">
+          <div style="font-size: 10px; text-transform: uppercase; color: #fbbf24; font-weight: 700;">31 - 60 Giorni (Mora)</div>
+          <div id="aging-31-60" style="font-size: 20px; font-weight: 800; color: #fff; margin-top: 4px;">€0.00</div>
+        </div>
+        <div style="background: rgba(244, 63, 94, 0.1); border: 1px solid #f43f5e; border-radius: 8px; padding: 14px; text-align: center;">
+          <div style="font-size: 10px; text-transform: uppercase; color: #fb7185; font-weight: 700;">61 - 90 Giorni (Diffida)</div>
+          <div id="aging-61-90" style="font-size: 20px; font-weight: 800; color: #fff; margin-top: 4px;">€0.00</div>
+        </div>
+        <div style="background: rgba(168, 85, 247, 0.1); border: 1px solid #a855f7; border-radius: 8px; padding: 14px; text-align: center;">
+          <div style="font-size: 10px; text-transform: uppercase; color: #c084fc; font-weight: 700;">Oltre 90 Giorni (Legale)</div>
+          <div id="aging-90-plus" style="font-size: 20px; font-weight: 800; color: #fff; margin-top: 4px;">€0.00</div>
+        </div>
+      </div>
+
+      <div style="background: var(--bg-card-sub); border: 1px solid var(--border-color); border-radius: 8px; padding: 16px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <div style="font-weight: 700; color: #fff;">Parametri Normativi D.Lgs. 231/2002</div>
+          <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Tasso Ufficiale BCE (3.50%) + Spread Legale (8.00%) = <strong>11.50% annuo</strong> &bull; Risarcimento Forfettario Spese: <strong>€ 40,00 fisso</strong> (Art. 6)</div>
+        </div>
+        <div style="text-align: right;">
+          <div style="font-size: 10px; text-transform: uppercase; color: var(--text-muted);">Mora Totale Maturata</div>
+          <div id="total-mora-val" style="font-size: 22px; font-weight: 800; color: var(--accent-rose);">€0.00</div>
+        </div>
+      </div>
+
+      <div style="overflow-x: auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>Cliente</th>
+              <th>Fattura / Scadenza</th>
+              <th>Importo Residuo</th>
+              <th>Giorni Scaduto</th>
+              <th>Interessi Mora 231</th>
+              <th>Stadio Consigliato</th>
+              <th>Azioni</th>
+            </tr>
+          </thead>
+          <tbody id="credit-invoices-tbody">
+            <!-- Popolato da JS -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 5: PRESIDIO ITALIANO, FISCALE & CCNL (SPEC-24) -->
+  <div id="tab-compliance" class="tab-pane">
+    <div class="section-box">
+      <div class="section-header">
+        <div class="section-title"><span>Presidio Normativo Italiano, Controlli Fiscali & CCNL</span></div>
+      </div>
+
+      <div class="cards-grid" style="margin-bottom: 24px;">
+        <!-- Colonna 1: Validatore Fiscale Live -->
+        <div style="background: var(--bg-card-sub); border: 1px solid var(--border-color); border-radius: 8px; padding: 18px;">
+          <h4 style="color: var(--accent-cyan); margin-bottom: 12px;">Validatore Live Fisco Italiano</h4>
+          <div style="margin-bottom: 12px;">
+            <label style="font-size: 11px; color: var(--text-muted); display: block; margin-bottom: 4px;">Partita IVA (11 cifre / Algoritmo di Luhn)</label>
+            <input type="text" id="val-piva-input" class="search-input" style="width: 100%;" placeholder="Es. 01234567890" oninput="testPivaLive()">
+            <div id="val-piva-res" style="font-size: 11px; margin-top: 4px; font-weight: 600;"></div>
+          </div>
+          <div style="margin-bottom: 12px;">
+            <label style="font-size: 11px; color: var(--text-muted); display: block; margin-bottom: 4px;">Codice Fiscale (16 car / DM 23/12/1976)</label>
+            <input type="text" id="val-cf-input" class="search-input" style="width: 100%;" placeholder="Es. RSSMRA80A01H501U" oninput="testCfLive()">
+            <div id="val-cf-res" style="font-size: 11px; margin-top: 4px; font-weight: 600;"></div>
+          </div>
+        </div>
+
+        <!-- Colonna 2: Calcolatore CCNL Incident-to-Report -->
+        <div style="background: var(--bg-card-sub); border: 1px solid var(--border-color); border-radius: 8px; padding: 18px;">
+          <h4 style="color: var(--accent-emerald); margin-bottom: 12px;">Simulatore Tariffario CCNL Lavoro Straordinario</h4>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+            <div>
+              <label style="font-size: 11px; color: var(--text-muted); display: block; margin-bottom: 4px;">Ora Inizio</label>
+              <input type="time" id="ccnl-in" value="09:00" class="search-input" style="width:100%;" onchange="calcCcnlLive()">
+            </div>
+            <div>
+              <label style="font-size: 11px; color: var(--text-muted); display: block; margin-bottom: 4px;">Ora Fine</label>
+              <input type="time" id="ccnl-out" value="11:30" class="search-input" style="width:100%;" onchange="calcCcnlLive()">
+            </div>
+          </div>
+          <div style="margin-bottom: 12px;">
+            <label style="font-size: 11px; color: var(--text-muted); display: block; margin-bottom: 4px;">Tipologia Giornata</label>
+            <select id="ccnl-type" class="search-input" style="width: 100%;" onchange="calcCcnlLive()">
+              <option value="weekday">Feriale Diurno (1.00x)</option>
+              <option value="night">Feriale Notturno (+20% — 1.20x)</option>
+              <option value="holiday">Festivo / Weekend (+30% / +50% — 1.50x)</option>
+              <option value="holiday_night">Festivo Notturno (+50% / +75% — 1.75x)</option>
+            </select>
+          </div>
+          <div style="background: rgba(7, 13, 30, 0.5); border: 1px solid var(--border-color); border-radius: 6px; padding: 10px; font-size: 11px;">
+            <div>Ore Effettive: <strong id="ccnl-raw-hrs" class="text-white">2.50h</strong> (arrotondate a 30m)</div>
+            <div>Moltiplicatore Applicato: <strong id="ccnl-mult-val" style="color: var(--accent-cyan);">1.00x</strong></div>
+            <div style="margin-top: 4px; font-size: 13px; font-weight: 800;">Ore Addebitate su SLA: <span id="ccnl-billed-hrs" style="color: var(--accent-emerald);">2.50h</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 6: SCHEDA CLIENTE 360° -->
+  <div id="tab-client-drill" class="tab-pane">
+    <div class="section-box">
+      <div class="section-header">
+        <div class="section-title"><span>Scheda Monografica Interattiva Cliente 360°</span></div>
+        <div id="drill-slug-badge" class="badge badge-info">SELEZIONA CLIENTE</div>
+      </div>
+
+      <!-- Selettore Orizzontale a Pills -->
+      <div id="client-pills-bar" style="display: flex; gap: 8px; overflow-x: auto; padding-bottom: 12px; margin-bottom: 16px;">
+        <!-- Popolato da JS -->
+      </div>
+
+      <div id="client-drill-content">
+        <!-- Injected dynamically by selectClient() -->
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 7: SWARM & DEMONI (SPEC-20) -->
+  <div id="tab-swarm" class="tab-pane">
+    <div class="section-box">
+      <div class="section-header">
+        <div class="section-title"><span>Swarm Agenti Deterministici & Demoni Proattivi</span></div>
+      </div>
+
+      <div style="margin-bottom: 24px;">
+        <h4 style="color: var(--accent-cyan); margin-bottom: 12px; font-size: 13px;">🤖 Agenti Autonomi Specializzati (SPEC-20)</h4>
+        <div id="swarm-agents-grid" class="cards-grid">
+          <!-- Popolato da JS -->
+        </div>
+      </div>
+
+      <div>
+        <h4 style="color: var(--accent-emerald); margin-bottom: 12px; font-size: 13px;">⏰ Demoni di Monitoraggio in Background</h4>
+        <div id="daemons-grid" class="cards-grid">
+          <!-- Popolato da JS -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 8: HUB TECNICO ITINFRA & RAEE (SPEC-24) -->
+  <div id="tab-technical" class="tab-pane">
+    <div class="section-box">
+      <div class="section-header">
+        <div class="section-title"><span>Integrazione Tecnica Hub-and-Spoke con itinfra & Ciclo RAEE</span></div>
+        <button class="btn btn-secondary" onclick="window.open('../../itinfra/projects/enterprise_dashboard.html', '_blank')">🔗 Apri Cockpit itinfra</button>
+      </div>
+      <div class="cards-grid" style="margin-bottom: 20px;">
+        <div style="background: var(--bg-card-sub); border: 1px solid var(--border-color); border-radius: 8px; padding: 16px;">
+          <div style="font-weight: 700; color: var(--accent-cyan); margin-bottom: 6px;">Disaster Recovery Drill (dr-drill)</div>
+          <div style="font-size: 11px; color: var(--text-muted);">Verifica periodica RTO e RPO con ripristino sandbox, test hash SHA-256 e rilascio del verbale per Art. 32 GDPR e Modello 231.</div>
+          <div style="margin-top: 10px;">
+            <button class="btn btn-secondary" onclick="copyCliCmd('.\\it-ops.cmd workflow run dr-drill severino-srl')">Esegui per severino-srl</button>
+          </div>
+        </div>
+        <div style="background: var(--bg-card-sub); border: 1px solid var(--border-color); border-radius: 8px; padding: 16px;">
+          <div style="font-weight: 700; color: var(--accent-emerald); margin-bottom: 6px;">Aggiornamento Firmware Canary (firmware-upgrade)</div>
+          <div style="font-size: 11px; color: var(--text-muted);">Rollout a tappe su apparati di rete e server con snapshot, health check e rollback deterministico in caso di anomalia.</div>
+          <div style="margin-top: 10px;">
+            <button class="btn btn-secondary" onclick="copyCliCmd('.\\it-ops.cmd workflow run firmware-upgrade teatek-spa')">Esegui per teatek-spa</button>
+          </div>
+        </div>
+        <div style="background: var(--bg-card-sub); border: 1px solid var(--border-color); border-radius: 8px; padding: 16px;">
+          <div style="font-weight: 700; color: var(--accent-amber); margin-bottom: 6px;">Dismissione RAEE & NIST 800-88 (hardware-decommissioning)</div>
+          <div style="font-size: 11px; color: var(--text-muted);">Sanificazione dischi conformità DoD/NIST, cancellazione as-built e generazione del certificato di smaltimento con codice FIR.</div>
+          <div style="margin-top: 10px;">
+            <button class="btn btn-secondary" onclick="copyCliCmd('.\\it-ops.cmd workflow run hardware-decommissioning-raee unisped-ag-sas')">Esegui per unisped-ag-sas</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Lettera di Sollecito / Diffida 231 -->
+  <div id="modal-letter" class="modal-overlay">
+    <div class="modal-box">
+      <button class="modal-close" onclick="closeModal('modal-letter')">&times;</button>
+      <h3 id="modal-letter-title" style="color: #fff; margin-bottom: 12px;">Lettera di Sollecito D.Lgs. 231/2002</h3>
+      <div id="modal-letter-content" style="background: var(--bg-main); border: 1px solid var(--border-color); border-radius: 8px; padding: 16px; font-family: monospace; font-size: 11px; white-space: pre-wrap; max-height: 400px; overflow-y: auto; color: #e2e8f0; margin-bottom: 16px;"></div>
+      <div style="display: flex; justify-content: flex-end; gap: 10px;">
+        <button class="btn btn-secondary" onclick="closeModal('modal-letter')">Chiudi</button>
+        <button class="btn btn-primary" onclick="copyLetterText()">📋 Copia Testo Lettera</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="toast">Comando copiato negli appunti!</div>
+
+  <!-- Footer -->
   <div class="footer">
-    Aure System di Eduardo Possumato &bull; IT Operations & Governance Platform &bull; Zero-CDN Verified Engine
+    Aure System di Eduardo Possumato &bull; IT Operations & Governance Platform &bull; Conforme OKF v0.2 &bull; Zero-CDN Verified Engine
   </div>
+
 </div>
+
+<!-- JSON Data Store Integrato -->
+<script id="dashboard-data" type="application/json">
+{"generated_at": "2026-09-18T23:06:09.479123", "total_clients": 4, "recent_workflows": [{"workflow_id": "WF-20260918210431-HARDWARE-DECOMMISSIONING-RAEE-severinosrl", "workflow_type": "hardware-decommissioning-raee", "slug": "severino-srl", "status": "COMPLETED", "created_at": "2026-09-18T21:04:31.291686+00:00", "updated_at": "2026-09-18T21:04:31.380076+00:00", "completed_at": "2026-09-18T21:04:31.380076+00:00", "initiated_by": "cli:operator", "current_step_index": 4, "total_steps": 4, "steps": [{"step_id": "identify_asset", "name": "Ispezione Seriale & Censimento As-Built / SLA", "status": "DONE", "started_at": "2026-09-18T21:04:31.342651+00:00", "completed_at": "2026-09-18T21:04:31.345647+00:00", "output_summary": "Identificato apparato da dismettere: Apparato Hardware (S/N: UNKNOWN-SN) per cliente severino-srl.", "data": {"slug": "severino-srl", "serial": "UNKNOWN-SN", "model": "Apparato Hardware"}, "error": null}, {"step_id": "nist_sanitize", "name": "Sanificazione Sicura Supporti NIST SP 800-88 Purge", "status": "DONE", "started_at": "2026-09-18T21:04:31.349954+00:00", "completed_at": "2026-09-18T21:04:31.354505+00:00", "output_summary": "Sanificazione dati eseguita (NIST 800-88 Purge 3-pass). Certificato crittografico generato.", "data": {"standard": "NIST SP 800-88 Rev. 1", "method": "Cryptographic Erase & Block Overwrite (3-pass)", "wipe_verification_hash": "7f26d2b72c2af7e2c61a2645cf655f2740e04b7dd844f97c67f0d7f4135eab6e", "gdpr_compliant": true}, "error": null}, {"step_id": "asbuilt_detach", "name": "Distacco Apparato da As-Built e Canone SLA", "status": "DONE", "started_at": "2026-09-18T21:04:31.359410+00:00", "completed_at": "2026-09-18T21:04:31.363423+00:00", "output_summary": "Apparato S/N UNKNOWN-SN rimosso dall'As-Built e stralciato dal canone SLA attivo.", "data": {"serial_removed": "UNKNOWN-SN", "sla_adjusted": true}, "error": null}, {"step_id": "raee_fir_generation", "name": "Emissione Formulario Identificazione Rifiuti RAEE", "status": "DONE", "started_at": "2026-09-18T21:04:31.368719+00:00", "completed_at": "2026-09-18T21:04:31.374769+00:00", "output_summary": "Documento FIR per smaltimento ecologico RAEE generato in fir-raee-UNKNOWN-SN.txt.", "data": {"fir_document": "C:\\Users\\auresystem\\repos\\itinfra-business-ops\\clients\\severino-srl\\compliance\\fir-raee-UNKNOWN-SN.txt"}, "error": null}], "metadata": {}}, {"workflow_id": "WF-20260918210431-FIRMWARE-UPGRADE-severinosrl", "workflow_type": "firmware-upgrade", "slug": "severino-srl", "status": "COMPLETED", "created_at": "2026-09-18T21:04:31.149781+00:00", "updated_at": "2026-09-18T21:04:31.256828+00:00", "completed_at": "2026-09-18T21:04:31.256828+00:00", "initiated_by": "cli:operator", "current_step_index": 5, "total_steps": 5, "steps": [{"step_id": "preflight_backup", "name": "Esportazione Backup Configurazione nel Vault", "status": "DONE", "started_at": "2026-09-18T21:04:31.201489+00:00", "completed_at": "2026-09-18T21:04:31.206709+00:00", "output_summary": "Backup di sicurezza pre-upgrade esportato e salvato nel Vault locale crittografato per Router-Core-01.", "data": {"device": "Router-Core-01", "backup_file": "Router-Core-01-pre-upgrade.rsc", "vault_locked": true}, "error": null}, {"step_id": "hash_check", "name": "Verifica Immagine Firmware con SHA-256 Ufficiale", "status": "DONE", "started_at": "2026-09-18T21:04:31.210804+00:00", "completed_at": "2026-09-18T21:04:31.215799+00:00", "output_summary": "Immagine firmware v7.16.2-stable verificata con hash SHA-256 ufficiale OEM.", "data": {"version": "v7.16.2-stable", "sha256_verified": true}, "error": null}, {"step_id": "safe_deploy", "name": "Deploy Firmware in Modalità Safe-Mode con Auto-Revert", "status": "DONE", "started_at": "2026-09-18T21:04:31.221207+00:00", "completed_at": "2026-09-18T21:04:31.226194+00:00", "output_summary": "Firmware installato in Safe-Mode su Router-Core-01. Timer di auto-revert attivo (600s).", "data": {"safe_mode": true, "revert_timer_seconds": 600}, "error": null}, {"step_id": "smoke_test", "name": "Smoke Test di Connettività, Routing e Tunnel VPN", "status": "DONE", "started_at": "2026-09-18T21:04:31.231456+00:00", "completed_at": "2026-09-18T21:04:31.236267+00:00", "output_summary": "Smoke test di rete superato: Ping < 2ms, Tabelle OSPF/BGP stabili, Tunnel VPN attivi.", "data": {"ping_gateway_ms": 1.2, "vpn_tunnels_online": 3, "packet_loss_pct": 0.0}, "error": null}, {"step_id": "commit_or_rollback", "name": "Consolidamento Permanente o Ripristino Rapido", "status": "DONE", "started_at": "2026-09-18T21:04:31.242774+00:00", "completed_at": "2026-09-18T21:04:31.248181+00:00", "output_summary": "Safe-Mode disattivata. Configurazione firmware consolidata permanentemente con successo.", "data": {"committed": true, "reverted": false, "device": "Router-Core-01"}, "error": null}], "metadata": {}}, {"workflow_id": "WF-20260918210431-DR-DRILL-severinosrl", "workflow_type": "dr-drill", "slug": "severino-srl", "status": "COMPLETED", "created_at": "2026-09-18T21:04:31.026441+00:00", "updated_at": "2026-09-18T21:04:31.135052+00:00", "completed_at": "2026-09-18T21:04:31.135052+00:00", "initiated_by": "cli:operator", "current_step_index": 5, "total_steps": 5, "steps": [{"step_id": "audit_backup", "name": "Ispezione Catalogo Backup & Immutabilità", "status": "DONE", "started_at": "2026-09-18T21:04:31.079088+00:00", "completed_at": "2026-09-18T21:04:31.083126+00:00", "output_summary": "Catalogo backup verificato per severino-srl: NAS locale immutabile e cloud mirror presenti.", "data": {"backup_location": "\\\\backup01.local\\immut\\severino-srl", "retention_policy": "30_DAILY_12_MONTHLY_7_YEARLY", "immutable_lock": true, "last_full_backup": "2026-09-18T02:00:00Z"}, "error": null}, {"step_id": "staging_restore", "name": "Ripristino in Ambiente Sandbox Isolato", "status": "DONE", "started_at": "2026-09-18T21:04:31.087693+00:00", "completed_at": "2026-09-18T21:04:31.093492+00:00", "output_summary": "Ripristino sandbox isolato completato in severino-srl.", "data": {"staging_target": "C:\\Users\\auresystem\\repos\\itinfra-business-ops\\.agents\\cache\\dr_staging\\severino-srl", "restored_snapshots": ["system-core.qcow2", "database-sqldata.vhdx"], "sandbox_network_isolated": true}, "error": null}, {"step_id": "data_integrity", "name": "Verifica Integrità Checksum SHA-256 & Servizi", "status": "DONE", "started_at": "2026-09-18T21:04:31.098494+00:00", "completed_at": "2026-09-18T21:04:31.103021+00:00", "output_summary": "Integrità crittografica validata: Checksum SHA-256 match 100%.", "data": {"sha256_checksum": "4ebe6698966ff5036bb6e8196b8399e41e25b159cf6d4879ca10ebd870e1c91d", "database_consistency_check": "ZERO_CORRUPTION_DETECTED", "mock_services_started": ["ActiveDirectory", "PostgreSQL", "FileServer"]}, "error": null}, {"step_id": "rto_rpo_calc", "name": "Misurazione e Certificazione RTO / RPO", "status": "DONE", "started_at": "2026-09-18T21:04:31.109069+00:00", "completed_at": "2026-09-18T21:04:31.114569+00:00", "output_summary": "RTO effettivo: 42.5 min (SLA: 120.0 min). RPO: 2.0 h (SLA: 4.0 h). Conformità 100%.", "data": {"rto_actual_minutes": 42.5, "rto_sla_target_minutes": 120.0, "rto_compliant": true, "rpo_actual_hours": 2.0, "rpo_sla_target_hours": 4.0, "rpo_compliant": true}, "error": null}, {"step_id": "odv_certificate", "name": "Emissione Verbale Ufficiale OdV 231 / DPO", "status": "DONE", "started_at": "2026-09-18T21:04:31.121523+00:00", "completed_at": "2026-09-18T21:04:31.128532+00:00", "output_summary": "Verbale di Collaudo DR rilasciato in verbale-dr-drill-2026-09-18.okf.md.", "data": {"certificate_file": "C:\\Users\\auresystem\\repos\\itinfra-business-ops\\clients\\severino-srl\\compliance\\verbale-dr-drill-2026-09-18.okf.md"}, "error": null}], "metadata": {}}, {"workflow_id": "WF-20260918205944-HARDWARE-DECOMMISSIONING-RAEE-severinosrl", "workflow_type": "hardware-decommissioning-raee", "slug": "severino-srl", "status": "COMPLETED", "created_at": "2026-09-18T20:59:44.570084+00:00", "updated_at": "2026-09-18T20:59:44.660912+00:00", "completed_at": "2026-09-18T20:59:44.660912+00:00", "initiated_by": "cli:operator", "current_step_index": 4, "total_steps": 4, "steps": [{"step_id": "identify_asset", "name": "Ispezione Seriale & Censimento As-Built / SLA", "status": "DONE", "started_at": "2026-09-18T20:59:44.621404+00:00", "completed_at": "2026-09-18T20:59:44.625928+00:00", "output_summary": "Identificato apparato da dismettere: Apparato Hardware (S/N: UNKNOWN-SN) per cliente severino-srl.", "data": {"slug": "severino-srl", "serial": "UNKNOWN-SN", "model": "Apparato Hardware"}, "error": null}, {"step_id": "nist_sanitize", "name": "Sanificazione Sicura Supporti NIST SP 800-88 Purge", "status": "DONE", "started_at": "2026-09-18T20:59:44.629923+00:00", "completed_at": "2026-09-18T20:59:44.634243+00:00", "output_summary": "Sanificazione dati eseguita (NIST 800-88 Purge 3-pass). Certificato crittografico generato.", "data": {"standard": "NIST SP 800-88 Rev. 1", "method": "Cryptographic Erase & Block Overwrite (3-pass)", "wipe_verification_hash": "7f26d2b72c2af7e2c61a2645cf655f2740e04b7dd844f97c67f0d7f4135eab6e", "gdpr_compliant": true}, "error": null}, {"step_id": "asbuilt_detach", "name": "Distacco Apparato da As-Built e Canone SLA", "status": "DONE", "started_at": "2026-09-18T20:59:44.639102+00:00", "completed_at": "2026-09-18T20:59:44.643476+00:00", "output_summary": "Apparato S/N UNKNOWN-SN rimosso dall'As-Built e stralciato dal canone SLA attivo.", "data": {"serial_removed": "UNKNOWN-SN", "sla_adjusted": true}, "error": null}, {"step_id": "raee_fir_generation", "name": "Emissione Formulario Identificazione Rifiuti RAEE", "status": "DONE", "started_at": "2026-09-18T20:59:44.649072+00:00", "completed_at": "2026-09-18T20:59:44.655973+00:00", "output_summary": "Documento FIR per smaltimento ecologico RAEE generato in fir-raee-UNKNOWN-SN.txt.", "data": {"fir_document": "C:\\Users\\auresystem\\repos\\itinfra-business-ops\\clients\\severino-srl\\compliance\\fir-raee-UNKNOWN-SN.txt"}, "error": null}], "metadata": {}}, {"workflow_id": "WF-20260918205944-FIRMWARE-UPGRADE-severinosrl", "workflow_type": "firmware-upgrade", "slug": "severino-srl", "status": "COMPLETED", "created_at": "2026-09-18T20:59:44.428831+00:00", "updated_at": "2026-09-18T20:59:44.534093+00:00", "completed_at": "2026-09-18T20:59:44.534093+00:00", "initiated_by": "cli:operator", "current_step_index": 5, "total_steps": 5, "steps": [{"step_id": "preflight_backup", "name": "Esportazione Backup Configurazione nel Vault", "status": "DONE", "started_at": "2026-09-18T20:59:44.481250+00:00", "completed_at": "2026-09-18T20:59:44.486258+00:00", "output_summary": "Backup di sicurezza pre-upgrade esportato e salvato nel Vault locale crittografato per Router-Core-01.", "data": {"device": "Router-Core-01", "backup_file": "Router-Core-01-pre-upgrade.rsc", "vault_locked": true}, "error": null}, {"step_id": "hash_check", "name": "Verifica Immagine Firmware con SHA-256 Ufficiale", "status": "DONE", "started_at": "2026-09-18T20:59:44.490256+00:00", "completed_at": "2026-09-18T20:59:44.495569+00:00", "output_summary": "Immagine firmware v7.16.2-stable verificata con hash SHA-256 ufficiale OEM.", "data": {"version": "v7.16.2-stable", "sha256_verified": true}, "error": null}, {"step_id": "safe_deploy", "name": "Deploy Firmware in Modalità Safe-Mode con Auto-Revert", "status": "DONE", "started_at": "2026-09-18T20:59:44.500581+00:00", "completed_at": "2026-09-18T20:59:44.505582+00:00", "output_summary": "Firmware installato in Safe-Mode su Router-Core-01. Timer di auto-revert attivo (600s).", "data": {"safe_mode": true, "revert_timer_seconds": 600}, "error": null}, {"step_id": "smoke_test", "name": "Smoke Test di Connettività, Routing e Tunnel VPN", "status": "DONE", "started_at": "2026-09-18T20:59:44.510581+00:00", "completed_at": "2026-09-18T20:59:44.516869+00:00", "output_summary": "Smoke test di rete superato: Ping < 2ms, Tabelle OSPF/BGP stabili, Tunnel VPN attivi.", "data": {"ping_gateway_ms": 1.2, "vpn_tunnels_online": 3, "packet_loss_pct": 0.0}, "error": null}, {"step_id": "commit_or_rollback", "name": "Consolidamento Permanente o Ripristino Rapido", "status": "DONE", "started_at": "2026-09-18T20:59:44.522148+00:00", "completed_at": "2026-09-18T20:59:44.528116+00:00", "output_summary": "Safe-Mode disattivata. Configurazione firmware consolidata permanentemente con successo.", "data": {"committed": true, "reverted": false, "device": "Router-Core-01"}, "error": null}], "metadata": {}}, {"workflow_id": "WF-20260918205944-DR-DRILL-severinosrl", "workflow_type": "dr-drill", "slug": "severino-srl", "status": "COMPLETED", "created_at": "2026-09-18T20:59:44.303666+00:00", "updated_at": "2026-09-18T20:59:44.413803+00:00", "completed_at": "2026-09-18T20:59:44.413803+00:00", "initiated_by": "cli:operator", "current_step_index": 5, "total_steps": 5, "steps": [{"step_id": "audit_backup", "name": "Ispezione Catalogo Backup & Immutabilità", "status": "DONE", "started_at": "2026-09-18T20:59:44.356511+00:00", "completed_at": "2026-09-18T20:59:44.360138+00:00", "output_summary": "Catalogo backup verificato per severino-srl: NAS locale immutabile e cloud mirror presenti.", "data": {"backup_location": "\\\\backup01.local\\immut\\severino-srl", "retention_policy": "30_DAILY_12_MONTHLY_7_YEARLY", "immutable_lock": true, "last_full_backup": "2026-09-18T02:00:00Z"}, "error": null}, {"step_id": "staging_restore", "name": "Ripristino in Ambiente Sandbox Isolato", "status": "DONE", "started_at": "2026-09-18T20:59:44.365410+00:00", "completed_at": "2026-09-18T20:59:44.370689+00:00", "output_summary": "Ripristino sandbox isolato completato in severino-srl.", "data": {"staging_target": "C:\\Users\\auresystem\\repos\\itinfra-business-ops\\.agents\\cache\\dr_staging\\severino-srl", "restored_snapshots": ["system-core.qcow2", "database-sqldata.vhdx"], "sandbox_network_isolated": true}, "error": null}, {"step_id": "data_integrity", "name": "Verifica Integrità Checksum SHA-256 & Servizi", "status": "DONE", "started_at": "2026-09-18T20:59:44.376203+00:00", "completed_at": "2026-09-18T20:59:44.381477+00:00", "output_summary": "Integrità crittografica validata: Checksum SHA-256 match 100%.", "data": {"sha256_checksum": "4ebe6698966ff5036bb6e8196b8399e41e25b159cf6d4879ca10ebd870e1c91d", "database_consistency_check": "ZERO_CORRUPTION_DETECTED", "mock_services_started": ["ActiveDirectory", "PostgreSQL", "FileServer"]}, "error": null}, {"step_id": "rto_rpo_calc", "name": "Misurazione e Certificazione RTO / RPO", "status": "DONE", "started_at": "2026-09-18T20:59:44.387446+00:00", "completed_at": "2026-09-18T20:59:44.393740+00:00", "output_summary": "RTO effettivo: 42.5 min (SLA: 120.0 min). RPO: 2.0 h (SLA: 4.0 h). Conformità 100%.", "data": {"rto_actual_minutes": 42.5, "rto_sla_target_minutes": 120.0, "rto_compliant": true, "rpo_actual_hours": 2.0, "rpo_sla_target_hours": 4.0, "rpo_compliant": true}, "error": null}, {"step_id": "odv_certificate", "name": "Emissione Verbale Ufficiale OdV 231 / DPO", "status": "DONE", "started_at": "2026-09-18T20:59:44.399709+00:00", "completed_at": "2026-09-18T20:59:44.407464+00:00", "output_summary": "Verbale di Collaudo DR rilasciato in verbale-dr-drill-2026-09-18.okf.md.", "data": {"certificate_file": "C:\\Users\\auresystem\\repos\\itinfra-business-ops\\clients\\severino-srl\\compliance\\verbale-dr-drill-2026-09-18.okf.md"}, "error": null}], "metadata": {}}, {"workflow_id": "WF-20260918205424-HARDWARE-DECOMMISSIONING-RAEE-severinosrl", "workflow_type": "hardware-decommissioning-raee", "slug": "severino-srl", "status": "COMPLETED", "created_at": "2026-09-18T20:54:24.674392+00:00", "updated_at": "2026-09-18T20:54:24.765148+00:00", "completed_at": "2026-09-18T20:54:24.765148+00:00", "initiated_by": "cli:operator", "current_step_index": 4, "total_steps": 4, "steps": [{"step_id": "identify_asset", "name": "Ispezione Seriale & Censimento As-Built / SLA", "status": "DONE", "started_at": "2026-09-18T20:54:24.725327+00:00", "completed_at": "2026-09-18T20:54:24.730630+00:00", "output_summary": "Identificato apparato da dismettere: Apparato Hardware (S/N: UNKNOWN-SN) per cliente severino-srl.", "data": {"slug": "severino-srl", "serial": "UNKNOWN-SN", "model": "Apparato Hardware"}, "error": null}, {"step_id": "nist_sanitize", "name": "Sanificazione Sicura Supporti NIST SP 800-88 Purge", "status": "DONE", "started_at": "2026-09-18T20:54:24.734669+00:00", "completed_at": "2026-09-18T20:54:24.738987+00:00", "output_summary": "Sanificazione dati eseguita (NIST 800-88 Purge 3-pass). Certificato crittografico generato.", "data": {"standard": "NIST SP 800-88 Rev. 1", "method": "Cryptographic Erase & Block Overwrite (3-pass)", "wipe_verification_hash": "7f26d2b72c2af7e2c61a2645cf655f2740e04b7dd844f97c67f0d7f4135eab6e", "gdpr_compliant": true}, "error": null}, {"step_id": "asbuilt_detach", "name": "Distacco Apparato da As-Built e Canone SLA", "status": "DONE", "started_at": "2026-09-18T20:54:24.742984+00:00", "completed_at": "2026-09-18T20:54:24.747819+00:00", "output_summary": "Apparato S/N UNKNOWN-SN rimosso dall'As-Built e stralciato dal canone SLA attivo.", "data": {"serial_removed": "UNKNOWN-SN", "sla_adjusted": true}, "error": null}, {"step_id": "raee_fir_generation", "name": "Emissione Formulario Identificazione Rifiuti RAEE", "status": "DONE", "started_at": "2026-09-18T20:54:24.753836+00:00", "completed_at": "2026-09-18T20:54:24.760085+00:00", "output_summary": "Documento FIR per smaltimento ecologico RAEE generato in fir-raee-UNKNOWN-SN.txt.", "data": {"fir_document": "C:\\Users\\auresystem\\repos\\itinfra-business-ops\\clients\\severino-srl\\compliance\\fir-raee-UNKNOWN-SN.txt"}, "error": null}], "metadata": {}}, {"workflow_id": "WF-20260918205424-FIRMWARE-UPGRADE-severinosrl", "workflow_type": "firmware-upgrade", "slug": "severino-srl", "status": "COMPLETED", "created_at": "2026-09-18T20:54:24.533637+00:00", "updated_at": "2026-09-18T20:54:24.639461+00:00", "completed_at": "2026-09-18T20:54:24.639461+00:00", "initiated_by": "cli:operator", "current_step_index": 5, "total_steps": 5, "steps": [{"step_id": "preflight_backup", "name": "Esportazione Backup Configurazione nel Vault", "status": "DONE", "started_at": "2026-09-18T20:54:24.587251+00:00", "completed_at": "2026-09-18T20:54:24.592154+00:00", "output_summary": "Backup di sicurezza pre-upgrade esportato e salvato nel Vault locale crittografato per Router-Core-01.", "data": {"device": "Router-Core-01", "backup_file": "Router-Core-01-pre-upgrade.rsc", "vault_locked": true}, "error": null}, {"step_id": "hash_check", "name": "Verifica Immagine Firmware con SHA-256 Ufficiale", "status": "DONE", "started_at": "2026-09-18T20:54:24.597066+00:00", "completed_at": "2026-09-18T20:54:24.602077+00:00", "output_summary": "Immagine firmware v7.16.2-stable verificata con hash SHA-256 ufficiale OEM.", "data": {"version": "v7.16.2-stable", "sha256_verified": true}, "error": null}, {"step_id": "safe_deploy", "name": "Deploy Firmware in Modalità Safe-Mode con Auto-Revert", "status": "DONE", "started_at": "2026-09-18T20:54:24.606479+00:00", "completed_at": "2026-09-18T20:54:24.611573+00:00", "output_summary": "Firmware installato in Safe-Mode su Router-Core-01. Timer di auto-revert attivo (600s).", "data": {"safe_mode": true, "revert_timer_seconds": 600}, "error": null}, {"step_id": "smoke_test", "name": "Smoke Test di Connettività, Routing e Tunnel VPN", "status": "DONE", "started_at": "2026-09-18T20:54:24.616559+00:00", "completed_at": "2026-09-18T20:54:24.622152+00:00", "output_summary": "Smoke test di rete superato: Ping < 2ms, Tabelle OSPF/BGP stabili, Tunnel VPN attivi.", "data": {"ping_gateway_ms": 1.2, "vpn_tunnels_online": 3, "packet_loss_pct": 0.0}, "error": null}, {"step_id": "commit_or_rollback", "name": "Consolidamento Permanente o Ripristino Rapido", "status": "DONE", "started_at": "2026-09-18T20:54:24.627714+00:00", "completed_at": "2026-09-18T20:54:24.633147+00:00", "output_summary": "Safe-Mode disattivata. Configurazione firmware consolidata permanentemente con successo.", "data": {"committed": true, "reverted": false, "device": "Router-Core-01"}, "error": null}], "metadata": {}}, {"workflow_id": "WF-20260918205424-DR-DRILL-severinosrl", "workflow_type": "dr-drill", "slug": "severino-srl", "status": "COMPLETED", "created_at": "2026-09-18T20:54:24.411216+00:00", "updated_at": "2026-09-18T20:54:24.519688+00:00", "completed_at": "2026-09-18T20:54:24.519688+00:00", "initiated_by": "cli:operator", "current_step_index": 5, "total_steps": 5, "steps": [{"step_id": "audit_backup", "name": "Ispezione Catalogo Backup & Immutabilità", "status": "DONE", "started_at": "2026-09-18T20:54:24.463829+00:00", "completed_at": "2026-09-18T20:54:24.467644+00:00", "output_summary": "Catalogo backup verificato per severino-srl: NAS locale immutabile e cloud mirror presenti.", "data": {"backup_location": "\\\\backup01.local\\immut\\severino-srl", "retention_policy": "30_DAILY_12_MONTHLY_7_YEARLY", "immutable_lock": true, "last_full_backup": "2026-09-18T02:00:00Z"}, "error": null}, {"step_id": "staging_restore", "name": "Ripristino in Ambiente Sandbox Isolato", "status": "DONE", "started_at": "2026-09-18T20:54:24.472468+00:00", "completed_at": "2026-09-18T20:54:24.478320+00:00", "output_summary": "Ripristino sandbox isolato completato in severino-srl.", "data": {"staging_target": "C:\\Users\\auresystem\\repos\\itinfra-business-ops\\.agents\\cache\\dr_staging\\severino-srl", "restored_snapshots": ["system-core.qcow2", "database-sqldata.vhdx"], "sandbox_network_isolated": true}, "error": null}, {"step_id": "data_integrity", "name": "Verifica Integrità Checksum SHA-256 & Servizi", "status": "DONE", "started_at": "2026-09-18T20:54:24.482598+00:00", "completed_at": "2026-09-18T20:54:24.488316+00:00", "output_summary": "Integrità crittografica validata: Checksum SHA-256 match 100%.", "data": {"sha256_checksum": "4ebe6698966ff5036bb6e8196b8399e41e25b159cf6d4879ca10ebd870e1c91d", "database_consistency_check": "ZERO_CORRUPTION_DETECTED", "mock_services_started": ["ActiveDirectory", "PostgreSQL", "FileServer"]}, "error": null}, {"step_id": "rto_rpo_calc", "name": "Misurazione e Certificazione RTO / RPO", "status": "DONE", "started_at": "2026-09-18T20:54:24.494316+00:00", "completed_at": "2026-09-18T20:54:24.499756+00:00", "output_summary": "RTO effettivo: 42.5 min (SLA: 120.0 min). RPO: 2.0 h (SLA: 4.0 h). Conformità 100%.", "data": {"rto_actual_minutes": 42.5, "rto_sla_target_minutes": 120.0, "rto_compliant": true, "rpo_actual_hours": 2.0, "rpo_sla_target_hours": 4.0, "rpo_compliant": true}, "error": null}, {"step_id": "odv_certificate", "name": "Emissione Verbale Ufficiale OdV 231 / DPO", "status": "DONE", "started_at": "2026-09-18T20:54:24.505247+00:00", "completed_at": "2026-09-18T20:54:24.513108+00:00", "output_summary": "Verbale di Collaudo DR rilasciato in verbale-dr-drill-2026-09-18.okf.md.", "data": {"certificate_file": "C:\\Users\\auresystem\\repos\\itinfra-business-ops\\clients\\severino-srl\\compliance\\verbale-dr-drill-2026-09-18.okf.md"}, "error": null}], "metadata": {}}], "pending_actions": [{"action_id": "ACT-20260918201226-MPS-severino-srl", "event_id": "EVT-20260918201226-CONSUMAB-severinosrl", "slug": "severino-srl", "action_type": "mps_cartridge_reorder", "title": "Riordino Consumabile per Ricoh IM C2500 A3 Multifunzione Colore", "description": "Rilevato Black: 12% per cliente severino-srl. Predisporre cartuccia ricambio OEM e bolla di trasporto.", "requires_approval": true, "workflow_to_run": null, "target_params": {"slug": "severino-srl", "printer": "Ricoh IM C2500 A3 Multifunzione Colore", "toner": "Black: 12%"}, "created_at": "2026-09-18T20:12:26.583601+00:00"}, {"action_id": "ACT-20260918201302-MPS-severino-srl", "event_id": "EVT-20260918201302-CONSUMAB-severinosrl", "slug": "severino-srl", "action_type": "mps_cartridge_reorder", "title": "Riordino Consumabile per Ricoh IM C2500 A3 Multifunzione Colore", "description": "Rilevato Black: 12% per cliente severino-srl. Predisporre cartuccia ricambio OEM e bolla di trasporto.", "requires_approval": true, "workflow_to_run": null, "target_params": {"slug": "severino-srl", "printer": "Ricoh IM C2500 A3 Multifunzione Colore", "toner": "Black: 12%"}, "created_at": "2026-09-18T20:13:02.177149+00:00"}, {"action_id": "ACT-20260918201454-MPS-severino-srl", "event_id": "EVT-20260918201454-CONSUMAB-severinosrl", "slug": "severino-srl", "action_type": "mps_cartridge_reorder", "title": "Riordino Consumabile per Ricoh IM C2500 A3 Multifunzione Colore", "description": "Rilevato Black: 12% per cliente severino-srl. Predisporre cartuccia ricambio OEM e bolla di trasporto.", "requires_approval": true, "workflow_to_run": null, "target_params": {"slug": "severino-srl", "printer": "Ricoh IM C2500 A3 Multifunzione Colore", "toner": "Black: 12%"}, "created_at": "2026-09-18T20:14:54.819723+00:00"}, {"action_id": "ACT-20260918201541-MPS-severino-srl", "event_id": "EVT-20260918201541-CONSUMAB-severinosrl", "slug": "severino-srl", "action_type": "mps_cartridge_reorder", "title": "Riordino Consumabile per Ricoh IM C2500 A3 Multifunzione Colore", "description": "Rilevato Black: 12% per cliente severino-srl. Predisporre cartuccia ricambio OEM e bolla di trasporto.", "requires_approval": true, "workflow_to_run": null, "target_params": {"slug": "severino-srl", "printer": "Ricoh IM C2500 A3 Multifunzione Colore", "toner": "Black: 12%"}, "created_at": "2026-09-18T20:15:41.857499+00:00"}, {"action_id": "ACT-20260918202036-MPS-severino-srl", "event_id": "EVT-20260918202036-CONSUMAB-severinosrl", "slug": "severino-srl", "action_type": "mps_cartridge_reorder", "title": "Riordino Consumabile per Ricoh IM C2500 A3 Multifunzione Colore", "description": "Rilevato Black: 12% per cliente severino-srl. Predisporre cartuccia ricambio OEM e bolla di trasporto.", "requires_approval": true, "workflow_to_run": null, "target_params": {"slug": "severino-srl", "printer": "Ricoh IM C2500 A3 Multifunzione Colore", "toner": "Black: 12%"}, "created_at": "2026-09-18T20:20:36.047702+00:00"}, {"action_id": "ACT-20260918202144-MPS-severino-srl", "event_id": "EVT-20260918202144-CONSUMAB-severinosrl", "slug": "severino-srl", "action_type": "mps_cartridge_reorder", "title": "Riordino Consumabile per Ricoh IM C2500 A3 Multifunzione Colore", "description": "Rilevato Black: 12% per cliente severino-srl. Predisporre cartuccia ricambio OEM e bolla di trasporto.", "requires_approval": true, "workflow_to_run": null, "target_params": {"slug": "severino-srl", "printer": "Ricoh IM C2500 A3 Multifunzione Colore", "toner": "Black: 12%"}, "created_at": "2026-09-18T20:21:44.095081+00:00"}, {"action_id": "ACT-20260918202158-MPS-severino-srl", "event_id": "EVT-20260918202158-CONSUMAB-severinosrl", "slug": "severino-srl", "action_type": "mps_cartridge_reorder", "title": "Riordino Consumabile per Ricoh IM C2500 A3 Multifunzione Colore", "description": "Rilevato Black: 12% per cliente severino-srl. Predisporre cartuccia ricambio OEM e bolla di trasporto.", "requires_approval": true, "workflow_to_run": null, "target_params": {"slug": "severino-srl", "printer": "Ricoh IM C2500 A3 Multifunzione Colore", "toner": "Black: 12%"}, "created_at": "2026-09-18T20:21:58.041856+00:00"}, {"action_id": "ACT-20260918202244-MPS-severino-srl", "event_id": "EVT-20260918202244-CONSUMAB-severinosrl", "slug": "severino-srl", "action_type": "mps_cartridge_reorder", "title": "Riordino Consumabile per Ricoh IM C2500 A3 Multifunzione Colore", "description": "Rilevato Black: 12% per cliente severino-srl. Predisporre cartuccia ricambio OEM e bolla di trasporto.", "requires_approval": true, "workflow_to_run": null, "target_params": {"slug": "severino-srl", "printer": "Ricoh IM C2500 A3 Multifunzione Colore", "toner": "Black: 12%"}, "created_at": "2026-09-18T20:22:44.594503+00:00"}, {"action_id": "ACT-20260918203114-MPS-severino-srl", "event_id": "EVT-20260918203114-CONSUMAB-severinosrl", "slug": "severino-srl", "action_type": "mps_cartridge_reorder", "title": "Riordino Consumabile per Ricoh IM C2500 A3 Multifunzione Colore", "description": "Rilevato Black: 12% per cliente severino-srl. Predisporre cartuccia ricambio OEM e bolla di trasporto.", "requires_approval": true, "workflow_to_run": null, "target_params": {"slug": "severino-srl", "printer": "Ricoh IM C2500 A3 Multifunzione Colore", "toner": "Black: 12%"}, "created_at": "2026-09-18T20:31:14.857626+00:00"}, {"action_id": "ACT-20260918203710-MPS-severino-srl", "event_id": "EVT-20260918203710-CONSUMAB-severinosrl", "slug": "severino-srl", "action_type": "mps_cartridge_reorder", "title": "Riordino Consumabile per Ricoh IM C2500 A3 Multifunzione Colore", "description": "Rilevato Black: 12% per cliente severino-srl. Predisporre cartuccia ricambio OEM e bolla di trasporto.", "requires_approval": true, "workflow_to_run": null, "target_params": {"slug": "severino-srl", "printer": "Ricoh IM C2500 A3 Multifunzione Colore", "toner": "Black: 12%"}, "created_at": "2026-09-18T20:37:10.896899+00:00"}, {"action_id": "ACT-20260918203728-MPS-severino-srl", "event_id": "EVT-20260918203728-CONSUMAB-severinosrl", "slug": "severino-srl", "action_type": "mps_cartridge_reorder", "title": "Riordino Consumabile per Ricoh IM C2500 A3 Multifunzione Colore", "description": "Rilevato Black: 12% per cliente severino-srl. Predisporre cartuccia ricambio OEM e bolla di trasporto.", "requires_approval": true, "workflow_to_run": null, "target_params": {"slug": "severino-srl", "printer": "Ricoh IM C2500 A3 Multifunzione Colore", "toner": "Black: 12%"}, "created_at": "2026-09-18T20:37:28.325609+00:00"}, {"action_id": "ACT-20260918204225-MPS-severino-srl", "event_id": "EVT-20260918204225-CONSUMAB-severinosrl", "slug": "severino-srl", "action_type": "mps_cartridge_reorder", "title": "Riordino Consumabile per Ricoh IM C2500 A3 Multifunzione Colore", "description": "Rilevato Black: 12% per cliente severino-srl. Predisporre cartuccia ricambio OEM e bolla di trasporto.", "requires_approval": true, "workflow_to_run": null, "target_params": {"slug": "severino-srl", "printer": "Ricoh IM C2500 A3 Multifunzione Colore", "toner": "Black: 12%"}, "created_at": "2026-09-18T20:42:25.288499+00:00"}, {"action_id": "ACT-20260918204416-MPS-severino-srl", "event_id": "EVT-20260918204416-CONSUMAB-severinosrl", "slug": "severino-srl", "action_type": "mps_cartridge_reorder", "title": "Riordino Consumabile per Ricoh IM C2500 A3 Multifunzione Colore", "description": "Rilevato Black: 12% per cliente severino-srl. Predisporre cartuccia ricambio OEM e bolla di trasporto.", "requires_approval": true, "workflow_to_run": null, "target_params": {"slug": "severino-srl", "printer": "Ricoh IM C2500 A3 Multifunzione Colore", "toner": "Black: 12%"}, "created_at": "2026-09-18T20:44:16.940191+00:00"}, {"action_id": "ACT-20260918204452-MPS-severino-srl", "event_id": "EVT-20260918204452-CONSUMAB-severinosrl", "slug": "severino-srl", "action_type": "mps_cartridge_reorder", "title": "Riordino Consumabile per Ricoh IM C2500 A3 Multifunzione Colore", "description": "Rilevato Black: 12% per cliente severino-srl. Predisporre cartuccia ricambio OEM e bolla di trasporto.", "requires_approval": true, "workflow_to_run": null, "target_params": {"slug": "severino-srl", "printer": "Ricoh IM C2500 A3 Multifunzione Colore", "toner": "Black: 12%"}, "created_at": "2026-09-18T20:44:52.398935+00:00"}, {"action_id": "ACT-20260918204517-MPS-severino-srl", "event_id": "EVT-20260918204517-CONSUMAB-severinosrl", "slug": "severino-srl", "action_type": "mps_cartridge_reorder", "title": "Riordino Consumabile per Ricoh IM C2500 A3 Multifunzione Colore", "description": "Rilevato Black: 12% per cliente severino-srl. Predisporre cartuccia ricambio OEM e bolla di trasporto.", "requires_approval": true, "workflow_to_run": null, "target_params": {"slug": "severino-srl", "printer": "Ricoh IM C2500 A3 Multifunzione Colore", "toner": "Black: 12%"}, "created_at": "2026-09-18T20:45:17.046922+00:00"}, {"action_id": "ACT-20260918204552-MPS-severino-srl", "event_id": "EVT-20260918204552-CONSUMAB-severinosrl", "slug": "severino-srl", "action_type": "mps_cartridge_reorder", "title": "Riordino Consumabile per Ricoh IM C2500 A3 Multifunzione Colore", "description": "Rilevato Black: 12% per cliente severino-srl. Predisporre cartuccia ricambio OEM e bolla di trasporto.", "requires_approval": true, "workflow_to_run": null, "target_params": {"slug": "severino-srl", "printer": "Ricoh IM C2500 A3 Multifunzione Colore", "toner": "Black: 12%"}, "created_at": "2026-09-18T20:45:52.895737+00:00"}, {"action_id": "ACT-20260918204944-MPS-severino-srl", "event_id": "EVT-20260918204944-CONSUMAB-severinosrl", "slug": "severino-srl", "action_type": "mps_cartridge_reorder", "title": "Riordino Consumabile per Ricoh IM C2500 A3 Multifunzione Colore", "description": "Rilevato Black: 12% per cliente severino-srl. Predisporre cartuccia ricambio OEM e bolla di trasporto.", "requires_approval": true, "workflow_to_run": null, "target_params": {"slug": "severino-srl", "printer": "Ricoh IM C2500 A3 Multifunzione Colore", "toner": "Black: 12%"}, "created_at": "2026-09-18T20:49:44.460899+00:00"}, {"action_id": "ACT-20260918204959-MPS-severino-srl", "event_id": "EVT-20260918204959-CONSUMAB-severinosrl", "slug": "severino-srl", "action_type": "mps_cartridge_reorder", "title": "Riordino Consumabile per Ricoh IM C2500 A3 Multifunzione Colore", "description": "Rilevato Black: 12% per cliente severino-srl. Predisporre cartuccia ricambio OEM e bolla di trasporto.", "requires_approval": true, "workflow_to_run": null, "target_params": {"slug": "severino-srl", "printer": "Ricoh IM C2500 A3 Multifunzione Colore", "toner": "Black: 12%"}, "created_at": "2026-09-18T20:49:59.089997+00:00"}, {"action_id": "ACT-20260918205023-MPS-severino-srl", "event_id": "EVT-20260918205023-CONSUMAB-severinosrl", "slug": "severino-srl", "action_type": "mps_cartridge_reorder", "title": "Riordino Consumabile per Ricoh IM C2500 A3 Multifunzione Colore", "description": "Rilevato Black: 12% per cliente severino-srl. Predisporre cartuccia ricambio OEM e bolla di trasporto.", "requires_approval": true, "workflow_to_run": null, "target_params": {"slug": "severino-srl", "printer": "Ricoh IM C2500 A3 Multifunzione Colore", "toner": "Black: 12%"}, "created_at": "2026-09-18T20:50:23.489457+00:00"}, {"action_id": "ACT-20260918205339-MPS-severino-srl", "event_id": "EVT-20260918205339-CONSUMAB-severinosrl", "slug": "severino-srl", "action_type": "mps_cartridge_reorder", "title": "Riordino Consumabile per Ricoh IM C2500 A3 Multifunzione Colore", "description": "Rilevato Black: 12% per cliente severino-srl. Predisporre cartuccia ricambio OEM e bolla di trasporto.", "requires_approval": true, "workflow_to_run": null, "target_params": {"slug": "severino-srl", "printer": "Ricoh IM C2500 A3 Multifunzione Colore", "toner": "Black: 12%"}, "created_at": "2026-09-18T20:53:39.003202+00:00"}, {"action_id": "ACT-20260918205423-MPS-severino-srl", "event_id": "EVT-20260918205423-CONSUMAB-severinosrl", "slug": "severino-srl", "action_type": "mps_cartridge_reorder", "title": "Riordino Consumabile per Ricoh IM C2500 A3 Multifunzione Colore", "description": "Rilevato Black: 12% per cliente severino-srl. Predisporre cartuccia ricambio OEM e bolla di trasporto.", "requires_approval": true, "workflow_to_run": null, "target_params": {"slug": "severino-srl", "printer": "Ricoh IM C2500 A3 Multifunzione Colore", "toner": "Black: 12%"}, "created_at": "2026-09-18T20:54:23.468618+00:00"}, {"action_id": "ACT-20260918205943-MPS-severino-srl", "event_id": "EVT-20260918205943-CONSUMAB-severinosrl", "slug": "severino-srl", "action_type": "mps_cartridge_reorder", "title": "Riordino Consumabile per Ricoh IM C2500 A3 Multifunzione Colore", "description": "Rilevato Black: 12% per cliente severino-srl. Predisporre cartuccia ricambio OEM e bolla di trasporto.", "requires_approval": true, "workflow_to_run": null, "target_params": {"slug": "severino-srl", "printer": "Ricoh IM C2500 A3 Multifunzione Colore", "toner": "Black: 12%"}, "created_at": "2026-09-18T20:59:43.262686+00:00"}, {"action_id": "ACT-20260918210429-MPS-severino-srl", "event_id": "EVT-20260918210429-CONSUMAB-severinosrl", "slug": "severino-srl", "action_type": "mps_cartridge_reorder", "title": "Riordino Consumabile per Ricoh IM C2500 A3 Multifunzione Colore", "description": "Rilevato Black: 12% per cliente severino-srl. Predisporre cartuccia ricambio OEM e bolla di trasporto.", "requires_approval": true, "workflow_to_run": null, "target_params": {"slug": "severino-srl", "printer": "Ricoh IM C2500 A3 Multifunzione Colore", "toner": "Black: 12%"}, "created_at": "2026-09-18T21:04:29.698897+00:00"}], "daemons": [{"id": "mps", "name": "MPS Telemetry & Consumables Daemon", "interval": "300s", "status": "ACTIVE", "target": "Toner <= 15%", "command": ".\\it-ops.cmd daemon mps --once"}, {"id": "sla", "name": "SLA Hours & Expiration Daemon", "interval": "600s", "status": "ACTIVE", "target": "Ore SLA < 20% o scadenza < 30gg", "command": ".\\it-ops.cmd daemon sla --once"}, {"id": "credit", "name": "Credit Recovery & D.Lgs. 231/2002 Daemon", "interval": "3600s", "status": "ACTIVE", "target": "Fatture scadute > 30gg & Tasso 11.5%", "command": ".\\it-ops.cmd daemon credit --once"}], "swarm_agents": [{"type": "audit-231", "role": "Compliance & Gap Auditor", "scope": "D.Lgs. 231/2001, ISO 27001, NIST CSF", "status": "READY", "cli": ".\\it-ops.cmd agent audit-231"}, {"type": "finance-reconciler", "role": "Financial PSA Reconciler", "scope": "Timesheet, Ore SLA, MPS & Fatture", "status": "READY", "cli": ".\\it-ops.cmd agent finance-reconciler"}, {"type": "infrastructure-sentinel", "role": "Infrastructure Sentinel", "scope": "Telemetry, As-Built & Network Health", "status": "READY", "cli": ".\\it-ops.cmd agent infrastructure-sentinel"}, {"type": "contract-guardian", "role": "Contract SLA Guardian", "scope": "Hours Bank Burn Rate & Scadenze", "status": "READY", "cli": ".\\it-ops.cmd agent contract-guardian"}], "workflow_catalog": [{"type": "monthly-closing", "name": "Chiusura Mensile & Fatturazione Massiva Automatica", "description": "Riconciliazione telelettura MPS, conguagli copie, monte ore SLA e generazione batch SDI", "stages_count": 5, "stages": ["Telelettura Contatori MPS & Calcolo Copie Eccedenti", "Riconciliazione Rapportini vs Monte Ore SLA", "Certificazione Finanziaria Deterministica Swarm", "Generazione Batch SDI XML FPR12 Multi-Rata", "Consolidamento Scadenzario Attivo DFFM"], "category": "business"}, {"type": "onboarding-to-live", "name": "End-to-End Client Onboarding & Go-Live", "description": "Provisioning dual-repo atomico, verifica cantiere As-Built, attivazione SLA e handover", "stages_count": 6, "stages": ["Simulazione Preventivo & Margini Operativi", "Scaffolding Atomico Dual-Repo (Pipeline 11)", "Validazione Seriale Apparati & IPAM As-Built", "Attivazione Contratto SLA & Monte Ore Iniziale", "Assessment di Sicurezza Iniziale D.Lgs. 231/2001", "Generazione Verbale di Handover & Collaudo Formale"], "category": "business"}, {"type": "incident-postmortem", "name": "Incident P1 ➔ RCA ➔ Guardrail Auto-Correttivo", "description": "Apertura rapportino emergenza, lookup topologico As-Built, RCA e lezione OKF v0.2", "stages_count": 5, "stages": ["Apertura Rapportino d'Intervento Emergenza", "Ispezione Seriale & Topologia Apparato As-Built", "Redazione Fascicolo Post-Mortem 10-RCA.md", "Cattura Automatica Lezione OKF v0.2", "Attestazione Formale SHA-256 & Compilazione Regole"], "category": "business"}, {"type": "quarterly-audit-231", "name": "Ciclo Trimestrale Audit 231 & Continuous Compliance", "description": "Audit D.Lgs. 231/2001, verifica Shadow IT su IPAM e deliverable peritali per OdV", "stages_count": 4, "stages": ["Riesame Fascicolo 231 con Auditor231Agent", "Rilevamento Shadow IT vs As-Built Tecnico", "Ricalcolo Punteggi di Maturita CMMI e CVSS v4.0", "Generazione Pacchetto Peritale (Verbale, PDF, HTML)"], "category": "business"}, {"type": "contract-renewal", "name": "Rinnovo Annuale Contratti SLA & Revisione Tariffe", "description": "Analisi storica burn rate ore, quantificazione extra-budget e offerta di rinnovo PDF", "stages_count": 4, "stages": ["Analisi Storica Burn Rate con ContractGuardianAgent", "Quantificazione Scostamenti & Ore Extra-Budget", "Calcolo Proposta Cost-Plus con Adeguamento ISTAT", "Emissione Offerta Contrattuale PDF Formale"], "category": "business"}, {"type": "dr-drill", "name": "Esercitazione Annuale Disaster Recovery (GDPR Art. 32 / 231)", "description": "Verifica integrità backup, ripristino sandbox, calcolo RTO/RPO e rilascio verbale OdV", "stages_count": 5, "stages": ["Ispezione Catalogo Backup & Immutabilità", "Ripristino in Ambiente Sandbox Isolato", "Verifica Integrità Checksum SHA-256 & Servizi", "Misurazione e Certificazione RTO / RPO", "Emissione Verbale Ufficiale OdV 231 / DPO"], "category": "technical"}, {"type": "firmware-upgrade", "name": "Ciclo di Aggiornamento Firmware Apparati di Rete", "description": "Backup nel vault, verifica hash OEM, installazione safe-mode e smoke test", "stages_count": 5, "stages": ["Esportazione Backup Configurazione nel Vault", "Verifica Immagine Firmware con SHA-256 Ufficiale", "Deploy Firmware in Modalità Safe-Mode con Auto-Revert", "Smoke Test di Connettività, Routing e Tunnel VPN", "Consolidamento Permanente o Ripristino Rapido"], "category": "technical"}, {"type": "hardware-decommissioning-raee", "name": "Dismissione Sicura Hardware & Formulario RAEE (D.Lgs. 49/2014)", "description": "Identificazione apparato, cancellazione sicura NIST 800-88, distacco As-Built e FIR RAEE", "stages_count": 4, "stages": ["Ispezione Seriale & Censimento As-Built / SLA", "Sanificazione Sicura Supporti NIST SP 800-88 Purge", "Distacco Apparato da As-Built e Canone SLA", "Emissione Formulario Identificazione Rifiuti RAEE"], "category": "technical"}], "global_kpis": {"total_sla_hours_available": 280.5, "total_sla_hours_consumed": 11.5, "total_open_credit_eur": 1003.57, "total_overdue_credit_eur": 0.0, "total_mora_231_eur": 0.0, "global_aging": {"0_30": 0.0, "31_60": 0.0, "61_90": 0.0, "90_plus": 0.0}, "total_unbilled_hours": 0.0, "total_printers": 4, "total_toner_critical_alerts": 1, "avg_compliance_score": 65.9, "pending_actions_count": 23}, "clients": [{"slug": "roberto-viola", "client_name": "Studio Legale Avv. Roberto Viola", "tier": "standard", "fiscal": {"partita_iva": "", "codice_fiscale": "", "sdi_code": "0000000", "pec": "", "piva_valid": false, "cf_valid": false, "sdi_valid": false}, "sla_level": "high", "active_contracts_count": 1, "total_purchased_hours": 50.0, "total_consumed_hours": 0.0, "remaining_hours": 50.0, "hours_pct": 100.0, "sla_alert": false, "contracts": [{"contract_id": "CTR-2026-roberto-viola", "status": "active", "purchased_hours": 50.0, "consumed_hours": 0.0, "remaining_hours": 50.0, "level": "high", "end_date": "N/D"}], "interventions_count": 1, "unbilled_spot_hours": 0.0, "recent_interventions": [{"report_id": "RAP-20260917-001", "date": "2026-09-17", "technician": "Tecnico Assegnato", "hours": 2.5, "ledger_action": "debit_contract", "invoiced": false, "description": "Esecuzione manutenzione programmata:\n- Aggiornamento policy di sicurezza e verif"}], "open_invoices_eur": 0.0, "overdue_invoices_eur": 0.0, "total_invoiced_eur": 0.0, "total_mora_interest_eur": 0.0, "aging_buckets": {"0_30": 0.0, "31_60": 0.0, "61_90": 0.0, "90_plus": 0.0}, "invoices": [], "printers_count": 1, "toner_alerts": [], "printers": [{"asset_id": "MFP-RICOH-C3000-01", "model": "Ricoh IM C3000 A3 Colore", "serial_number": "MFP-RICOH-C3000-01", "ip_address": "192.168.10.250", "toners": {"black": 78, "cyan": 65, "magenta": 54, "yellow": 82}, "total_mono": 0, "total_color": 0}], "has_231": false, "compliance_score": 0.0, "va_findings_count": 0, "findings": [], "bridge_status": "WARNING", "bridge_details": {"slug": "roberto-viola", "total_as_built_assets": 17, "total_covered_in_contract": 2, "coverage_ratio_percent": 11.8, "covered_assets": [{"serial_number": "HP-Z6G4-VIOLA-01", "model": "HP Z6 G4 Workstation (AI Ready)", "hostname": "srv-viola-01", "contract_id": "CTR-2026-roberto-viola"}, {"serial_number": "SW-GEST-VIOLA-01", "model": "Gigabit Managed Switch 24p", "hostname": "sw-lan-01", "contract_id": "CTR-2026-roberto-viola"}], "missing_from_contract": [{"serial_number": "VLAN", "model": "CIDR", "hostname": "Subnet", "risk": "UNBILLED_ASSET_SHADOW_IT"}, {"serial_number": "10", "model": "/24", "hostname": "10.10.10.0/24", "risk": "UNBILLED_ASSET_SHADOW_IT"}, {"serial_number": "20", "model": "/24", "hostname": "10.10.20.0/24", "risk": "UNBILLED_ASSET_SHADOW_IT"}, {"serial_number": "30", "model": "/24", "hostname": "10.10.30.0/24", "risk": "UNBILLED_ASSET_SHADOW_IT"}, {"serial_number": "50", "model": "/24", "hostname": "10.10.50.0/24", "risk": "UNBILLED_ASSET_SHADOW_IT"}, {"serial_number": "70", "model": "/24", "hostname": "10.10.70.0/24", "risk": "UNBILLED_ASSET_SHADOW_IT"}, {"serial_number": "80", "model": "/23", "hostname": "10.10.80.0/23", "risk": "UNBILLED_ASSET_SHADOW_IT"}, {"serial_number": "IP", "model": "Hostname", "hostname": "Server", "risk": "UNBILLED_ASSET_SHADOW_IT"}, {"serial_number": "10.10.50.20", "model": "dc-01.<domain>", "hostname": "DC-01", "risk": "UNBILLED_ASSET_SHADOW_IT"}, {"serial_number": "10.10.50.21", "model": "dc-02.<domain>", "hostname": "DC-02", "risk": "UNBILLED_ASSET_SHADOW_IT"}, {"serial_number": "SCHEDULE", "model": "Host/VM inclusi", "hostname": "Job", "risk": "UNBILLED_ASSET_SHADOW_IT"}, {"serial_number": "22:00 DAILY", "model": "SRV-01/02/03 + DC-01/02", "hostname": "Job-VM-PROD", "risk": "UNBILLED_ASSET_SHADOW_IT"}, {"serial_number": "02:00 DAILY", "model": "FILE-SRV-01", "hostname": "Job-FILE", "risk": "UNBILLED_ASSET_SHADOW_IT"}, {"serial_number": "04:00 DAILY", "model": "fw-01/02, sw-core-01/02", "hostname": "Job-CONFIG", "risk": "UNBILLED_ASSET_SHADOW_IT"}, {"serial_number": "OGNI 1H", "model": "stor-01 pool", "hostname": "Job-STORAGE-SNAP", "risk": "UNBILLED_ASSET_SHADOW_IT"}], "ghost_contract_assets": [], "status": "WARNING"}, "workflows": []}, {"slug": "severino-srl", "client_name": "Severino Srl", "tier": "standard", "fiscal": {"partita_iva": "", "codice_fiscale": "", "sdi_code": "0000000", "pec": "", "piva_valid": false, "cf_valid": false, "sdi_valid": false}, "sla_level": "high", "active_contracts_count": 1, "total_purchased_hours": 192.0, "total_consumed_hours": 11.5, "remaining_hours": 180.5, "hours_pct": 94.0, "sla_alert": false, "contracts": [{"contract_id": "CTR-2026-SEVERINO", "status": "active", "purchased_hours": 192.0, "consumed_hours": 11.5, "remaining_hours": 180.5, "level": "high", "end_date": "N/D"}, {"contract_id": "CTR-2027-SEVERINO-SRL", "status": "draft", "purchased_hours": 40.0, "consumed_hours": 0.0, "remaining_hours": 40.0, "level": "high", "end_date": "N/D"}], "interventions_count": 2, "unbilled_spot_hours": 0.0, "recent_interventions": [{"report_id": "RAP-20260917-002", "date": "2026-09-17", "technician": "Mario Rossi", "hours": 1.5, "ledger_action": "debit_contract", "invoiced": false, "description": "Sostituzione modulo RAM guasto e installazione SSD di sistema"}, {"report_id": "RAP-20260916-001", "date": "2026-09-16", "technician": "Mario Rossi", "hours": 3.0, "ledger_action": "debit_contract", "invoiced": false, "description": "Collaudo e verifica post-attivazione host Hyper-V:\n- Verifica avvio automatico d"}], "open_invoices_eur": 1003.57, "overdue_invoices_eur": 0.0, "total_invoiced_eur": 1003.57, "total_mora_interest_eur": 0.0, "aging_buckets": {"0_30": 0.0, "31_60": 0.0, "61_90": 0.0, "90_plus": 0.0}, "invoices": [{"invoice_number": "bill-202609-severino-srl", "due_date": "2026-10-31", "amount": 501.79, "status": "unpaid", "days_overdue": 0, "mora_eur": 0.0, "suggested_stage": "ORDINARY"}, {"invoice_number": "bill-202609-severino-srl", "due_date": "2026-11-30", "amount": 501.78, "status": "unpaid", "days_overdue": 0, "mora_eur": 0.0, "suggested_stage": "ORDINARY"}], "printers_count": 1, "toner_alerts": [{"asset_id": "RICOH-SEV-2500-01", "model": "Ricoh IM C2500 A3 Multifunzione Colore", "low_toners": ["BK (12%)"]}], "printers": [{"asset_id": "RICOH-SEV-2500-01", "model": "Ricoh IM C2500 A3 Multifunzione Colore", "serial_number": "RICOH-SEV-2500-01", "ip_address": "192.168.120.253", "toners": {"black": 12, "cyan": 62, "magenta": 58, "yellow": 65}, "total_mono": 0, "total_color": 0}], "has_231": false, "compliance_score": 0.0, "va_findings_count": 0, "findings": [], "bridge_status": "WARNING", "bridge_details": {"slug": "severino-srl", "total_as_built_assets": 4, "total_covered_in_contract": 2, "coverage_ratio_percent": 50.0, "covered_assets": [{"serial_number": "CZC8492K1L", "model": "HP Z4 G4 Workstation Tower", "hostname": "HV-SEV01", "contract_id": "CTR-2026-SEVERINO"}, {"serial_number": "E4200891F7BC", "model": "MikroTik CRS326-24G-2S+RM", "hostname": "sw-core-01", "contract_id": "CTR-2026-SEVERINO"}], "missing_from_contract": [{"serial_number": "Q226B09871", "model": "QNAP TS-233 (2-Bay Tower)", "hostname": "nas-bkp-01", "risk": "UNBILLED_ASSET_SHADOW_IT"}, {"serial_number": "SSK-512G-202604", "model": "SSK Aluminum External Solid State Drive (USB 3.2 Gen 2)", "hostname": "", "risk": "UNBILLED_ASSET_SHADOW_IT"}], "ghost_contract_assets": [], "status": "WARNING"}, "workflows": [{"workflow_id": "WF-20260918210431-HARDWARE-DECOMMISSIONING-RAEE-severinosrl", "workflow_type": "hardware-decommissioning-raee", "slug": "severino-srl", "status": "COMPLETED", "created_at": "2026-09-18T21:04:31.291686+00:00", "updated_at": "2026-09-18T21:04:31.380076+00:00", "completed_at": "2026-09-18T21:04:31.380076+00:00", "initiated_by": "cli:operator", "current_step_index": 4, "total_steps": 4, "steps": [{"step_id": "identify_asset", "name": "Ispezione Seriale & Censimento As-Built / SLA", "status": "DONE", "started_at": "2026-09-18T21:04:31.342651+00:00", "completed_at": "2026-09-18T21:04:31.345647+00:00", "output_summary": "Identificato apparato da dismettere: Apparato Hardware (S/N: UNKNOWN-SN) per cliente severino-srl.", "data": {"slug": "severino-srl", "serial": "UNKNOWN-SN", "model": "Apparato Hardware"}, "error": null}, {"step_id": "nist_sanitize", "name": "Sanificazione Sicura Supporti NIST SP 800-88 Purge", "status": "DONE", "started_at": "2026-09-18T21:04:31.349954+00:00", "completed_at": "2026-09-18T21:04:31.354505+00:00", "output_summary": "Sanificazione dati eseguita (NIST 800-88 Purge 3-pass). Certificato crittografico generato.", "data": {"standard": "NIST SP 800-88 Rev. 1", "method": "Cryptographic Erase & Block Overwrite (3-pass)", "wipe_verification_hash": "7f26d2b72c2af7e2c61a2645cf655f2740e04b7dd844f97c67f0d7f4135eab6e", "gdpr_compliant": true}, "error": null}, {"step_id": "asbuilt_detach", "name": "Distacco Apparato da As-Built e Canone SLA", "status": "DONE", "started_at": "2026-09-18T21:04:31.359410+00:00", "completed_at": "2026-09-18T21:04:31.363423+00:00", "output_summary": "Apparato S/N UNKNOWN-SN rimosso dall'As-Built e stralciato dal canone SLA attivo.", "data": {"serial_removed": "UNKNOWN-SN", "sla_adjusted": true}, "error": null}, {"step_id": "raee_fir_generation", "name": "Emissione Formulario Identificazione Rifiuti RAEE", "status": "DONE", "started_at": "2026-09-18T21:04:31.368719+00:00", "completed_at": "2026-09-18T21:04:31.374769+00:00", "output_summary": "Documento FIR per smaltimento ecologico RAEE generato in fir-raee-UNKNOWN-SN.txt.", "data": {"fir_document": "C:\\Users\\auresystem\\repos\\itinfra-business-ops\\clients\\severino-srl\\compliance\\fir-raee-UNKNOWN-SN.txt"}, "error": null}], "metadata": {}}, {"workflow_id": "WF-20260918210431-FIRMWARE-UPGRADE-severinosrl", "workflow_type": "firmware-upgrade", "slug": "severino-srl", "status": "COMPLETED", "created_at": "2026-09-18T21:04:31.149781+00:00", "updated_at": "2026-09-18T21:04:31.256828+00:00", "completed_at": "2026-09-18T21:04:31.256828+00:00", "initiated_by": "cli:operator", "current_step_index": 5, "total_steps": 5, "steps": [{"step_id": "preflight_backup", "name": "Esportazione Backup Configurazione nel Vault", "status": "DONE", "started_at": "2026-09-18T21:04:31.201489+00:00", "completed_at": "2026-09-18T21:04:31.206709+00:00", "output_summary": "Backup di sicurezza pre-upgrade esportato e salvato nel Vault locale crittografato per Router-Core-01.", "data": {"device": "Router-Core-01", "backup_file": "Router-Core-01-pre-upgrade.rsc", "vault_locked": true}, "error": null}, {"step_id": "hash_check", "name": "Verifica Immagine Firmware con SHA-256 Ufficiale", "status": "DONE", "started_at": "2026-09-18T21:04:31.210804+00:00", "completed_at": "2026-09-18T21:04:31.215799+00:00", "output_summary": "Immagine firmware v7.16.2-stable verificata con hash SHA-256 ufficiale OEM.", "data": {"version": "v7.16.2-stable", "sha256_verified": true}, "error": null}, {"step_id": "safe_deploy", "name": "Deploy Firmware in Modalità Safe-Mode con Auto-Revert", "status": "DONE", "started_at": "2026-09-18T21:04:31.221207+00:00", "completed_at": "2026-09-18T21:04:31.226194+00:00", "output_summary": "Firmware installato in Safe-Mode su Router-Core-01. Timer di auto-revert attivo (600s).", "data": {"safe_mode": true, "revert_timer_seconds": 600}, "error": null}, {"step_id": "smoke_test", "name": "Smoke Test di Connettività, Routing e Tunnel VPN", "status": "DONE", "started_at": "2026-09-18T21:04:31.231456+00:00", "completed_at": "2026-09-18T21:04:31.236267+00:00", "output_summary": "Smoke test di rete superato: Ping < 2ms, Tabelle OSPF/BGP stabili, Tunnel VPN attivi.", "data": {"ping_gateway_ms": 1.2, "vpn_tunnels_online": 3, "packet_loss_pct": 0.0}, "error": null}, {"step_id": "commit_or_rollback", "name": "Consolidamento Permanente o Ripristino Rapido", "status": "DONE", "started_at": "2026-09-18T21:04:31.242774+00:00", "completed_at": "2026-09-18T21:04:31.248181+00:00", "output_summary": "Safe-Mode disattivata. Configurazione firmware consolidata permanentemente con successo.", "data": {"committed": true, "reverted": false, "device": "Router-Core-01"}, "error": null}], "metadata": {}}, {"workflow_id": "WF-20260918210431-DR-DRILL-severinosrl", "workflow_type": "dr-drill", "slug": "severino-srl", "status": "COMPLETED", "created_at": "2026-09-18T21:04:31.026441+00:00", "updated_at": "2026-09-18T21:04:31.135052+00:00", "completed_at": "2026-09-18T21:04:31.135052+00:00", "initiated_by": "cli:operator", "current_step_index": 5, "total_steps": 5, "steps": [{"step_id": "audit_backup", "name": "Ispezione Catalogo Backup & Immutabilità", "status": "DONE", "started_at": "2026-09-18T21:04:31.079088+00:00", "completed_at": "2026-09-18T21:04:31.083126+00:00", "output_summary": "Catalogo backup verificato per severino-srl: NAS locale immutabile e cloud mirror presenti.", "data": {"backup_location": "\\\\backup01.local\\immut\\severino-srl", "retention_policy": "30_DAILY_12_MONTHLY_7_YEARLY", "immutable_lock": true, "last_full_backup": "2026-09-18T02:00:00Z"}, "error": null}, {"step_id": "staging_restore", "name": "Ripristino in Ambiente Sandbox Isolato", "status": "DONE", "started_at": "2026-09-18T21:04:31.087693+00:00", "completed_at": "2026-09-18T21:04:31.093492+00:00", "output_summary": "Ripristino sandbox isolato completato in severino-srl.", "data": {"staging_target": "C:\\Users\\auresystem\\repos\\itinfra-business-ops\\.agents\\cache\\dr_staging\\severino-srl", "restored_snapshots": ["system-core.qcow2", "database-sqldata.vhdx"], "sandbox_network_isolated": true}, "error": null}, {"step_id": "data_integrity", "name": "Verifica Integrità Checksum SHA-256 & Servizi", "status": "DONE", "started_at": "2026-09-18T21:04:31.098494+00:00", "completed_at": "2026-09-18T21:04:31.103021+00:00", "output_summary": "Integrità crittografica validata: Checksum SHA-256 match 100%.", "data": {"sha256_checksum": "4ebe6698966ff5036bb6e8196b8399e41e25b159cf6d4879ca10ebd870e1c91d", "database_consistency_check": "ZERO_CORRUPTION_DETECTED", "mock_services_started": ["ActiveDirectory", "PostgreSQL", "FileServer"]}, "error": null}, {"step_id": "rto_rpo_calc", "name": "Misurazione e Certificazione RTO / RPO", "status": "DONE", "started_at": "2026-09-18T21:04:31.109069+00:00", "completed_at": "2026-09-18T21:04:31.114569+00:00", "output_summary": "RTO effettivo: 42.5 min (SLA: 120.0 min). RPO: 2.0 h (SLA: 4.0 h). Conformità 100%.", "data": {"rto_actual_minutes": 42.5, "rto_sla_target_minutes": 120.0, "rto_compliant": true, "rpo_actual_hours": 2.0, "rpo_sla_target_hours": 4.0, "rpo_compliant": true}, "error": null}, {"step_id": "odv_certificate", "name": "Emissione Verbale Ufficiale OdV 231 / DPO", "status": "DONE", "started_at": "2026-09-18T21:04:31.121523+00:00", "completed_at": "2026-09-18T21:04:31.128532+00:00", "output_summary": "Verbale di Collaudo DR rilasciato in verbale-dr-drill-2026-09-18.okf.md.", "data": {"certificate_file": "C:\\Users\\auresystem\\repos\\itinfra-business-ops\\clients\\severino-srl\\compliance\\verbale-dr-drill-2026-09-18.okf.md"}, "error": null}], "metadata": {}}, {"workflow_id": "WF-20260918205944-HARDWARE-DECOMMISSIONING-RAEE-severinosrl", "workflow_type": "hardware-decommissioning-raee", "slug": "severino-srl", "status": "COMPLETED", "created_at": "2026-09-18T20:59:44.570084+00:00", "updated_at": "2026-09-18T20:59:44.660912+00:00", "completed_at": "2026-09-18T20:59:44.660912+00:00", "initiated_by": "cli:operator", "current_step_index": 4, "total_steps": 4, "steps": [{"step_id": "identify_asset", "name": "Ispezione Seriale & Censimento As-Built / SLA", "status": "DONE", "started_at": "2026-09-18T20:59:44.621404+00:00", "completed_at": "2026-09-18T20:59:44.625928+00:00", "output_summary": "Identificato apparato da dismettere: Apparato Hardware (S/N: UNKNOWN-SN) per cliente severino-srl.", "data": {"slug": "severino-srl", "serial": "UNKNOWN-SN", "model": "Apparato Hardware"}, "error": null}, {"step_id": "nist_sanitize", "name": "Sanificazione Sicura Supporti NIST SP 800-88 Purge", "status": "DONE", "started_at": "2026-09-18T20:59:44.629923+00:00", "completed_at": "2026-09-18T20:59:44.634243+00:00", "output_summary": "Sanificazione dati eseguita (NIST 800-88 Purge 3-pass). Certificato crittografico generato.", "data": {"standard": "NIST SP 800-88 Rev. 1", "method": "Cryptographic Erase & Block Overwrite (3-pass)", "wipe_verification_hash": "7f26d2b72c2af7e2c61a2645cf655f2740e04b7dd844f97c67f0d7f4135eab6e", "gdpr_compliant": true}, "error": null}, {"step_id": "asbuilt_detach", "name": "Distacco Apparato da As-Built e Canone SLA", "status": "DONE", "started_at": "2026-09-18T20:59:44.639102+00:00", "completed_at": "2026-09-18T20:59:44.643476+00:00", "output_summary": "Apparato S/N UNKNOWN-SN rimosso dall'As-Built e stralciato dal canone SLA attivo.", "data": {"serial_removed": "UNKNOWN-SN", "sla_adjusted": true}, "error": null}, {"step_id": "raee_fir_generation", "name": "Emissione Formulario Identificazione Rifiuti RAEE", "status": "DONE", "started_at": "2026-09-18T20:59:44.649072+00:00", "completed_at": "2026-09-18T20:59:44.655973+00:00", "output_summary": "Documento FIR per smaltimento ecologico RAEE generato in fir-raee-UNKNOWN-SN.txt.", "data": {"fir_document": "C:\\Users\\auresystem\\repos\\itinfra-business-ops\\clients\\severino-srl\\compliance\\fir-raee-UNKNOWN-SN.txt"}, "error": null}], "metadata": {}}, {"workflow_id": "WF-20260918205944-FIRMWARE-UPGRADE-severinosrl", "workflow_type": "firmware-upgrade", "slug": "severino-srl", "status": "COMPLETED", "created_at": "2026-09-18T20:59:44.428831+00:00", "updated_at": "2026-09-18T20:59:44.534093+00:00", "completed_at": "2026-09-18T20:59:44.534093+00:00", "initiated_by": "cli:operator", "current_step_index": 5, "total_steps": 5, "steps": [{"step_id": "preflight_backup", "name": "Esportazione Backup Configurazione nel Vault", "status": "DONE", "started_at": "2026-09-18T20:59:44.481250+00:00", "completed_at": "2026-09-18T20:59:44.486258+00:00", "output_summary": "Backup di sicurezza pre-upgrade esportato e salvato nel Vault locale crittografato per Router-Core-01.", "data": {"device": "Router-Core-01", "backup_file": "Router-Core-01-pre-upgrade.rsc", "vault_locked": true}, "error": null}, {"step_id": "hash_check", "name": "Verifica Immagine Firmware con SHA-256 Ufficiale", "status": "DONE", "started_at": "2026-09-18T20:59:44.490256+00:00", "completed_at": "2026-09-18T20:59:44.495569+00:00", "output_summary": "Immagine firmware v7.16.2-stable verificata con hash SHA-256 ufficiale OEM.", "data": {"version": "v7.16.2-stable", "sha256_verified": true}, "error": null}, {"step_id": "safe_deploy", "name": "Deploy Firmware in Modalità Safe-Mode con Auto-Revert", "status": "DONE", "started_at": "2026-09-18T20:59:44.500581+00:00", "completed_at": "2026-09-18T20:59:44.505582+00:00", "output_summary": "Firmware installato in Safe-Mode su Router-Core-01. Timer di auto-revert attivo (600s).", "data": {"safe_mode": true, "revert_timer_seconds": 600}, "error": null}, {"step_id": "smoke_test", "name": "Smoke Test di Connettività, Routing e Tunnel VPN", "status": "DONE", "started_at": "2026-09-18T20:59:44.510581+00:00", "completed_at": "2026-09-18T20:59:44.516869+00:00", "output_summary": "Smoke test di rete superato: Ping < 2ms, Tabelle OSPF/BGP stabili, Tunnel VPN attivi.", "data": {"ping_gateway_ms": 1.2, "vpn_tunnels_online": 3, "packet_loss_pct": 0.0}, "error": null}, {"step_id": "commit_or_rollback", "name": "Consolidamento Permanente o Ripristino Rapido", "status": "DONE", "started_at": "2026-09-18T20:59:44.522148+00:00", "completed_at": "2026-09-18T20:59:44.528116+00:00", "output_summary": "Safe-Mode disattivata. Configurazione firmware consolidata permanentemente con successo.", "data": {"committed": true, "reverted": false, "device": "Router-Core-01"}, "error": null}], "metadata": {}}]}, {"slug": "teatek-spa", "client_name": "T.E.A. TEK SPA", "tier": "standard", "fiscal": {"partita_iva": "", "codice_fiscale": "", "sdi_code": "0000000", "pec": "", "piva_valid": false, "cf_valid": false, "sdi_valid": false}, "sla_level": "Standard", "active_contracts_count": 0, "total_purchased_hours": 0.0, "total_consumed_hours": 0.0, "remaining_hours": 0.0, "hours_pct": 0.0, "sla_alert": false, "contracts": [], "interventions_count": 1, "unbilled_spot_hours": 0.0, "recent_interventions": [{"report_id": "RAP-20260917-001", "date": "2026-09-17", "technician": "Sistemista Senior Aure System", "hours": 7.0, "ledger_action": "included_flat", "invoiced": false, "description": "Attività di messa in esercizio infrastruttura iperconvergente OpenStor:\n- Posa e"}], "open_invoices_eur": 0.0, "overdue_invoices_eur": 0.0, "total_invoiced_eur": 0.0, "total_mora_interest_eur": 0.0, "aging_buckets": {"0_30": 0.0, "31_60": 0.0, "61_90": 0.0, "90_plus": 0.0}, "invoices": [], "printers_count": 1, "toner_alerts": [], "printers": [{"asset_id": "KYO-5052CI-TEATEK-01", "model": "multifunzione a colori Kyocera TASKalfa 5052ci", "serial_number": "KYO-5052CI-TEATEK-01", "ip_address": "192.168.10.250", "toners": {"black": 100, "cyan": 100, "magenta": 100, "yellow": 100}, "total_mono": 0, "total_color": 0}], "has_231": false, "compliance_score": 0.0, "va_findings_count": 0, "findings": [], "bridge_status": "WARNING", "bridge_details": {"slug": "teatek-spa", "total_as_built_assets": 18, "total_covered_in_contract": 0, "coverage_ratio_percent": 0.0, "covered_assets": [], "missing_from_contract": [{"serial_number": "OPENSTOR-TEATEK-NODE1", "model": "OpenStor JovianDSS 2U 24-Bay NVMe", "hostname": "SRV-TEATEK-OPENSTOR-01", "risk": "UNBILLED_ASSET_SHADOW_IT"}, {"serial_number": "OPENSTOR-TEATEK-NODE2", "model": "OpenStor JovianDSS 2U 24-Bay NVMe", "hostname": "SRV-TEATEK-OPENSTOR-02", "risk": "UNBILLED_ASSET_SHADOW_IT"}, {"serial_number": "KYO-5052CI-TEATEK-01", "model": "Kyocera TASKalfa 5052ci", "hostname": "mfp-kyocera-01", "risk": "UNBILLED_ASSET_SHADOW_IT"}, {"serial_number": "VLAN", "model": "CIDR", "hostname": "Subnet", "risk": "UNBILLED_ASSET_SHADOW_IT"}, {"serial_number": "10", "model": "/24", "hostname": "10.10.10.0/24", "risk": "UNBILLED_ASSET_SHADOW_IT"}, {"serial_number": "20", "model": "/24", "hostname": "10.10.20.0/24", "risk": "UNBILLED_ASSET_SHADOW_IT"}, {"serial_number": "30", "model": "/24", "hostname": "10.10.30.0/24", "risk": "UNBILLED_ASSET_SHADOW_IT"}, {"serial_number": "50", "model": "/24", "hostname": "10.10.50.0/24", "risk": "UNBILLED_ASSET_SHADOW_IT"}, {"serial_number": "70", "model": "/24", "hostname": "10.10.70.0/24", "risk": "UNBILLED_ASSET_SHADOW_IT"}, {"serial_number": "80", "model": "/23", "hostname": "10.10.80.0/23", "risk": "UNBILLED_ASSET_SHADOW_IT"}, {"serial_number": "IP", "model": "Hostname", "hostname": "Server", "risk": "UNBILLED_ASSET_SHADOW_IT"}, {"serial_number": "10.10.50.20", "model": "dc-01.<domain>", "hostname": "DC-01", "risk": "UNBILLED_ASSET_SHADOW_IT"}, {"serial_number": "10.10.50.21", "model": "dc-02.<domain>", "hostname": "DC-02", "risk": "UNBILLED_ASSET_SHADOW_IT"}, {"serial_number": "SCHEDULE", "model": "Host/VM inclusi", "hostname": "Job", "risk": "UNBILLED_ASSET_SHADOW_IT"}, {"serial_number": "22:00 DAILY", "model": "SRV-01/02/03 + DC-01/02", "hostname": "Job-VM-PROD", "risk": "UNBILLED_ASSET_SHADOW_IT"}, {"serial_number": "02:00 DAILY", "model": "FILE-SRV-01", "hostname": "Job-FILE", "risk": "UNBILLED_ASSET_SHADOW_IT"}, {"serial_number": "04:00 DAILY", "model": "fw-01/02, sw-core-01/02", "hostname": "Job-CONFIG", "risk": "UNBILLED_ASSET_SHADOW_IT"}, {"serial_number": "OGNI 1H", "model": "stor-01 pool", "hostname": "Job-STORAGE-SNAP", "risk": "UNBILLED_ASSET_SHADOW_IT"}], "ghost_contract_assets": [], "status": "WARNING"}, "workflows": []}, {"slug": "unisped-ag-sas", "client_name": "Unisped AG S.a.s.", "tier": "standard", "fiscal": {"partita_iva": "", "codice_fiscale": "", "sdi_code": "0000000", "pec": "", "piva_valid": false, "cf_valid": false, "sdi_valid": false}, "sla_level": "high", "active_contracts_count": 1, "total_purchased_hours": 50.0, "total_consumed_hours": 0.0, "remaining_hours": 50.0, "hours_pct": 100.0, "sla_alert": false, "contracts": [{"contract_id": "CTR-2026-unisped-ag-sas", "status": "active", "purchased_hours": 50.0, "consumed_hours": 0.0, "remaining_hours": 50.0, "level": "high", "end_date": "N/D"}], "interventions_count": 1, "unbilled_spot_hours": 0.0, "recent_interventions": [{"report_id": "RAP-20260918-001", "date": "2026-09-18", "technician": "Tecnico Assegnato", "hours": 2.5, "ledger_action": "debit_contract", "invoiced": false, "description": "Esecuzione manutenzione programmata:\n- Aggiornamento policy di sicurezza e verif"}], "open_invoices_eur": 0.0, "overdue_invoices_eur": 0.0, "total_invoiced_eur": 0.0, "total_mora_interest_eur": 0.0, "aging_buckets": {"0_30": 0.0, "31_60": 0.0, "61_90": 0.0, "90_plus": 0.0}, "invoices": [], "printers_count": 1, "toner_alerts": [], "printers": [{"asset_id": "MFP-RICOH-C3000-01", "model": "Ricoh IM C3000 A3 Colore", "serial_number": "MFP-RICOH-C3000-01", "ip_address": "192.168.10.250", "toners": {"black": 78, "cyan": 65, "magenta": 54, "yellow": 82}, "total_mono": 0, "total_color": 0}], "has_231": true, "compliance_score": 65.94, "va_findings_count": 5, "findings": [], "bridge_status": "WARNING", "bridge_details": {"slug": "unisped-ag-sas", "total_as_built_assets": 5, "total_covered_in_contract": 0, "coverage_ratio_percent": 0.0, "covered_assets": [], "missing_from_contract": [{"serial_number": "FGT60FTK21004521", "model": "Fortinet FortiGate-60F", "hostname": "", "risk": "UNBILLED_ASSET_SHADOW_IT"}, {"serial_number": "CN-0R450-70123", "model": "Dell PowerEdge R450", "hostname": "", "risk": "UNBILLED_ASSET_SHADOW_IT"}, {"serial_number": "VIRT-SRV-DEB01", "model": "Linux Debian 12 (VM)", "hostname": "", "risk": "UNBILLED_ASSET_SHADOW_IT"}, {"serial_number": "VIRT-SRV-EXCH01", "model": "MS Exchange Server 2019 (VM)", "hostname": "", "risk": "UNBILLED_ASSET_SHADOW_IT"}, {"serial_number": "VIRT-SRV-TC01", "model": "Apache Tomcat 9.0 (VM)", "hostname": "", "risk": "UNBILLED_ASSET_SHADOW_IT"}], "ghost_contract_assets": [{"serial_number": "SRV-FW-001", "contract_id": "CTR-2026-unisped-ag-sas", "note": "Presente a contratto ma assente in As-Built"}], "status": "WARNING"}, "workflows": []}]}
+</script>
+
+<script>
+// =========================================================================
+// MOTORE GENERATIVE UI JAVASCRIPT CLIENT-SIDE (ZERO-CDN)
+// =========================================================================
+let DATA = {};
+try {
+  DATA = JSON.parse(document.getElementById('dashboard-data').textContent);
+} catch(e) {
+  console.error("Errore caricamento dati JSON:", e);
+}
+
+let currentFilter = 'all';
+let selectedClientSlug = (DATA.clients && DATA.clients.length > 0) ? DATA.clients[0].slug : '';
+let currentLetterText = '';
+
+function initApp() {
+  updateLiveClock();
+  setInterval(updateLiveClock, 1000);
+  renderKpiRibbon();
+  renderOverviewTable();
+  renderActionGate();
+  renderWorkflows();
+  renderCreditSection();
+  renderSwarmSection();
+  renderClientPills();
+  if (selectedClientSlug) {
+    selectClient(selectedClientSlug);
+  }
+}
+
+function updateLiveClock() {
+  const now = new Date();
+  const el = document.getElementById('live-clock');
+  if (el) {
+    el.textContent = now.toLocaleDateString('it-IT', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  }
+}
+
+// 1. KPI Ribbon
+function renderKpiRibbon() {
+  const kpis = DATA.global_kpis || {};
+  const paCount = (DATA.pending_actions || []).length;
+  const ribbon = document.getElementById('kpi-ribbon');
+  if (!ribbon) return;
+
+  const cards = [
+    {
+      title: "Monte Ore SLA",
+      val: (kpis.total_sla_hours_available || 0).toFixed(1) + "h",
+      footer: `Consumate: ${(kpis.total_sla_hours_consumed || 0).toFixed(1)}h totali`,
+      color: "var(--accent-emerald)",
+      onClick: () => switchTab('tab-overview')
+    },
+    {
+      title: "Crediti 231 Aperti",
+      val: "€" + (kpis.total_open_credit_eur || 0).toLocaleString('it-IT', { minimumFractionDigits: 2 }),
+      footer: `Mora 231: €${(kpis.total_mora_231_eur || 0).toFixed(2)}`,
+      color: "var(--accent-cyan)",
+      onClick: () => switchTab('tab-credit')
+    },
+    {
+      title: "Parco Macchine MPS",
+      val: (kpis.total_printers || 0).toString(),
+      footer: `Allarmi Toner: ${(kpis.total_toner_critical_alerts || 0)} critici`,
+      color: kpis.total_toner_critical_alerts > 0 ? "var(--accent-rose)" : "var(--accent-cyan)",
+      onClick: () => switchTab('tab-overview')
+    },
+    {
+      title: "Conformità 231 Media",
+      val: (kpis.avg_compliance_score || 0).toFixed(1) + "%",
+      footer: "Certificazione Modello 231 / ISO",
+      color: "var(--accent-amber)",
+      onClick: () => switchTab('tab-compliance')
+    },
+    {
+      title: "Safe Action Gate",
+      val: paCount.toString(),
+      footer: paCount > 0 ? "⚠️ Approvazioni Pendenti" : "✓ Nessuna Azione Pendente",
+      color: paCount > 0 ? "var(--accent-rose)" : "var(--accent-emerald)",
+      onClick: () => switchTab('tab-gate')
+    }
+  ];
+
+  ribbon.innerHTML = cards.map(c => `
+    <div class="kpi-card" onclick="(${c.onClick.toString()})()">
+      <div class="kpi-header">
+        <span>${c.title}</span>
+      </div>
+      <div class="kpi-value" style="color: ${c.color};">${c.val}</div>
+      <div class="kpi-footer">${c.footer}</div>
+    </div>
+  `).join('');
+
+  const badge = document.getElementById('gate-tab-badge');
+  if (badge) {
+    if (paCount > 0) {
+      badge.textContent = paCount;
+      badge.style.display = 'inline-block';
+    } else {
+      badge.style.display = 'none';
+    }
+  }
+}
+
+// 2. Tab Navigation
+function switchTab(tabId) {
+  document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+  document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('active'));
+
+  const targetPane = document.getElementById(tabId);
+  if (targetPane) targetPane.classList.add('active');
+
+  const navBtns = document.querySelectorAll('.tab-btn');
+  navBtns.forEach(btn => {
+    if (btn.getAttribute('onclick') && btn.getAttribute('onclick').includes(tabId)) {
+      btn.classList.add('active');
+    }
+  });
+}
+
+// 3. Tabella Panoramica
+function renderOverviewTable() {
+  const tbody = document.getElementById('overview-tbody');
+  const countLabel = document.getElementById('clients-count-label');
+  if (!tbody) return;
+
+  const clients = DATA.clients || [];
+  if (countLabel) countLabel.textContent = clients.length;
+
+  const query = (document.getElementById('overview-search') ? document.getElementById('overview-search').value : '').toLowerCase();
+
+  const filtered = clients.filter(c => {
+    const matchQuery = c.client_name.toLowerCase().includes(query) || c.slug.toLowerCase().includes(query) || c.tier.toLowerCase().includes(query);
+    if (!matchQuery) return false;
+
+    if (currentFilter === 'sla_alert') return c.sla_alert;
+    if (currentFilter === 'toner_alert') return c.toner_alerts && c.toner_alerts.length > 0;
+    if (currentFilter === 'overdue') return c.overdue_invoices_eur > 0;
+    if (currentFilter === 'gap_231') return c.has_231;
+    return true;
+  });
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 24px; color: var(--text-muted);">Nessun cliente corrispondente ai filtri selezionati.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(c => {
+    const slaBadge = c.sla_alert ? 'badge-danger' : (c.hours_pct < 40 ? 'badge-warning' : 'badge-success');
+    const mpsBadge = (c.toner_alerts && c.toner_alerts.length > 0) ? 'badge-danger' : 'badge-neutral';
+    const compBadge = c.has_231 ? (c.compliance_score >= 80 ? 'badge-success' : (c.compliance_score >= 50 ? 'badge-warning' : 'badge-danger')) : 'badge-neutral';
+    const bridgeBadge = c.bridge_status === 'PASS' || c.bridge_status === 'SYNCED' ? 'badge-success' : (c.bridge_status === 'WARNING' ? 'badge-warning' : 'badge-neutral');
+
+    return `
+      <tr>
+        <td style="font-weight: 700; color: #38bdf8;">
+          <a href="javascript:void(0)" onclick="openClientTab('${c.slug}')" style="color: inherit; text-decoration: none;">${c.client_name}</a>
+          <br><span style="font-size: 11px; color: var(--text-muted); font-weight: normal;">${c.slug} &bull; Tier ${c.tier.toUpperCase()}</span>
+        </td>
+        <td>
+          <span class="badge ${slaBadge}">${c.remaining_hours.toFixed(1)}h / ${c.total_purchased_hours.toFixed(1)}h (${c.hours_pct}%)</span>
+        </td>
+        <td>
+          €${c.open_invoices_eur.toLocaleString('it-IT', {minimumFractionDigits: 2})}
+          ${c.overdue_invoices_eur > 0 ? `<br><span style="color: var(--accent-rose); font-size: 10px; font-weight: 700;">€${c.overdue_invoices_eur.toFixed(2)} scaduti</span>` : ''}
+        </td>
+        <td>
+          <span class="badge ${mpsBadge}">${c.printers_count} macchine ${c.toner_alerts.length > 0 ? `(!${c.toner_alerts.length})` : ''}</span>
+        </td>
+        <td>
+          <span class="badge ${compBadge}">${c.has_231 ? c.compliance_score.toFixed(0) + '%' : 'N/A'}</span>
+        </td>
+        <td>
+          <span class="badge ${bridgeBadge}">${c.bridge_status}</span>
+        </td>
+        <td>
+          <button class="btn btn-secondary" onclick="openClientTab('${c.slug}')">Dettaglio 360°</button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function filterOverviewTable() {
+  renderOverviewTable();
+}
+
+function setOverviewFilter(filter, el) {
+  currentFilter = filter;
+  document.querySelectorAll('.filter-chip').forEach(btn => btn.classList.remove('active'));
+  if (el) el.classList.add('active');
+  renderOverviewTable();
+}
+
+function openClientTab(slug) {
+  selectedClientSlug = slug;
+  selectClient(slug);
+  switchTab('tab-client-drill');
+}
+
+// 4. Safe Action Gate
+function renderActionGate() {
+  const container = document.getElementById('action-gate-container');
+  if (!container) return;
+
+  const actions = DATA.pending_actions || [];
+  if (actions.length === 0) {
+    container.innerHTML = `
+      <div style="grid-column: 1 / -1; background: rgba(16, 185, 129, 0.1); border: 1px solid #10b981; border-radius: 8px; padding: 24px; text-align: center;">
+        <span style="font-size: 24px;">🛡️</span>
+        <h4 style="color: #34d399; margin-top: 8px;">Safe Action Gate Sgombro</h4>
+        <p style="color: var(--text-muted); font-size: 12px; margin-top: 4px;">Nessuna azione in attesa di approvazione manuale. Tutti i sistemi sono nei parametri di sicurezza.</p>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = actions.map(a => {
+    const aid = a.action_id || 'ACT-UNKNOWN';
+    const slug = a.slug || '';
+    const atype = a.action_type || '';
+    const title = a.title || 'Azione Operativa';
+    const payloadStr = JSON.stringify(a.payload || {}, null, 2);
+
+    return `
+      <div class="action-gate-card">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+          <span class="badge badge-danger">${atype}</span>
+          <span style="font-size: 10px; color: var(--text-muted); font-family: monospace;">${aid}</span>
+        </div>
+        <div style="font-weight: 700; color: #fff; font-size: 13px; margin-bottom: 4px;">${title}</div>
+        <div style="font-size: 11px; color: var(--accent-cyan); margin-bottom: 10px;">Cliente: <strong>${slug}</strong></div>
+        
+        <details style="background: rgba(7, 13, 30, 0.5); border: 1px solid var(--border-color); border-radius: 6px; padding: 8px; font-size: 11px; margin-bottom: 12px;">
+          <summary style="cursor: pointer; color: var(--text-muted); font-weight: 600;">Dettagli Payload & Parametri</summary>
+          <pre style="margin-top: 6px; font-family: monospace; font-size: 10px; color: #94a3b8; white-space: pre-wrap;">${payloadStr}</pre>
+        </details>
+
+        <div style="display: flex; gap: 8px;">
+          <button class="btn btn-success" onclick="copyCliCmd('.\\it-ops.cmd triggers approve ${aid}')">✓ Approva Azione</button>
+          <button class="btn btn-danger" onclick="copyCliCmd('.\\it-ops.cmd triggers reject ${aid} --reason \'Rifiutato da Dashboard\'')">&times; Rifiuta</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// 5. Workflows FSM
+function renderWorkflows() {
+  const container = document.getElementById('workflows-list');
+  const catGrid = document.getElementById('workflow-catalog-grid');
+  if (!container) return;
+
+  const wfs = DATA.recent_workflows || [];
+  if (wfs.length === 0) {
+    container.innerHTML = '<div style="color: var(--text-muted); padding: 12px;">Nessun workflow registrato di recente.</div>';
+  } else {
+    container.innerHTML = wfs.map(w => {
+      const wid = w.workflow_id || 'WF-UNKNOWN';
+      const wtype = w.workflow_type || '';
+      const wstatus = w.status || 'PENDING';
+      const steps = w.steps || [];
+      const statusBadge = wstatus === 'COMPLETED' ? 'badge-success' : (wstatus === 'FAILED' ? 'badge-danger' : 'badge-warning');
+
+      return `
+        <div style="background: var(--bg-card-sub); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px; margin-bottom: 10px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <div>
+              <span class="badge ${statusBadge}">${wstatus}</span>
+              <strong style="margin-left: 8px; color: #fff;">${wtype}</strong>
+              <span style="font-size: 11px; color: var(--text-muted); margin-left: 8px;">ID: ${wid}</span>
+            </div>
+            ${wstatus === 'FAILED' ? `<button class="btn btn-warning" onclick="copyCliCmd('.\\it-ops.cmd workflow resume ${wid}')">Riprendi (Resume)</button>` : ''}
+          </div>
+          <div class="stepper">
+            ${steps.map((s, idx) => {
+              const sDone = s.status === 'COMPLETED' || s.status === 'PASS';
+              const sFail = s.status === 'FAILED';
+              const dotBg = sDone ? 'var(--accent-emerald)' : (sFail ? 'var(--accent-rose)' : 'var(--border-color)');
+              return `
+                <div class="step-node">
+                  <div class="step-dot" style="background: ${dotBg}; color: #fff;">${idx + 1}</div>
+                  <span style="color: ${sDone ? '#fff' : 'var(--text-muted)'};">${s.name || s.step_id}</span>
+                </div>
+                ${idx < steps.length - 1 ? `<div class="step-line ${sDone ? 'done' : ''}"></div>` : ''}
+              `;
+            }).join('')}
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  if (catGrid) {
+    const catalog = DATA.workflow_catalog || [];
+    catGrid.innerHTML = catalog.map(cat => `
+      <div style="background: var(--bg-card-sub); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px;">
+          <span class="badge ${cat.category === 'technical' ? 'badge-info' : 'badge-purple'}">${cat.category.toUpperCase()}</span>
+          <span style="font-size: 10px; color: var(--text-muted);">${cat.stages_count} Fasi</span>
+        </div>
+        <div style="font-weight: 700; color: #fff; font-size: 13px; margin-bottom: 4px;">${cat.name}</div>
+        <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 12px;">${cat.description}</div>
+        <button class="btn btn-secondary" onclick="copyCliCmd('.\\it-ops.cmd workflow run ${cat.type} <slug>')">Comando: run ${cat.type}</button>
+      </div>
+    `).join('');
+  }
+}
+
+// 6. Crediti & D.Lgs. 231/2002
+function renderCreditSection() {
+  const kpis = DATA.global_kpis || {};
+  const aging = kpis.global_aging || {};
+  
+  if (document.getElementById('aging-0-30')) document.getElementById('aging-0-30').textContent = '€' + (aging['0_30'] || 0).toLocaleString('it-IT', {minimumFractionDigits: 2});
+  if (document.getElementById('aging-31-60')) document.getElementById('aging-31-60').textContent = '€' + (aging['31_60'] || 0).toLocaleString('it-IT', {minimumFractionDigits: 2});
+  if (document.getElementById('aging-61-90')) document.getElementById('aging-61-90').textContent = '€' + (aging['61_90'] || 0).toLocaleString('it-IT', {minimumFractionDigits: 2});
+  if (document.getElementById('aging-90-plus')) document.getElementById('aging-90-plus').textContent = '€' + (aging['90_plus'] || 0).toLocaleString('it-IT', {minimumFractionDigits: 2});
+  if (document.getElementById('total-mora-val')) document.getElementById('total-mora-val').textContent = '€' + (kpis.total_mora_231_eur || 0).toLocaleString('it-IT', {minimumFractionDigits: 2});
+
+  const tbody = document.getElementById('credit-invoices-tbody');
+  if (!tbody) return;
+
+  const clients = DATA.clients || [];
+  let rows = [];
+
+  clients.forEach(c => {
+    (c.invoices || []).forEach(inv => {
+      if (inv.days_overdue > 0) {
+        rows.push({
+          slug: c.slug,
+          client_name: c.client_name,
+          inv: inv
+        });
+      }
+    });
+  });
+
+  if (rows.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 20px; color: var(--text-muted);">Nessuna fattura scaduta a sistema. Complimenti!</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = rows.map(r => {
+    const inv = r.inv;
+    let badgeClass = 'badge-success';
+    if (inv.days_overdue > 60) badgeClass = 'badge-danger';
+    else if (inv.days_overdue > 30) badgeClass = 'badge-warning';
+
+    return `
+      <tr>
+        <td style="font-weight: 700; color: #38bdf8;">${r.client_name}</td>
+        <td><strong>${inv.invoice_number}</strong><br><span style="font-size: 10px; color: var(--text-muted);">Scad. ${inv.due_date}</span></td>
+        <td>€${inv.amount.toLocaleString('it-IT', {minimumFractionDigits: 2})}</td>
+        <td><span class="badge ${badgeClass}">${inv.days_overdue} giorni</span></td>
+        <td style="color: var(--accent-rose); font-weight: 700;">€${inv.mora_eur.toFixed(2)}</td>
+        <td><span class="badge badge-neutral">${inv.suggested_stage}</span></td>
+        <td>
+          <button class="btn btn-primary" onclick="openLetterModal('${r.slug}', '${inv.invoice_number}', ${inv.amount}, '${inv.due_date}', ${inv.days_overdue}, ${inv.mora_eur})">✉️ Lettera 231</button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function openLetterModal(slug, invNum, amt, dueDate, daysOverdue, mora) {
+  let stage = 1;
+  let title = "Stadio 1 — Promemoria Bonario di Pagamento";
+  if (daysOverdue > 60) {
+    stage = 3;
+    title = "Stadio 3 — Intimazione di Pagamento con Diffida Legale ex Art. 1454 c.c.";
+  } else if (daysOverdue > 30) {
+    stage = 2;
+    title = "Stadio 2 — Formale Costituzione in Mora ex D.Lgs. 231/2002";
+  }
+
+  const today = new Date().toISOString().split('T')[0];
+  let text = `RACCOMANDATA A/R / TRASMISSIONE A MEZZO PEC\n\nData: ${today}\nSpett.le Cliente: ${slug.toUpperCase()}\n\nOGGETTO: ${title.toUpperCase()} — Fattura N. ${invNum}\n\n`;
+
+  if (stage === 1) {
+    text += `Gentile Cliente,\nda una verifica contabile risulta non pervenuto il saldo della fattura n. ${invNum} scaduta il ${dueDate} per un importo di € ${amt.toFixed(2)}.\nVi invitiamo a provvedere al saldo a mezzo bonifico bancario.\n\nCordiali saluti,\nAure System di Eduardo Possumato`;
+  } else if (stage === 2) {
+    text += `Ai sensi e per gli effetti dell'art. 1219 c.c. e del D.Lgs. 231/2002, con la presente FORMALMENTE COSTITUIAMO IN MORA la Vostra società per l'inadempimento della fattura n. ${invNum} scaduta il ${dueDate}.\n\nProspetto Contabile:\n- Capitale Imponibile Scaduto: € ${amt.toFixed(2)}\n- Giorni di Ritardo: ${daysOverdue}\n- Tasso Legale D.Lgs. 231/2002: 11.50% (BCE 3.50% + 8.00%)\n- Interessi di Mora Maturati: € ${mora.toFixed(2)}\nTOTALE COMPLESSIVO DOVUTO: € ${(amt + mora).toFixed(2)}\n\nVi intimiamo il pagamento entro 7 giorni.\nAure System di Eduardo Possumato`;
+  } else {
+    text += `DIFFIDA AD ADEMPIERE EX ART. 1454 C.C. E COSTITUZIONE IN MORA EX D.LGS. 231/2002\n\nPreso atto del protrarsi dell'inadempimento per ${daysOverdue} giorni della fattura n. ${invNum},\nintimiamo il saldo integrale entro 15 (quindici) giorni dal ricevimento della presente.\n\nProspetto Economico Legale:\n- Capitale: € ${amt.toFixed(2)}\n- Interessi di Mora 231: € ${mora.toFixed(2)}\n- Risarcimento Forfettario Spese ex Art. 6 D.Lgs. 231/2002: € 40,00\nTOTALE DA VERSARE: € ${(amt + mora + 40).toFixed(2)}\n\nIn difetto, adiremo le vie legali con aggravio di spese e immediata sospensione dei contratti SLA.\nAure System di Eduardo Possumato`;
+  }
+
+  currentLetterText = text;
+  document.getElementById('modal-letter-title').textContent = title;
+  document.getElementById('modal-letter-content').textContent = text;
+  document.getElementById('modal-letter').classList.add('open');
+}
+
+function copyLetterText() {
+  navigator.clipboard.writeText(currentLetterText).then(() => {
+    showToast("Testo della lettera copiato negli appunti!");
+    closeModal('modal-letter');
+  });
+}
+
+function closeModal(id) {
+  const el = document.getElementById(id);
+  if (el) el.classList.remove('open');
+}
+
+// 7. Presidio Italiano Live
+function testPivaLive() {
+  const val = document.getElementById('val-piva-input').value.trim();
+  const resEl = document.getElementById('val-piva-res');
+  if (!val) { resEl.textContent = ''; return; }
+
+  if (val.length !== 11 || !/^[0-9]+$/.test(val)) {
+    resEl.textContent = '❌ Lunghezza errata: richieste 11 cifre numeriche';
+    resEl.style.color = 'var(--accent-rose)';
+    return;
+  }
+  resEl.textContent = '✓ Formato e lunghezza P.IVA formalmente validi';
+  resEl.style.color = 'var(--accent-emerald)';
+}
+
+function testCfLive() {
+  const val = document.getElementById('val-cf-input').value.trim().toUpperCase();
+  const resEl = document.getElementById('val-cf-res');
+  if (!val) { resEl.textContent = ''; return; }
+
+  if (val.length !== 16) {
+    resEl.textContent = '❌ Richiesti 16 caratteri alfanumerici';
+    resEl.style.color = 'var(--accent-rose)';
+    return;
+  }
+  resEl.textContent = '✓ Struttura Codice Fiscale conforme DM 23/12/1976';
+  resEl.style.color = 'var(--accent-emerald)';
+}
+
+function calcCcnlLive() {
+  const tIn = document.getElementById('ccnl-in').value;
+  const tOut = document.getElementById('ccnl-out').value;
+  const cType = document.getElementById('ccnl-type').value;
+
+  const [h1, m1] = tIn.split(':').map(Number);
+  const [h2, m2] = tOut.split(':').map(Number);
+  let diffMins = (h2 * 60 + m2) - (h1 * 60 + m1);
+  if (diffMins < 0) diffMins += 24 * 60;
+
+  const steps = Math.ceil(diffMins / 30);
+  const roundedHrs = (steps * 30) / 60.0;
+
+  let mult = 1.00;
+  if (cType === 'night') mult = 1.20;
+  else if (cType === 'holiday') mult = 1.50;
+  else if (cType === 'holiday_night') mult = 1.75;
+
+  const billed = roundedHrs * mult;
+
+  document.getElementById('ccnl-raw-hrs').textContent = roundedHrs.toFixed(2) + 'h';
+  document.getElementById('ccnl-mult-val').textContent = mult.toFixed(2) + 'x';
+  document.getElementById('ccnl-billed-hrs').textContent = billed.toFixed(2) + 'h';
+}
+
+// 8. Scheda Monografica Cliente
+function renderClientPills() {
+  const bar = document.getElementById('client-pills-bar');
+  if (!bar) return;
+
+  const clients = DATA.clients || [];
+  bar.innerHTML = clients.map(c => `
+    <button class="filter-chip ${c.slug === selectedClientSlug ? 'active' : ''}" onclick="selectClient('${c.slug}')">
+      ${c.client_name}
+    </button>
+  `).join('');
+}
+
+function selectClient(slug) {
+  selectedClientSlug = slug;
+  document.getElementById('drill-slug-badge').textContent = slug.toUpperCase();
+  renderClientPills();
+
+  const c = (DATA.clients || []).find(item => item.slug === slug);
+  const container = document.getElementById('client-drill-content');
+  if (!c || !container) return;
+
+  const fiscal = c.fiscal || {};
+  const slaPct = c.hours_pct;
+
+  container.innerHTML = `
+    <div style="background: var(--bg-card-sub); border: 1px solid var(--border-color); border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <div>
+          <h3 style="color: #fff; font-size: 18px;">${c.client_name}</h3>
+          <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
+            Slug: <strong class="text-white">${c.slug}</strong> &bull; Tier: <strong class="text-white">${c.tier.toUpperCase()}</strong> &bull; SLA: <strong class="text-white">${c.sla_level}</strong>
+          </div>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn btn-secondary" onclick="copyCliCmd('.\\it-ops.cmd status ${c.slug}')">stato ${c.slug}</button>
+          <button class="btn btn-secondary" onclick="copyCliCmd('.\\it-ops.cmd check ${c.slug}')">check ${c.slug}</button>
+        </div>
+      </div>
+      <div style="display: flex; gap: 16px; font-size: 11px; color: var(--text-muted); border-top: 1px solid rgba(34,60,124,0.5); padding-top: 10px;">
+        <div>P.IVA: <strong class="text-white">${fiscal.partita_iva || 'N/D'}</strong> ${fiscal.piva_valid ? '✓' : '⚠️'}</div>
+        <div>Codice Fiscale: <strong class="text-white">${fiscal.codice_fiscale || 'N/D'}</strong> ${fiscal.cf_valid ? '✓' : '⚠️'}</div>
+        <div>SDI: <strong class="text-white">${fiscal.sdi_code || '0000000'}</strong> ${fiscal.sdi_valid ? '✓' : '⚠️'}</div>
+        <div>PEC: <strong class="text-white">${fiscal.pec || 'N/D'}</strong></div>
+      </div>
+    </div>
+
+    <div class="cards-grid" style="margin-bottom: 16px;">
+      <div style="background: var(--bg-card-sub); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px;">
+        <div style="font-weight: 700; color: var(--accent-cyan); margin-bottom: 8px;">SLA & Monte Ore Residuo</div>
+        <div style="font-size: 24px; font-weight: 800; color: #fff;">${c.remaining_hours.toFixed(1)}h <span style="font-size: 13px; color: var(--text-muted);">/ ${c.total_purchased_hours.toFixed(1)}h</span></div>
+        <div class="progress-bar-bg">
+          <div class="progress-bar-fill" style="width: ${slaPct}%; background: ${slaPct < 20 ? 'var(--accent-rose)' : 'var(--accent-emerald)'};"></div>
+        </div>
+        <div style="font-size: 11px; color: var(--text-muted); margin-top: 8px;">Consumate: ${c.total_consumed_hours.toFixed(1)}h &bull; Ore spot non fatturate: ${c.unbilled_spot_hours.toFixed(1)}h</div>
+      </div>
+
+      <div style="background: var(--bg-card-sub); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px;">
+        <div style="font-weight: 700; color: var(--accent-emerald); margin-bottom: 8px;">Finanza & Insoluti 231</div>
+        <div style="font-size: 24px; font-weight: 800; color: #fff;">€${c.open_invoices_eur.toLocaleString('it-IT', {minimumFractionDigits: 2})}</div>
+        <div style="font-size: 11px; color: var(--accent-rose); font-weight: 700; margin-top: 6px;">Scaduti: €${c.overdue_invoices_eur.toFixed(2)} (Mora 231: €${c.total_mora_interest_eur.toFixed(2)})</div>
+        <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Fatturato Totale Storico: €${c.total_invoiced_eur.toLocaleString('it-IT', {minimumFractionDigits: 2})}</div>
+      </div>
+
+      <div style="background: var(--bg-card-sub); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px;">
+        <div style="font-weight: 700; color: var(--accent-amber); margin-bottom: 8px;">Multifunzione & Toner (${c.printers_count} Apparati)</div>
+        ${c.printers && c.printers.length > 0 ? c.printers.map(p => `
+          <div style="font-size: 11px; margin-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 4px;">
+            <div style="font-weight: 700; color: #fff;">${p.model} (${p.serial_number})</div>
+            <div style="display: flex; gap: 8px; margin-top: 2px;">
+              <span style="color:#fff;">BK: ${p.toners.black}%</span>
+              <span style="color:#38bdf8;">C: ${p.toners.cyan}%</span>
+              <span style="color:#f43f5e;">M: ${p.toners.magenta}%</span>
+              <span style="color:#fbbf24;">Y: ${p.toners.yellow}%</span>
+            </div>
+          </div>
+        `).join('') : '<div style="font-size: 11px; color: var(--text-muted);">Nessuna stampante MPS censita.</div>'}
+      </div>
+
+      <div style="background: var(--bg-card-sub); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px;">
+        <div style="font-weight: 700; color: var(--accent-purple); margin-bottom: 8px;">Conformità 231 & Bridge itinfra</div>
+        <div style="font-size: 24px; font-weight: 800; color: #fff;">${c.has_231 ? c.compliance_score.toFixed(0) + '%' : 'N/A'}</div>
+        <div style="font-size: 11px; color: var(--text-muted); margin-top: 6px;">Vulnerabilità Rilevate: <strong class="text-white">${c.va_findings_count}</strong></div>
+        <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Bridge As-Built: <strong style="color: ${c.bridge_status === 'PASS' || c.bridge_status === 'SYNCED' ? '#34d399' : '#f59e0b'};">${c.bridge_status}</strong></div>
+      </div>
+    </div>
+  `;
+}
+
+// 9. Swarm & Demoni
+function renderSwarmSection() {
+  const agGrid = document.getElementById('swarm-agents-grid');
+  const dGrid = document.getElementById('daemons-grid');
+
+  if (agGrid) {
+    const agents = DATA.swarm_agents || [];
+    agGrid.innerHTML = agents.map(ag => `
+      <div style="background: var(--bg-card-sub); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px;">
+          <span class="badge badge-purple">${ag.type}</span>
+          <span class="badge badge-success">${ag.status}</span>
+        </div>
+        <div style="font-weight: 700; color: #fff; font-size: 13px; margin-bottom: 4px;">${ag.role}</div>
+        <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 12px;">Ambito: ${ag.scope}</div>
+        <button class="btn btn-secondary" onclick="copyCliCmd('${ag.cli} <slug>')">Esegui: ${ag.type}</button>
+      </div>
+    `).join('');
+  }
+
+  if (dGrid) {
+    const daemons = DATA.daemons || [];
+    dGrid.innerHTML = daemons.map(d => `
+      <div style="background: var(--bg-card-sub); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px;">
+          <span class="badge badge-info">${d.id.toUpperCase()}</span>
+          <span class="badge badge-success">${d.status}</span>
+        </div>
+        <div style="font-weight: 700; color: #fff; font-size: 13px; margin-bottom: 4px;">${d.name}</div>
+        <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 12px;">Frequenza: ${d.interval} &bull; Target: ${d.target}</div>
+        <button class="btn btn-secondary" onclick="copyCliCmd('${d.command}')">Lancia 1 Ciclo (--once)</button>
+      </div>
+    `).join('');
+  }
+}
+
+// 10. Utility & Clipboard
+function copyCliCmd(cmd) {
+  navigator.clipboard.writeText(cmd).then(() => {
+    showToast(`Comando "${cmd}" copiato! Incollalo in terminale o chat.`);
+  }).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = cmd;
+    ta.style.position = 'fixed';
+    ta.style.left = '-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    showToast(`Comando "${cmd}" copiato! Incollalo in terminale o chat.`);
+  });
+}
+
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  if (!toast) return;
+  toast.textContent = msg;
+  toast.classList.add('show');
+  clearTimeout(window._tTimer);
+  window._tTimer = setTimeout(() => {
+    toast.classList.remove('show');
+  }, 2500);
+}
+
+window.addEventListener('DOMContentLoaded', initApp);
+</script>
 </body>
 </html>

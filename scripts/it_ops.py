@@ -1118,8 +1118,24 @@ def cmd_mission_control(args):
 def cmd_ui(args):
     pipeline = MissionControlPipeline()
     out_p = Path("docs") / "mission-control.html"
-    pipeline.render_html(output_path=out_p)
+    html = pipeline.render_html(output_path=out_p)
     print(f"[✓] Mission Control Dashboard HTML aggiornata: {out_p}")
+
+    brain_dir = Path.home() / ".gemini" / "antigravity" / "brain"
+    target_artifact = None
+    if brain_dir.exists():
+        try:
+            dirs = [d for d in brain_dir.iterdir() if d.is_dir() and d.name != "tempmediaStorage"]
+            if dirs:
+                latest = max(dirs, key=lambda d: d.stat().st_mtime)
+                target_artifact = latest / "mission-control.html"
+                target_artifact.write_text(html, encoding="utf-8")
+                print(f"[✓] Copia artifact Antigravity generata: {target_artifact}")
+                embed_path = str(target_artifact).replace("\\", "/")
+                print("\nTag per la chat Antigravity:")
+                print(f'<agent-embed src="file:///{embed_path}"></agent-embed>\n')
+        except Exception:
+            pass
     return 0
 
 def cmd_agent(args):

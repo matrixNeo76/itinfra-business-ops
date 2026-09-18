@@ -178,6 +178,7 @@ Quando un tecnico si reca dal cliente o interviene da remoto:
 | **Devo calcolare la telelettura stampanti** | `mps cliente-rossi` | `.\it-ops.cmd mps cliente-rossi calculate` | Calcola le copie fatte, copie incluse, eccedenze e consumabili |
 | **A fine mese devo fatturare tutti i clienti** | `workflow run monthly-closing` | `.\it-ops.cmd workflow run monthly-closing` | Esegue la chiusura contabile, calcola i conguagli e prepara i lotti SDI |
 | **Un cliente è in ritardo coi pagamenti** | `credit status cliente-rossi` | `.\it-ops.cmd credit remind cliente-rossi --stage 2` | Calcola gli interessi D.Lgs. 231/2002 (+€40 spese) e genera la lettera |
+| **Voglio visualizzare la Consolle Cockpit 360° / UI Generativa** | `it-ops ui` *(o `it ui`)* | `.\it-ops.cmd ui` *(oppure `.\it.cmd ui`)* | Apre la dashboard esecutiva con Action Gate, Workflows, Crediti 231 e Telemetria |
 | **Devo simulare un preventivo con margini** | `preventivo cliente-rossi` | `.\it-ops.cmd quote cliente-rossi calculate` | Calcola prezzo di vendita, costi e marginalità esatta |
 | **C'è stato un disservizio grave di rete** | `troubleshoot init cliente-rossi` | `it troubleshoot init cliente-rossi TICK-01` | Guida la diagnosi L1-L7, crea 10-RCA e notifica il rapportino |
 | **Dobbiamo fare il test annuale di Disaster Recovery** | `workflow run dr-drill` | `.\it-ops.cmd workflow run dr-drill --slug cliente-rossi` | Ripristina i backup, calcola RTO/RPO e genera il verbale per l'OdV |

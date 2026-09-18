@@ -1,0 +1,76 @@
+workflow_id: WF-20260918205944-DR-DRILL-severinosrl
+workflow_type: dr-drill
+slug: severino-srl
+status: COMPLETED
+created_at: '2026-09-18T20:59:44.303666+00:00'
+updated_at: '2026-09-18T20:59:44.413803+00:00'
+completed_at: '2026-09-18T20:59:44.413803+00:00'
+initiated_by: cli:operator
+current_step_index: 5
+total_steps: 5
+steps:
+- step_id: audit_backup
+  name: Ispezione Catalogo Backup & Immutabilità
+  status: DONE
+  started_at: '2026-09-18T20:59:44.356511+00:00'
+  completed_at: '2026-09-18T20:59:44.360138+00:00'
+  output_summary: 'Catalogo backup verificato per severino-srl: NAS locale immutabile
+    e cloud mirror presenti.'
+  data:
+    backup_location: \\backup01.local\immut\severino-srl
+    retention_policy: 30_DAILY_12_MONTHLY_7_YEARLY
+    immutable_lock: true
+    last_full_backup: '2026-09-18T02:00:00Z'
+  error: null
+- step_id: staging_restore
+  name: Ripristino in Ambiente Sandbox Isolato
+  status: DONE
+  started_at: '2026-09-18T20:59:44.365410+00:00'
+  completed_at: '2026-09-18T20:59:44.370689+00:00'
+  output_summary: Ripristino sandbox isolato completato in severino-srl.
+  data:
+    staging_target: C:\Users\auresystem\repos\itinfra-business-ops\.agents\cache\dr_staging\severino-srl
+    restored_snapshots:
+    - system-core.qcow2
+    - database-sqldata.vhdx
+    sandbox_network_isolated: true
+  error: null
+- step_id: data_integrity
+  name: Verifica Integrità Checksum SHA-256 & Servizi
+  status: DONE
+  started_at: '2026-09-18T20:59:44.376203+00:00'
+  completed_at: '2026-09-18T20:59:44.381477+00:00'
+  output_summary: 'Integrità crittografica validata: Checksum SHA-256 match 100%.'
+  data:
+    sha256_checksum: 4ebe6698966ff5036bb6e8196b8399e41e25b159cf6d4879ca10ebd870e1c91d
+    database_consistency_check: ZERO_CORRUPTION_DETECTED
+    mock_services_started:
+    - ActiveDirectory
+    - PostgreSQL
+    - FileServer
+  error: null
+- step_id: rto_rpo_calc
+  name: Misurazione e Certificazione RTO / RPO
+  status: DONE
+  started_at: '2026-09-18T20:59:44.387446+00:00'
+  completed_at: '2026-09-18T20:59:44.393740+00:00'
+  output_summary: 'RTO effettivo: 42.5 min (SLA: 120.0 min). RPO: 2.0 h (SLA: 4.0
+    h). Conformità 100%.'
+  data:
+    rto_actual_minutes: 42.5
+    rto_sla_target_minutes: 120.0
+    rto_compliant: true
+    rpo_actual_hours: 2.0
+    rpo_sla_target_hours: 4.0
+    rpo_compliant: true
+  error: null
+- step_id: odv_certificate
+  name: Emissione Verbale Ufficiale OdV 231 / DPO
+  status: DONE
+  started_at: '2026-09-18T20:59:44.399709+00:00'
+  completed_at: '2026-09-18T20:59:44.407464+00:00'
+  output_summary: Verbale di Collaudo DR rilasciato in verbale-dr-drill-2026-09-18.okf.md.
+  data:
+    certificate_file: C:\Users\auresystem\repos\itinfra-business-ops\clients\severino-srl\compliance\verbale-dr-drill-2026-09-18.okf.md
+  error: null
+metadata: {}
