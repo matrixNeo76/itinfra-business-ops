@@ -38,5 +38,6 @@ ehthumbs_vista.db
 
 # Exports & staging
 exports/
+.agents/cache/
 dist/
 build/

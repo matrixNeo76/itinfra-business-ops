@@ -965,6 +965,94 @@ def cmd_daemon(args):
         print(f"[ERRORE] Servizio demone '{service}' non riconosciuto.")
         return 1
 
+
+def cmd_skills(args):
+    action = args.action or "list"
+    from scripts.core.skills_manager import SkillsManager
+    sm = SkillsManager()
+
+    if action == "list":
+        installed = sm.list_installed()
+        print("=" * 70)
+        print(f" 📦 SKILLS INSTALLATE NEL WORKSPACE ({len(installed)} totali)")
+        print("=" * 70)
+        for s in installed:
+            desc_prev = (s['description'][:75] + "...") if len(s['description']) > 75 else s['description']
+            print(f"  • {s['id']:<32} | {desc_prev}")
+        print("=" * 70)
+        return 0
+
+    elif action == "search":
+        query = getattr(args, "query", None) or getattr(args, "skill_id", "") or ""
+        limit = getattr(args, "limit", 15) or 15
+        results = sm.search(query, limit=limit)
+        print("=" * 70)
+        print(f" 🔍 RISULTATI RICERCA SKILLS CATALOG (Query: '{query}') — Trovate {len(results)}")
+        print("=" * 70)
+        for r in results:
+            desc = r.get("description", "")
+            desc_prev = (desc[:75] + "...") if len(desc) > 75 else desc
+            print(f"  • {r.get('id'):<35} | {desc_prev}")
+        print("-" * 70)
+        print("  Per installare: .\\it-ops.cmd skills install <skill_id>")
+        print("=" * 70)
+        return 0
+
+    elif action == "info":
+        skill_id = getattr(args, "skill_id", None)
+        if not skill_id:
+            print("[ERRORE] Specificare l'ID della skill (es. .\\it-ops.cmd skills info c4-architecture-c4-architecture)")
+            return 1
+        info = sm.info(skill_id)
+        if not info:
+            print(f"[!] Skill '{skill_id}' non trovata nel catalogo.")
+            return 1
+        print("=" * 70)
+        print(f" ℹ️  DETTAGLIO SKILL: {info.get('id')}")
+        print("=" * 70)
+        print(f" Nome       : {info.get('name', '')}")
+        print(f" Categoria  : {info.get('category', 'N/A')}")
+        print(f" Tags       : {', '.join(info.get('tags', []))}")
+        print(f" Triggers   : {', '.join(info.get('triggers', []))}")
+        print(f"\n Descrizione:\n {info.get('description', '')}")
+        print("=" * 70)
+        return 0
+
+    elif action == "install":
+        skill_id = getattr(args, "skill_id", None)
+        if not skill_id:
+            print("[ERRORE] Specificare l'ID della skill da installare")
+            return 1
+        is_global = getattr(args, "global_install", False)
+        res = sm.install(skill_id, global_install=is_global)
+        if res.get("success"):
+            print(f"[✓] Skill '{res['skill_id']}' installata con successo!")
+            print(f"    Percorso : {res['path']}")
+            print(f"    Modalità : {'Globale' if res['global'] else 'Locale workspace'}")
+        else:
+            print(f"[!] Errore durante l'installazione: {res.get('error')}")
+            return 1
+        return 0
+
+    elif action == "bundles":
+        b = sm.list_bundles()
+        print("=" * 70)
+        print(" 📦 BUNDLES SKILLS DISPONIBILI (rmyndharis/antigravity-skills)")
+        print("=" * 70)
+        bundles = b.get("bundles", {})
+        for bname, bdata in bundles.items():
+            s_list = bdata.get("skills", []) if isinstance(bdata, dict) else bdata
+            bdesc = bdata.get("description", "") if isinstance(bdata, dict) else ""
+            print(f"  • {bname:<16} ({len(s_list)} skills): {', '.join(s_list[:5])}...")
+            if bdesc:
+                print(f"    Descrizione: {bdesc[:75]}...")
+        print("=" * 70)
+        return 0
+
+    else:
+        print(f"[ERRORE] Azione '{action}' non valida per skills.")
+        return 1
+
 def main():
     check_auto_sync_memory()
     parser = argparse.ArgumentParser(description="itinfra-business-ops CLI Master Engine (v0.3.0)")
@@ -1158,6 +1246,16 @@ def main():
     p_daemon.add_argument("--interval", type=int, default=3600, help="Intervallo di scansione in secondi (default: 3600)")
     p_daemon.add_argument("--once", action="store_true", help="Esegui un unico ciclo di controllo e termina")
     p_daemon.set_defaults(func=cmd_daemon)
+
+    
+    # skills (SPEC-20 Extension — rmyndharis/antigravity-skills)
+    p_skills = subparsers.add_parser("skills", help="Gestore catalogo skills (rmyndharis/antigravity-skills)")
+    p_skills.add_argument("action", nargs="?", default="list", choices=["list", "search", "info", "install", "bundles"], help="Azione da eseguire")
+    p_skills.add_argument("skill_id", nargs="?", help="ID della skill (per info o install)")
+    p_skills.add_argument("--query", "-q", help="Testo da cercare nel catalogo")
+    p_skills.add_argument("--limit", type=int, default=15, help="Limite risultati ricerca (default: 15)")
+    p_skills.add_argument("--global", dest="global_install", action="store_true", help="Installa a livello globale (~/.gemini/antigravity/skills/)")
+    p_skills.set_defaults(func=cmd_skills)
 
     args = parser.parse_args()
     if not args.subcommand:

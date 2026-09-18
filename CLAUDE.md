@@ -36,6 +36,7 @@ Questo è l'ambiente di lavoro per la gestione operativa, commerciale, fatturazi
 | **Swarm Agenti Deterministici** | `agent <type> <slug>` | `.\it-ops.cmd agent [audit-231\|finance-reconciler\|infrastructure-sentinel\|contract-guardian\|swarm] <slug>` |
 | **Demoni di Monitoraggio Proattivo** | `daemon [mps\|sla]` | `.\it-ops.cmd daemon [mps\|sla] [--once]` |
 | **Git Guard Hooks Deterministici** | `hooks [install\|check]` | `.\it-ops.cmd hooks [install\|check] [--both]` |
+| **Gestore Skills (Catalogo 300+)** | `skills [search\|list\|info\|install]` | `.\it-ops.cmd skills [search\|list\|info\|install]` |
 
 ---
 
