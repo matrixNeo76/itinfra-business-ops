@@ -14,7 +14,7 @@ class QuotesPipeline:
     def get_quotes_dir(self, slug: str) -> Path:
         return self.clients_root / slug / "quotes"
 
-    def calculate_quote(self, quote_data: Dict[str, Any]) -> Dict[str, Any]:
+    def calculate_quote(self, quote_data: Dict[str, Any], min_gross_margin_percent: float = 20.0) -> Dict[str, Any]:
         """Ricalcola deterministamente costi, prezzi di vendita e margini per categoria."""
         total_cost = 0.0
         total_net = 0.0
@@ -27,6 +27,16 @@ class QuotesPipeline:
 
             for item in cat.get("items", []):
                 cost = self.parse_cascading_cost(item.get("unit_cost", 0.0))
+                # Supporto valuta estera (es. USD con buffer prudenziale di cambio)
+                item_curr = str(item.get("currency", quote_data.get("default_currency", "EUR"))).upper()
+                if item_curr == "USD":
+                    fx_rate = float(item.get("fx_rate", quote_data.get("default_fx_rate", 1.08)))
+                    buf_pct = float(item.get("currency_buffer_percent", quote_data.get("default_currency_buffer_percent", 2.5)))
+                    fx_conv = self.convert_currency_with_buffer(cost, fx_rate, buf_pct, "USD", "EUR")
+                    item["original_unit_cost"] = cost
+                    item["fx_conversion"] = fx_conv
+                    cost = fx_conv["hedged_amount"]
+
                 qty = float(item.get("quantity", 1))
                 markup = float(item.get("markup_percent", 0.0))
 
@@ -65,12 +75,24 @@ class QuotesPipeline:
         gross_margin = round(total_net - total_cost, 2)
         gross_margin_pct = round((gross_margin / total_net * 100.0), 2) if total_net > 0 else 0.0
 
+        is_violation = (total_net > 0) and (gross_margin_pct < min_gross_margin_percent)
+        if is_violation and min_gross_margin_percent < 100.0:
+            target_floor_net = round(total_cost / (1.0 - min_gross_margin_percent / 100.0), 2)
+            margin_deficit_amount = round(target_floor_net - total_net, 2)
+        else:
+            target_floor_net = total_net
+            margin_deficit_amount = 0.0
+
         quote_data["categories"] = categories_breakdown
         quote_data["totals"] = {
             "total_cost": round(total_cost, 2),
             "total_net": round(total_net, 2),
             "gross_margin_amount": gross_margin,
-            "gross_margin_percent": gross_margin_pct
+            "gross_margin_percent": gross_margin_pct,
+            "min_gross_margin_percent": min_gross_margin_percent,
+            "margin_safety_violation": is_violation,
+            "target_floor_net": target_floor_net,
+            "margin_deficit_amount": margin_deficit_amount
         }
         quote_data["lease_financial_options"] = self.calculate_lease_options(total_net)
         return quote_data
@@ -325,5 +347,153 @@ class QuotesPipeline:
             yaml.safe_dump(contract_data, fp, sort_keys=False, allow_unicode=True)
 
         return c_file
+
+    @staticmethod
+    def convert_currency_with_buffer(
+        amount: float,
+        fx_rate: float,
+        buffer_percent: float = 2.5,
+        from_currency: str = "USD",
+        to_currency: str = "EUR"
+    ) -> Dict[str, Any]:
+        """
+        Converte importi da valuta estera (default USD) ad EUR includendo un buffer prudenziale di rischio cambio.
+        Ad es. fx_rate = 1.08 USD per 1 EUR -> spot_eur = amount / 1.08; hedged_eur = spot_eur * (1 + 2.5/100).
+        """
+        amount = float(amount)
+        fx_rate = float(fx_rate) if float(fx_rate) > 0 else 1.0
+        buffer_percent = float(buffer_percent)
+
+        if from_currency.upper() == "USD" and to_currency.upper() == "EUR":
+            spot_eur = amount / fx_rate
+        elif from_currency.upper() == "EUR" and to_currency.upper() == "USD":
+            spot_eur = amount * fx_rate
+        else:
+            spot_eur = amount / fx_rate
+
+        hedged_eur = spot_eur * (1.0 + buffer_percent / 100.0)
+
+        return {
+            "original_amount": round(amount, 2),
+            "from_currency": from_currency.upper(),
+            "to_currency": to_currency.upper(),
+            "fx_rate": fx_rate,
+            "spot_amount": round(spot_eur, 2),
+            "buffer_percent": buffer_percent,
+            "hedged_amount": round(hedged_eur, 2)
+        }
+
+    def save_quote_revision(self, slug: str, quote_id: str, note: str = "") -> Optional[Path]:
+        """
+        Salva uno snapshot immutabile della versione corrente del preventivo
+        nella directory history/ e incrementa il contatore di revisione nel file principale.
+        """
+        qdir = self.get_quotes_dir(slug)
+        history_dir = qdir / "history"
+        history_dir.mkdir(parents=True, exist_ok=True)
+
+        for qf in qdir.glob("*.yaml"):
+            try:
+                with open(qf, "r", encoding="utf-8") as fp:
+                    data = yaml.safe_load(fp) or {}
+                if data.get("quote_id") == quote_id:
+                    current_rev = int(data.get("revision", 1))
+                    next_rev = current_rev + 1
+
+                    # Archivia lo stato attuale come snapshot storico
+                    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+                    history_file = history_dir / f"{quote_id.lower()}_rev{current_rev}_{timestamp}.yaml"
+                    with open(history_file, "w", encoding="utf-8") as hfp:
+                        yaml.safe_dump(data, hfp, sort_keys=False, allow_unicode=True)
+
+                    # Aggiorna il file principale
+                    data["revision"] = next_rev
+                    hist_log = data.setdefault("revision_history", [])
+                    hist_log.append({
+                        "revision": current_rev,
+                        "archived_file": history_file.name,
+                        "archived_at": datetime.datetime.now().isoformat(),
+                        "note": note
+                    })
+                    with open(qf, "w", encoding="utf-8") as fp:
+                        yaml.safe_dump(data, fp, sort_keys=False, allow_unicode=True)
+
+                    return history_file
+            except Exception:
+                pass
+        return None
+
+    def compare_quote_revisions(
+        self,
+        slug: str,
+        quote_id: str,
+        rev_a: Any,
+        rev_b: Any
+    ) -> Dict[str, Any]:
+        """
+        Effettua il diff deterministico tra due revisioni di un preventivo.
+        rev_a e rev_b possono essere numeri di revisione (int), nomi file o dizionari.
+        """
+        qdir = self.get_quotes_dir(slug)
+        history_dir = qdir / "history"
+
+        def _load_rev(rev_param: Any) -> Optional[Dict[str, Any]]:
+            if isinstance(rev_param, dict):
+                return self.calculate_quote(rev_param)
+
+            # Cerca nel file principale se corrisponde alla revisione corrente
+            for qf in qdir.glob("*.yaml"):
+                try:
+                    with open(qf, "r", encoding="utf-8") as fp:
+                        d = yaml.safe_load(fp) or {}
+                    if d.get("quote_id") == quote_id:
+                        if str(d.get("revision")) == str(rev_param) or rev_param in ("current", "latest", qf.name):
+                            return self.calculate_quote(d)
+                except Exception:
+                    pass
+
+            # Cerca nella history
+            if history_dir.is_dir():
+                for hf in history_dir.glob("*.yaml"):
+                    try:
+                        with open(hf, "r", encoding="utf-8") as hfp:
+                            hd = yaml.safe_load(hfp) or {}
+                        if hd.get("quote_id") == quote_id:
+                            if str(hd.get("revision")) == str(rev_param) or str(rev_param) in hf.name:
+                                return self.calculate_quote(hd)
+                    except Exception:
+                        pass
+            return None
+
+        data_a = _load_rev(rev_a)
+        data_b = _load_rev(rev_b)
+
+        if not data_a or not data_b:
+            return {
+                "error": "Impossibile caricare entrambe le revisioni",
+                "rev_a_found": data_a is not None,
+                "rev_b_found": data_b is not None
+            }
+
+        tot_a = data_a.get("totals", {})
+        tot_b = data_b.get("totals", {})
+
+        cost_delta = round(tot_b.get("total_cost", 0.0) - tot_a.get("total_cost", 0.0), 2)
+        net_delta = round(tot_b.get("total_net", 0.0) - tot_a.get("total_net", 0.0), 2)
+        margin_amt_delta = round(tot_b.get("gross_margin_amount", 0.0) - tot_a.get("gross_margin_amount", 0.0), 2)
+        margin_pct_delta = round(tot_b.get("gross_margin_percent", 0.0) - tot_a.get("gross_margin_percent", 0.0), 2)
+
+        return {
+            "slug": slug,
+            "quote_id": quote_id,
+            "rev_a": {"revision": data_a.get("revision"), "totals": tot_a},
+            "rev_b": {"revision": data_b.get("revision"), "totals": tot_b},
+            "deltas": {
+                "total_cost": cost_delta,
+                "total_net": net_delta,
+                "gross_margin_amount": margin_amt_delta,
+                "gross_margin_percent": margin_pct_delta
+            }
+        }
 
 

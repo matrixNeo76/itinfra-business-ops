@@ -203,6 +203,25 @@ class ReportsPipeline:
         summary["included_flat_hours"] = round(summary["included_flat_hours"], 2)
         return summary
 
+    @staticmethod
+    def calculate_travel_allowance(
+        distance_km: float = 0.0,
+        rate_per_km: float = 0.50,
+        tolls_eur: float = 0.0,
+        parking_eur: float = 0.0
+    ) -> Dict[str, float]:
+        """Calcola l'indennità chilometrica e il rimborso spese di trasferta."""
+        km_reimbursement = round(float(distance_km) * float(rate_per_km), 2)
+        total_allowance = round(km_reimbursement + float(tolls_eur) + float(parking_eur), 2)
+        return {
+            "distance_km": round(float(distance_km), 2),
+            "rate_per_km": round(float(rate_per_km), 2),
+            "km_reimbursement": km_reimbursement,
+            "tolls_eur": round(float(tolls_eur), 2),
+            "parking_eur": round(float(parking_eur), 2),
+            "total_travel_allowance": total_allowance
+        }
+
     def create_report(
         self,
         slug: str,
@@ -218,9 +237,13 @@ class ReportsPipeline:
         break_minutes: int = 0,
         customer_signed: bool = False,
         signer_name: str = "",
-        spare_parts: Optional[List[Dict[str, Any]]] = None
+        spare_parts: Optional[List[Dict[str, Any]]] = None,
+        distance_km: float = 0.0,
+        rate_per_km: float = 0.50,
+        tolls_eur: float = 0.0,
+        parking_eur: float = 0.0
     ) -> Dict[str, Any]:
-        """Crea, valida e salva fisicamente un nuovo rapportino di intervento con gestione over-budget e ricambi."""
+        """Crea, valida e salva fisicamente un nuovo rapportino di intervento con gestione over-budget, ricambi e trasferta."""
         if not date_str:
             date_str = datetime.date.today().isoformat()
         date_compact = date_str.replace("-", "")
@@ -253,6 +276,8 @@ class ReportsPipeline:
             debited_h = res_debit["debited_contract_hours"]
             extra_h = res_debit["extra_hours"]
 
+        travel_allowance = self.calculate_travel_allowance(distance_km, rate_per_km, tolls_eur, parking_eur)
+
         report_data = {
             "report_id": rep_id,
             "slug": slug,
@@ -273,6 +298,7 @@ class ReportsPipeline:
             },
             "debited_contract_hours": debited_h,
             "extra_hours": extra_h,
+            "travel_allowance": travel_allowance,
             "rounding_step_minutes": 30,
             "intervention_type": intervention_type,
             "ledger_action": ledger_action,
@@ -524,4 +550,84 @@ class ReportsPipeline:
             results["pdf"] = out_pdf
 
         return results
+
+    def apply_as_built_patch_to_project(self, slug: str, report_id: str) -> Dict[str, Any]:
+        """
+        Applica atomicamente le modifiche hardware/ricambi documentate nel rapportino
+        direttamente all'As-Built (06-As-Built.md) del repository federato itinfra.
+        Garantisce idempotenza ed evita scritture duplicate.
+        """
+        tdir = self.get_timesheets_dir(slug)
+        report_data = None
+        for f in tdir.glob("*.yaml"):
+            try:
+                with open(f, "r", encoding="utf-8") as fp:
+                    d = yaml.safe_load(fp) or {}
+                if d.get("report_id") == report_id or f.stem == report_id.lower():
+                    report_data = d
+                    break
+            except Exception:
+                pass
+
+        if not report_data:
+            return {
+                "status": "error",
+                "message": f"Rapportino {report_id} non trovato in {slug}/timesheets",
+                "applied": False
+            }
+
+        pdir = self.bridge.get_project_dir(slug)
+        if not pdir or not pdir.is_dir():
+            return {
+                "status": "error",
+                "message": f"Progetto tecnico itinfra non trovato per slug '{slug}'",
+                "applied": False
+            }
+
+        as_built_path = pdir / "06-As-Built.md"
+        if not as_built_path.is_file():
+            return {
+                "status": "error",
+                "message": f"File 06-As-Built.md non trovato in {pdir}",
+                "applied": False
+            }
+
+        existing_content = as_built_path.read_text(encoding="utf-8")
+        marker = f"<!-- REVERSE-HANDOVER-PATCH: Generato da Rapportino {report_id}"
+        if marker in existing_content or f"Rapportino {report_id}" in existing_content:
+            return {
+                "status": "already_applied",
+                "message": f"La patch del rapportino {report_id} è già presente in {as_built_path.name}",
+                "applied": False,
+                "target_file": str(as_built_path)
+            }
+
+        patch_content = self.generate_as_built_patch(slug, report_data)
+        if not patch_content:
+            return {
+                "status": "skipped",
+                "message": "Nessun componente hardware nuovo o ricambio censito con seriale nel rapportino",
+                "applied": False
+            }
+
+        rep_date = report_data.get("date", datetime.date.today().isoformat())
+        section_append = f"\n\n### Aggiornamento Componenti da Rapportino Tecnico {report_id} ({rep_date})\n{patch_content}\n"
+
+        new_total_content = existing_content.rstrip() + section_append
+        tmp_path = as_built_path.with_suffix(".tmp")
+        try:
+            tmp_path.write_text(new_total_content, encoding="utf-8")
+            tmp_path.replace(as_built_path)
+        except Exception:
+            as_built_path.write_text(new_total_content, encoding="utf-8")
+            if tmp_path.exists():
+                tmp_path.unlink()
+
+        return {
+            "status": "success",
+            "message": f"Patch hardware del rapportino {report_id} applicata con successo a 06-As-Built.md",
+            "applied": True,
+            "target_file": str(as_built_path),
+            "report_id": report_id
+        }
 

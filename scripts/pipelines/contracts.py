@@ -243,13 +243,78 @@ class ContractsPipeline:
         (12, 26), # Santo Stefano
     }
 
+    DEFAULT_SLA_SEVERITY = {
+        "sev1": {"name": "Critical / Outage", "response_hours": 2.0, "resolution_hours": 4.0},
+        "sev2": {"name": "Major / Degraded", "response_hours": 4.0, "resolution_hours": 8.0},
+        "sev3": {"name": "Standard / Minor", "response_hours": 8.0, "resolution_hours": 24.0},
+        "sev4": {"name": "Request / Planned", "response_hours": 16.0, "resolution_hours": 48.0},
+    }
+
+    @staticmethod
+    def compute_easter_date(year: int) -> datetime.date:
+        """
+        Calcola la domenica di Pasqua per l'anno specificato tramite l'algoritmo astronomico di Gauss / Meeus.
+        Valido per il calendario gregoriano.
+        """
+        a = year % 19
+        b = year // 100
+        c = year % 100
+        d = b // 4
+        e = b % 4
+        f = (b + 8) // 25
+        g = (b - f + 1) // 3
+        h = (19 * a + b - d - g + 15) % 30
+        i = c // 4
+        k = c % 4
+        l = (32 + 2 * e + 2 * i - h - k) % 7
+        m = (a + 11 * h + 22 * l) // 451
+        month = (h + l - 7 * m + 114) // 31
+        day = ((h + l - 7 * m + 114) % 31) + 1
+        return datetime.date(year, month, day)
+
     @classmethod
-    def is_italian_holiday_or_weekend(cls, d: datetime.date) -> bool:
-        """Verifica se una data cade di sabato, domenica o festività nazionale italiana."""
+    def get_easter_monday(cls, year: int) -> datetime.date:
+        """Restituisce il lunedì dell'Angelo (Pasquetta)."""
+        return cls.compute_easter_date(year) + datetime.timedelta(days=1)
+
+    @classmethod
+    def is_italian_holiday_or_weekend(cls, d: datetime.date, patron_date: Optional[Any] = None) -> bool:
+        """
+        Verifica se una data cade di sabato, domenica, festività nazionale italiana fissa,
+        Pasqua, Lunedì dell'Angelo (Pasquetta) o Santo Patrono locale opzionale.
+        """
         if d.weekday() in (5, 6): # Sabato = 5, Domenica = 6
             return True
         if (d.month, d.day) in cls.ITALIAN_HOLIDAYS_FIXED:
             return True
+        
+        # Pasqua e Pasquetta (mobili)
+        easter = cls.compute_easter_date(d.year)
+        easter_monday = easter + datetime.timedelta(days=1)
+        if d == easter or d == easter_monday:
+            return True
+
+        # Santo Patrono locale (es. (12, 7) per Sant'Ambrogio a Milano o date/stringhe)
+        if patron_date:
+            if isinstance(patron_date, tuple) and len(patron_date) == 2:
+                if (d.month, d.day) == patron_date:
+                    return True
+            elif isinstance(patron_date, datetime.date):
+                if (d.month, d.day) == (patron_date.month, patron_date.day):
+                    return True
+            elif isinstance(patron_date, str):
+                try:
+                    p_dt = datetime.date.fromisoformat(patron_date)
+                    if (d.month, d.day) == (p_dt.month, p_dt.day):
+                        return True
+                except ValueError:
+                    parts = patron_date.replace("/", "-").split("-")
+                    if len(parts) == 2:
+                        try:
+                            if (d.month, d.day) == (int(parts[0]), int(parts[1])):
+                                return True
+                        except ValueError:
+                            pass
         return False
 
     @classmethod
@@ -258,11 +323,13 @@ class ContractsPipeline:
         start_dt: Any,
         end_dt: Any,
         window_start_str: str = "09:00",
-        window_end_str: str = "18:00"
+        window_end_str: str = "18:00",
+        patron_date: Optional[Any] = None
     ) -> float:
         """
         Calcola deterministamente le ore lavorative effettive trascorse tra due timestamp,
-        escludendo weekend, festività nazionali e ore al di fuori della finestra giornaliera (es. 09:00 - 18:00).
+        escludendo weekend, festività nazionali (incluse Pasqua e Pasquetta), Patrono locale
+        e ore al di fuori della finestra giornaliera (es. 09:00 - 18:00).
         """
         if isinstance(start_dt, str):
             start_dt = datetime.datetime.fromisoformat(start_dt)
@@ -280,7 +347,7 @@ class ContractsPipeline:
 
         while current < end_dt:
             cur_date = current.date()
-            if not cls.is_italian_holiday_or_weekend(cur_date):
+            if not cls.is_italian_holiday_or_weekend(cur_date, patron_date=patron_date):
                 day_open = datetime.datetime.combine(cur_date, w_start)
                 day_close = datetime.datetime.combine(cur_date, w_end)
 
@@ -393,3 +460,108 @@ class ContractsPipeline:
                     "remaining_hours": float(c.get("financial", {}).get("total_hours_included", 0)) - float(c.get("financial", {}).get("consumed_hours", 0))
                 }
         return None
+
+    def compute_sla_penalties(
+        self,
+        slug: str,
+        ticket_id: str,
+        report_id: str,
+        severity: str = "sev1",
+        start_time: Optional[Any] = None,
+        end_time: Optional[Any] = None,
+        hourly_penalty_rate: float = 50.0,
+        contract_id: Optional[str] = None,
+        patron_date: Optional[Any] = None,
+        auto_accrue: bool = True
+    ) -> Dict[str, Any]:
+        """
+        Calcola deterministamente le penali contrattuali per sforamento SLA su ticket/rapportini.
+        Se auto_accrue=True, registra e accoda l'evento di penale nel file contratto YAML.
+        """
+        cdir = self.get_contracts_dir(slug)
+        target_contract = None
+        target_path = None
+
+        for f in cdir.glob("*.yaml"):
+            try:
+                with open(f, "r", encoding="utf-8") as fp:
+                    cdata = yaml.safe_load(fp) or {}
+                if contract_id:
+                    if cdata.get("contract_id") == contract_id:
+                        target_contract = cdata
+                        target_path = f
+                        break
+                elif cdata.get("status") == "active":
+                    target_contract = cdata
+                    target_path = f
+                    break
+            except Exception:
+                pass
+
+        sev_key = severity.lower()
+        sev_config = self.DEFAULT_SLA_SEVERITY.get(sev_key, {"name": "Custom", "resolution_hours": 8.0, "response_hours": 4.0})
+        if target_contract and "sla" in target_contract and "severities" in target_contract["sla"]:
+            contract_sev = target_contract["sla"]["severities"].get(sev_key)
+            if contract_sev:
+                sev_config = contract_sev
+
+        allowed_hours = float(sev_config.get("resolution_hours", 8.0))
+
+        # Se non vengono forniti start_time / end_time, cerchiamo nel rapportino se esiste
+        if start_time is None or end_time is None:
+            r_dir = self.clients_root / slug / "reports"
+            for rf in r_dir.glob("*.yaml"):
+                try:
+                    with open(rf, "r", encoding="utf-8") as rfp:
+                        rdata = yaml.safe_load(rfp) or {}
+                    if rdata.get("report_id") == report_id:
+                        if start_time is None:
+                            start_time = rdata.get("timing", {}).get("start_time")
+                        if end_time is None:
+                            end_time = rdata.get("timing", {}).get("end_time")
+                        break
+                except Exception:
+                    pass
+
+        if start_time and end_time:
+            elapsed_hours = self.compute_business_hours_sla(start_time, end_time, patron_date=patron_date)
+        else:
+            elapsed_hours = 0.0
+
+        delay_hours = max(0.0, round(elapsed_hours - allowed_hours, 2))
+        is_breached = delay_hours > 0.0
+        penalty_amount = round(delay_hours * hourly_penalty_rate, 2)
+
+        result = {
+            "slug": slug,
+            "contract_id": target_contract.get("contract_id") if target_contract else contract_id,
+            "ticket_id": ticket_id,
+            "report_id": report_id,
+            "severity": sev_key,
+            "severity_name": sev_config.get("name", sev_key.upper()),
+            "allowed_resolution_hours": allowed_hours,
+            "actual_business_hours": elapsed_hours,
+            "delay_hours": delay_hours,
+            "is_breached": is_breached,
+            "hourly_penalty_rate": hourly_penalty_rate,
+            "penalty_amount": penalty_amount,
+            "accrued_at": datetime.datetime.now().isoformat()
+        }
+
+        if auto_accrue and is_breached and target_contract and target_path:
+            penalties = target_contract.setdefault("sla_penalties", [])
+            penalties.append({
+                "ticket_id": ticket_id,
+                "report_id": report_id,
+                "severity": sev_key,
+                "delay_hours": delay_hours,
+                "penalty_amount": penalty_amount,
+                "accrued_at": result["accrued_at"]
+            })
+            fin = target_contract.setdefault("financial", {})
+            total_penalties = round(sum(float(p.get("penalty_amount", 0.0)) for p in penalties), 2)
+            fin["sla_penalties_total"] = total_penalties
+            with open(target_path, "w", encoding="utf-8") as fp:
+                yaml.safe_dump(target_contract, fp, sort_keys=False, allow_unicode=True)
+
+        return result

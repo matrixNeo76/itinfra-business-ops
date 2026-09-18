@@ -14,6 +14,7 @@ class FurniturePipeline:
         "3_sampling_approval",
         "4_procurement",
         "5_assembly",
+        "6_handover_conditional_snagging",
         "6_handover_approved"
     ]
 
@@ -41,13 +42,15 @@ class FurniturePipeline:
         return orders
 
     def get_order_status(self, order_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Verifica lo stato di avanzamento delle 6 fasi e la checklist di collaudo."""
+        """Verifica lo stato di avanzamento delle fasi, punch list, ritenuta a garanzia e checklist di collaudo."""
         current_status = order_data.get("status", "1_survey")
         stages = order_data.get("stages", {})
         handover = stages.get("handover", {})
         checklist = handover.get("checklist", {})
+        punch_list = handover.get("punch_list", [])
 
         all_checks_ok = all(checklist.values()) if checklist else False
+        open_punch_items = [p for p in punch_list if not p.get("resolved", False)]
 
         try:
             current_index = self.STAGES_ORDER.index(current_status) + 1
@@ -55,6 +58,13 @@ class FurniturePipeline:
             current_index = 1
 
         pct_progress = round((current_index / len(self.STAGES_ORDER)) * 100.0, 1)
+
+        # Ritenuta di garanzia (standard 5% sul totale netto)
+        totals = order_data.get("totals", {})
+        total_net = float(totals.get("revised_total_net", totals.get("total_net", 0.0)))
+        retention_pct = float(handover.get("warranty_retention_percent", 5.0))
+        retention_amount = round(total_net * (retention_pct / 100.0), 2)
+        retention_released = (len(open_punch_items) == 0) and (current_status == "6_handover_approved")
 
         return {
             "order_id": order_data.get("order_id"),
@@ -67,7 +77,12 @@ class FurniturePipeline:
             "procurement_sent": stages.get("procurement", {}).get("factory_orders_sent", False),
             "handover_checklist": checklist,
             "all_checks_passed": all_checks_ok,
-            "signed_acceptance": handover.get("signed_acceptance_date", "")
+            "signed_acceptance": handover.get("signed_acceptance_date", ""),
+            "punch_list": punch_list,
+            "open_punch_items_count": len(open_punch_items),
+            "warranty_retention_percent": retention_pct,
+            "warranty_retention_amount": retention_amount,
+            "warranty_retention_released": retention_released
         }
 
     def advance_stage(self, slug: str, order_id: str, target_stage: Optional[str] = None) -> Optional[Dict[str, Any]]:
@@ -327,4 +342,174 @@ Si certifica che in data <strong>{sign_date}</strong> la squadra di posa in oper
             except Exception:
                 pass
         return None
+
+    def add_punch_list_item(
+        self,
+        slug: str,
+        order_id: str,
+        description: str,
+        severity: str = "minor",
+        location: str = ""
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Registra una non-conformità (snagging / riserva) durante il pre-collaudo.
+        Imposta automaticamente lo stato a '6_handover_conditional_snagging' e trattiene la garanzia del 5%.
+        """
+        fdir = self.get_furniture_dir(slug)
+        for f in fdir.glob("*.yaml"):
+            try:
+                with open(f, "r", encoding="utf-8") as fp:
+                    data = yaml.safe_load(fp) or {}
+                if data.get("order_id") == order_id:
+                    stages = data.setdefault("stages", {})
+                    handover = stages.setdefault("handover", {})
+                    punch_list = handover.setdefault("punch_list", [])
+
+                    item_id = len(punch_list) + 1
+                    punch_list.append({
+                        "item_id": item_id,
+                        "description": description,
+                        "severity": severity,
+                        "location": location,
+                        "created_at": datetime.date.today().isoformat(),
+                        "resolved": False
+                    })
+
+                    data["status"] = "6_handover_conditional_snagging"
+                    with open(f, "w", encoding="utf-8") as fp:
+                        yaml.safe_dump(data, fp, sort_keys=False, allow_unicode=True)
+
+                    return self.get_order_status(data)
+            except Exception:
+                pass
+        return None
+
+    def resolve_punch_list_item(
+        self,
+        slug: str,
+        order_id: str,
+        item_id: int,
+        resolution_note: str = ""
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Risolve un elemento della punch list.
+        Se tutti gli elementi sono risolti, promuove la commessa a '6_handover_approved'
+        e sblocca il rilascio della ritenuta a garanzia del 5%.
+        """
+        fdir = self.get_furniture_dir(slug)
+        for f in fdir.glob("*.yaml"):
+            try:
+                with open(f, "r", encoding="utf-8") as fp:
+                    data = yaml.safe_load(fp) or {}
+                if data.get("order_id") == order_id:
+                    stages = data.setdefault("stages", {})
+                    handover = stages.setdefault("handover", {})
+                    punch_list = handover.setdefault("punch_list", [])
+
+                    matched = False
+                    for item in punch_list:
+                        if item.get("item_id") == item_id:
+                            item["resolved"] = True
+                            item["resolved_at"] = datetime.date.today().isoformat()
+                            item["resolution_note"] = resolution_note or "Risolto e verificato"
+                            matched = True
+                            break
+
+                    if not matched:
+                        return None
+
+                    open_items = [p for p in punch_list if not p.get("resolved", False)]
+                    if not open_items:
+                        data["status"] = "6_handover_approved"
+                        handover["signed_acceptance_date"] = datetime.date.today().isoformat()
+                        handover.setdefault("checklist", {})
+                        handover["checklist"]["finishes_scratch_free"] = True
+
+                    with open(f, "w", encoding="utf-8") as fp:
+                        yaml.safe_dump(data, fp, sort_keys=False, allow_unicode=True)
+
+                    return self.get_order_status(data)
+            except Exception:
+                pass
+        return None
+
+    def cross_check_electrical_load(self, slug: str, order_id: str) -> Dict[str, Any]:
+        """
+        Esegue il cross-check di dimensionamento del carico elettrico (W / kW)
+        delle postazioni regolabili motorizzate e cabine acustiche rispetto al dimensionamento LLD di itinfra.
+        """
+        bridge = ITInfraBridge()
+        pdir = bridge.get_project_dir(slug)
+
+        fdir = self.get_furniture_dir(slug)
+        target_order = None
+        for f in fdir.glob("*.yaml"):
+            try:
+                with open(f, "r", encoding="utf-8") as fp:
+                    d = yaml.safe_load(fp) or {}
+                if d.get("order_id") == order_id:
+                    target_order = d
+                    break
+            except Exception:
+                pass
+
+        if not target_order:
+            return {"status": "error", "message": f"Commessa {order_id} non trovata"}
+
+        total_watts_peak = 0.0
+        total_watts_idle = 0.0
+        components_load = []
+
+        for item in target_order.get("items", []):
+            desc = item.get("description", "").lower()
+            qty = float(item.get("quantity", 1))
+
+            if any(w in desc for w in ["sit-stand", "motorizzat", "elevabil", "regolabile in altezza"]):
+                w_peak = 150.0 * qty
+                w_idle = 15.0 * qty
+                components_load.append({"item": item.get("description"), "type": "motorized_desk", "qty": qty, "peak_watts": w_peak, "idle_watts": w_idle})
+                total_watts_peak += w_peak
+                total_watts_idle += w_idle
+            elif any(w in desc for w in ["booth", "acustic", "pod", "cabina"]):
+                w_peak = 400.0 * qty
+                w_idle = 80.0 * qty
+                components_load.append({"item": item.get("description"), "type": "acoustic_pod", "qty": qty, "peak_watts": w_peak, "idle_watts": w_idle})
+                total_watts_peak += w_peak
+                total_watts_idle += w_idle
+            elif any(w in desc for w in ["scrivania", "desk", "workstation"]):
+                w_peak = 300.0 * qty
+                w_idle = 50.0 * qty
+                components_load.append({"item": item.get("description"), "type": "pc_workstation", "qty": qty, "peak_watts": w_peak, "idle_watts": w_idle})
+                total_watts_peak += w_peak
+                total_watts_idle += w_idle
+
+        total_kw_peak = round(total_watts_peak / 1000.0, 2)
+        total_kw_idle = round(total_watts_idle / 1000.0, 2)
+
+        lld_found = False
+        notes = []
+
+        if pdir and (pdir / "03-LLD.md").is_file():
+            lld_found = True
+            lld_text = (pdir / "03-LLD.md").read_text(encoding="utf-8")
+            if "ups" in lld_text.lower():
+                notes.append("Presenza di gruppo di continuità UPS segnalata in 03-LLD.md.")
+
+        single_circuit_max_kw = 3.68
+        circuits_recommended = max(1, int(total_kw_peak // single_circuit_max_kw) + (1 if total_kw_peak % single_circuit_max_kw > 0 else 0))
+
+        if total_kw_peak > single_circuit_max_kw:
+            notes.append(f"Il carico di picco ({total_kw_peak} kW) supera la capacità standard di una singola linea 16A ({single_circuit_max_kw} kW). Si raccomandano almeno {circuits_recommended} circuiti/sezionatori separati.")
+
+        return {
+            "slug": slug,
+            "order_id": order_id,
+            "itinfra_lld_found": lld_found,
+            "total_power_kw_peak": total_kw_peak,
+            "total_power_kw_idle": total_kw_idle,
+            "recommended_circuits_count": circuits_recommended,
+            "components_analyzed": components_load,
+            "status": "PASS" if total_kw_peak <= (circuits_recommended * single_circuit_max_kw) else "WARNING",
+            "notes": notes
+        }
 

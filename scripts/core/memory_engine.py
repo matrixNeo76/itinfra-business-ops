@@ -412,7 +412,7 @@ class MemoryEngine:
         return "\n".join(lines).strip() + "\n"
 
     def audit_memory(self) -> Dict[str, Any]:
-        """Scansiona l'intero grafo di memoria rilevando anomalie, scadenze e hash non conformi."""
+        """Scansiona l'intero grafo di memoria rilevando anomalie, scadenze, cicli DAG, orfani e hash non conformi."""
         report: Dict[str, Any] = {
             "total_nodes": 0,
             "active_nodes": 0,
@@ -422,10 +422,14 @@ class MemoryEngine:
             "expiring_soon_nodes": [],
             "tampered_nodes": [],
             "schema_errors": [],
+            "dag_cycles": [],
+            "orphan_references": [],
             "status": "PASS"
         }
 
         now = datetime.datetime.now(datetime.timezone.utc)
+        all_nodes_meta: Dict[str, Dict[str, Any]] = {}
+        adjacency: Dict[str, List[str]] = {}
 
         for f in self.memory_dir.rglob("*.okf.md"):
             report["total_nodes"] += 1
@@ -435,7 +439,8 @@ class MemoryEngine:
                 report["schema_errors"].append({"file": str(f.name), "error": str(e)})
                 continue
 
-            node_id = meta.get("id", f.stem)
+            node_id = str(meta.get("id", f.stem)).upper().strip()
+            all_nodes_meta[node_id] = meta
             lifecycle = meta.get("lifecycle", "active")
             tier = meta.get("trust", {}).get("tier", "generated")
 
@@ -475,12 +480,130 @@ class MemoryEngine:
                         "actual_sha": actual_sha
                     })
 
-        if report["tampered_nodes"] or report["schema_errors"]:
+        # Costruzione Adiacenze per Analisi Topologica DAG
+        for nid, meta in all_nodes_meta.items():
+            refs = []
+            for k in ["prerequisites", "dependencies", "relates_to", "requires"]:
+                raw_val = meta.get(k, [])
+                if isinstance(raw_val, list):
+                    refs.extend([str(r).upper().strip() for r in raw_val if r])
+                elif isinstance(raw_val, str) and raw_val:
+                    refs.append(raw_val.upper().strip())
+
+            clean_refs = []
+            for target in refs:
+                if target and target != nid:
+                    if target not in all_nodes_meta:
+                        report["orphan_references"].append({"source_node": nid, "missing_target": target})
+                    else:
+                        clean_refs.append(target)
+            adjacency[nid] = clean_refs
+
+        # Rilevamento Cicli DAG con DFS
+        visited: Dict[str, int] = {k: 0 for k in adjacency}
+        path: List[str] = []
+
+        def _dfs(u: str) -> None:
+            visited[u] = 1
+            path.append(u)
+            for v in adjacency.get(u, []):
+                if visited.get(v, 0) == 1:
+                    cycle_idx = path.index(v)
+                    report["dag_cycles"].append(list(path[cycle_idx:] + [v]))
+                elif visited.get(v, 0) == 0:
+                    _dfs(v)
+            path.pop()
+            visited[u] = 2
+
+        for k in list(adjacency.keys()):
+            if visited.get(k, 0) == 0:
+                _dfs(k)
+
+        if report["tampered_nodes"] or report["schema_errors"] or report["dag_cycles"]:
             report["status"] = "FAIL"
-        elif report["stale_nodes"] or report["expiring_soon_nodes"]:
+        elif report["stale_nodes"] or report["expiring_soon_nodes"] or report["orphan_references"]:
             report["status"] = "WARNING"
 
         return report
+
+    def decay_confidence_scores(self, half_life_days: float = 90.0) -> Dict[str, Any]:
+        """
+        Calcola il decadimento temporale del punteggio di confidenza per le memorie non rinforzate.
+        Confidence = base_confidence * 2^(-age_days / half_life_days).
+        """
+        now = datetime.datetime.now(datetime.timezone.utc)
+        decayed_results = []
+
+        for f in self.memory_dir.rglob("*.okf.md"):
+            try:
+                meta, body = self.parse_okf_file(f)
+                nid = str(meta.get("id", f.stem)).upper().strip()
+
+                raw_conf = meta.get("confidence", 1.0)
+                if isinstance(raw_conf, dict):
+                    conf_val = float(raw_conf.get("score", 1.0))
+                else:
+                    conf_val = float(raw_conf)
+
+                date_str = meta.get("updated_at") or meta.get("created_at") or meta.get("trust", {}).get("attestation_date")
+                if date_str:
+                    try:
+                        node_dt = datetime.datetime.fromisoformat(str(date_str).replace("Z", "+00:00"))
+                        age_days = max(0.0, (now - node_dt).total_seconds() / 86400.0)
+                    except Exception:
+                        age_days = 0.0
+                else:
+                    age_days = 0.0
+
+                decay_factor = 0.5 ** (age_days / max(1.0, half_life_days))
+                decayed_score = round(conf_val * decay_factor, 3)
+
+                decayed_results.append({
+                    "node_id": nid,
+                    "original_confidence": conf_val,
+                    "age_days": round(age_days, 1),
+                    "decayed_confidence": decayed_score
+                })
+            except Exception:
+                continue
+
+        return {
+            "half_life_days": half_life_days,
+            "total_nodes_evaluated": len(decayed_results),
+            "results": decayed_results
+        }
+
+    def reinforce_confidence(self, node_id: str, delta: float = 0.1) -> Dict[str, Any]:
+        """
+        Rinforza il punteggio di confidenza di un nodo di memoria in seguito a un utilizzo con esito positivo.
+        Aggiorna la data di ultimo rinforzo.
+        """
+        clean_id = node_id.upper().strip()
+        filepath = self.find_node_file(clean_id)
+        if not filepath:
+            return {"status": "error", "message": f"Nodo {node_id} non trovato"}
+
+        meta, body = self.parse_okf_file(filepath)
+        now_utc = datetime.datetime.now(datetime.timezone.utc).isoformat()
+
+        current_conf = float(meta.get("confidence", 1.0) if not isinstance(meta.get("confidence"), dict) else meta["confidence"].get("score", 1.0))
+        new_conf = round(min(1.0, current_conf + delta), 3)
+
+        meta["confidence"] = {
+            "score": new_conf,
+            "last_reinforced_at": now_utc,
+            "reinforcement_delta": delta
+        }
+        meta["updated_at"] = now_utc
+
+        filepath.write_text(self.format_okf_file(meta, body), encoding="utf-8")
+        return {
+            "status": "success",
+            "node_id": clean_id,
+            "previous_confidence": current_conf,
+            "new_confidence": new_conf,
+            "reinforced_at": now_utc
+        }
 
     def sync_with_peer(self) -> Dict[str, Any]:
         """Sincronizzazione atomica bidirezionale tra il repository locale e il repository gemello."""

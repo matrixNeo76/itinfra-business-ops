@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 import pdfplumber
 import yaml
+import xml.etree.ElementTree as ET
 
 from scripts.core.config import get_clients_dir, load_config
 from scripts.pipelines.quotes import QuotesPipeline
@@ -601,6 +602,326 @@ class OKFDocumentParser:
             "tables_found": len(tables)
         }
 
+class SdiXmlExtractor:
+    """Estrattore deterministico per fatture elettroniche XML SDI (FPR12 e FPA12)."""
+
+    @staticmethod
+    def _strip_ns(tag: str) -> str:
+        if "}" in tag:
+            return tag.split("}", 1)[1]
+        return tag
+
+    @classmethod
+    def extract(cls, xml_path_or_content: Any) -> Dict[str, Any]:
+        if isinstance(xml_path_or_content, Path) or (isinstance(xml_path_or_content, str) and (Path(xml_path_or_content).is_file() if len(xml_path_or_content) < 500 else False)):
+            p = Path(xml_path_or_content)
+            source_name = p.name
+            xml_text = p.read_text(encoding="utf-8")
+        else:
+            source_name = "sdi_invoice.xml"
+            xml_text = str(xml_path_or_content)
+
+        root = ET.fromstring(xml_text)
+        for elem in root.iter():
+            elem.tag = cls._strip_ns(elem.tag)
+
+        evidence: List[EvidenceField] = []
+
+        # 1. Cedente / Prestatore (Fornitore)
+        supplier_name = None
+        supplier_vat = None
+        cedente = root.find(".//CedentePrestatore")
+        if cedente is not None:
+            denom = cedente.find(".//Denominazione")
+            nome = cedente.find(".//Nome")
+            cognome = cedente.find(".//Cognome")
+            if denom is not None and denom.text:
+                supplier_name = denom.text.strip()
+            elif nome is not None and cognome is not None:
+                supplier_name = f"{nome.text or ''} {cognome.text or ''}".strip()
+            piva = cedente.find(".//IdCodice")
+            supplier_vat = piva.text.strip() if piva is not None and piva.text else None
+
+        # 2. Cessionario / Committente (Cliente)
+        client_name = None
+        client_vat = None
+        committente = root.find(".//CessionarioCommittente")
+        if committente is not None:
+            denom = committente.find(".//Denominazione")
+            nome = committente.find(".//Nome")
+            cognome = committente.find(".//Cognome")
+            if denom is not None and denom.text:
+                client_name = denom.text.strip()
+            elif nome is not None and cognome is not None:
+                client_name = f"{nome.text or ''} {cognome.text or ''}".strip()
+            piva = committente.find(".//IdCodice")
+            cf = committente.find(".//CodiceFiscale")
+            client_vat = piva.text.strip() if piva is not None and piva.text else (cf.text.strip() if cf is not None and cf.text else None)
+
+        evidence.append(EvidenceField("supplier_name", supplier_name, source_name, 1, str(supplier_name), 1.0, "VERIFIED" if supplier_name else "NOT_FOUND"))
+        evidence.append(EvidenceField("client_name", client_name, source_name, 1, str(client_name), 1.0, "VERIFIED" if client_name else "NOT_FOUND"))
+        evidence.append(EvidenceField("client_vat", client_vat, source_name, 1, str(client_vat), 1.0, "VERIFIED" if client_vat else "NOT_FOUND"))
+
+        # 3. Dati Generali Documento
+        doc_num = None
+        doc_date = None
+        total_amount = 0.0
+        dati_gen = root.find(".//DatiGeneraliDocumento")
+        if dati_gen is not None:
+            num_elem = dati_gen.find("Numero")
+            doc_num = num_elem.text.strip() if num_elem is not None and num_elem.text else None
+            date_elem = dati_gen.find("Data")
+            doc_date = date_elem.text.strip() if date_elem is not None and date_elem.text else None
+            tot_elem = dati_gen.find("ImportoTotaleDocumento")
+            if tot_elem is not None and tot_elem.text:
+                try:
+                    total_amount = float(tot_elem.text.strip())
+                except ValueError:
+                    total_amount = 0.0
+
+        evidence.append(EvidenceField("invoice_number", doc_num, source_name, 1, str(doc_num), 1.0, "VERIFIED" if doc_num else "NOT_FOUND"))
+        evidence.append(EvidenceField("invoice_date", doc_date, source_name, 1, str(doc_date), 1.0, "VERIFIED" if doc_date else "NOT_FOUND"))
+        evidence.append(EvidenceField("total_amount", total_amount, source_name, 1, str(total_amount), 1.0, "VERIFIED" if total_amount > 0 else "NOT_FOUND"))
+
+        # 4. Righe Dettaglio Beni/Servizi
+        lines = []
+        total_net = 0.0
+        for dett in root.findall(".//DettaglioLinee"):
+            num_l = dett.find("NumeroLinea")
+            desc_l = dett.find("Descrizione")
+            q_l = dett.find("Quantita")
+            pr_u = dett.find("PrezzoUnitario")
+            pr_t = dett.find("PrezzoTotale")
+            iva_l = dett.find("AliquotaIVA")
+
+            desc = desc_l.text.strip() if desc_l is not None and desc_l.text else ""
+            try:
+                qty = float(q_l.text.strip()) if q_l is not None and q_l.text else 1.0
+            except ValueError:
+                qty = 1.0
+            try:
+                unit_p = float(pr_u.text.strip()) if pr_u is not None and pr_u.text else 0.0
+            except ValueError:
+                unit_p = 0.0
+            try:
+                tot_p = float(pr_t.text.strip()) if pr_t is not None and pr_t.text else round(qty * unit_p, 2)
+            except ValueError:
+                tot_p = round(qty * unit_p, 2)
+            try:
+                vat = float(iva_l.text.strip()) if iva_l is not None and iva_l.text else 22.0
+            except ValueError:
+                vat = 22.0
+
+            lines.append({
+                "line_number": int(num_l.text) if num_l is not None and num_l.text and num_l.text.isdigit() else len(lines) + 1,
+                "description": desc,
+                "quantity": qty,
+                "unit_price": unit_p,
+                "total_price": tot_p,
+                "vat_rate": vat
+            })
+            total_net += tot_p
+
+        evidence.append(EvidenceField("invoice_lines", lines, source_name, 1, f"{len(lines)} righe SDI estratte", 1.0, "VERIFIED"))
+        evidence.append(EvidenceField("total_net", round(total_net, 2), source_name, 1, str(round(total_net, 2)), 1.0, "VERIFIED"))
+
+        # 5. Dati Ordine di Acquisto / CIG / CUP
+        po_id = None
+        cig = None
+        cup = None
+        ord_elem = root.find(".//DatiOrdineAcquisto")
+        if ord_elem is not None:
+            id_doc = ord_elem.find("IdDocumento")
+            po_id = id_doc.text.strip() if id_doc is not None and id_doc.text else None
+            cig_el = ord_elem.find("CodiceCIG")
+            cig = cig_el.text.strip() if cig_el is not None and cig_el.text else None
+            cup_el = ord_elem.find("CodiceCUP")
+            cup = cup_el.text.strip() if cup_el is not None and cup_el.text else None
+
+        evidence.append(EvidenceField("po_number", po_id, source_name, 1, str(po_id), 1.0 if po_id else 0.0, "VERIFIED" if po_id else "NOT_FOUND"))
+        if cig:
+            evidence.append(EvidenceField("cig_code", cig, source_name, 1, cig, 1.0, "VERIFIED"))
+        if cup:
+            evidence.append(EvidenceField("cup_code", cup, source_name, 1, cup, 1.0, "VERIFIED"))
+
+        # 6. Dati DDT
+        ddt_numbers = []
+        for ddt_el in root.findall(".//DatiDDT"):
+            id_ddt = ddt_el.find("NumeroDDT")
+            if id_ddt is None:
+                id_ddt = ddt_el.find("IdDocumento")
+            if id_ddt is not None and id_ddt.text:
+                ddt_numbers.append(id_ddt.text.strip())
+        evidence.append(EvidenceField("ddt_references", ddt_numbers, source_name, 1, ", ".join(ddt_numbers) if ddt_numbers else "", 1.0 if ddt_numbers else 0.0, "VERIFIED" if ddt_numbers else "NOT_FOUND"))
+
+        # 7. Pagamento & IBAN
+        iban_elem = root.find(".//IBAN")
+        iban = iban_elem.text.strip() if iban_elem is not None and iban_elem.text else None
+        evidence.append(EvidenceField("iban", iban, source_name, 1, str(iban), 1.0 if iban else 0.0, "VERIFIED" if iban else "NOT_FOUND"))
+
+        return {
+            "document_type": "INVOICE_SDI_XML",
+            "source_file": source_name,
+            "evidence": [e.to_dict() for e in evidence],
+            "parsed_invoice": {
+                "supplier_name": supplier_name,
+                "supplier_vat": supplier_vat,
+                "client_name": client_name,
+                "client_vat": client_vat,
+                "invoice_number": doc_num,
+                "invoice_date": doc_date,
+                "total_net": round(total_net, 2),
+                "total_amount": total_amount,
+                "lines": lines,
+                "po_number": po_id,
+                "cig": cig,
+                "cup": cup,
+                "ddt_numbers": ddt_numbers,
+                "iban": iban
+            }
+        }
+
+class TableContinuityStitcher:
+    """Ricuce tabelle multi-pagina che continuano tra pagine consecutive."""
+
+    @staticmethod
+    def stitch_markdown_tables(tables: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        if not tables or len(tables) <= 1:
+            return tables
+
+        stitched = []
+        idx = 0
+        while idx < len(tables):
+            cur = tables[idx]
+            cur_headers = [h.strip().lower() for h in cur.get("headers", [])]
+            cur_rows = list(cur.get("rows", []))
+
+            next_idx = idx + 1
+            while next_idx < len(tables):
+                nxt = tables[next_idx]
+                nxt_headers = [h.strip().lower() for h in nxt.get("headers", [])]
+                if cur_headers and nxt_headers and len(cur_headers) == len(nxt_headers):
+                    match_count = sum(1 for a, b in zip(cur_headers, nxt_headers) if a == b)
+                    if match_count >= len(cur_headers) * 0.75:
+                        cur_rows.extend(nxt.get("rows", []))
+                        next_idx += 1
+                        continue
+                break
+
+            stitched.append({
+                "headers": cur.get("headers", []),
+                "rows": cur_rows,
+                "stitched_page_count": next_idx - idx
+            })
+            idx = next_idx
+
+        return stitched
+
+class TriangularAuditEngine:
+    """
+    Riconciliazione contabile e logistica a 3 vie (Triangular 3-Way Match):
+    Ordine di Acquisto (PO) vs Documento di Trasporto (DDT) vs Fattura Fornitore (Invoice).
+    """
+
+    @classmethod
+    def audit_triangular(
+        cls,
+        po_data: Dict[str, Any],
+        ddt_data: Dict[str, Any],
+        invoice_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        po_items = po_data.get("items", po_data.get("lines", []))
+        ddt_items = ddt_data.get("items", ddt_data.get("lines", []))
+        inv_items = invoice_data.get("items", invoice_data.get("lines", []))
+
+        def _clean_key(item: Dict[str, Any]) -> str:
+            sku = item.get("part_number", item.get("sku", item.get("code", "")))
+            if sku:
+                return str(sku).strip().upper()
+            desc = item.get("description", "")
+            return re.sub(r"[^A-Za-z0-9]", "", desc).upper()[:25]
+
+        po_map = {_clean_key(it): it for it in po_items if _clean_key(it)}
+        ddt_map = {_clean_key(it): it for it in ddt_items if _clean_key(it)}
+        inv_map = {_clean_key(it): it for it in inv_items if _clean_key(it)}
+
+        all_keys = sorted(set(po_map.keys()) | set(ddt_map.keys()) | set(inv_map.keys()))
+
+        reconciled_lines = []
+        discrepancies = []
+
+        total_po_net = sum(float(it.get("line_total", float(it.get("quantity", 1)) * float(it.get("unit_price", 0)))) for it in po_items)
+        total_inv_net = sum(float(it.get("total_price", it.get("line_total", float(it.get("quantity", 1)) * float(it.get("unit_price", 0))))) for it in inv_items)
+
+        for k in all_keys:
+            po_it = po_map.get(k)
+            ddt_it = ddt_map.get(k)
+            inv_it = inv_map.get(k)
+
+            qty_po = float(po_it.get("quantity", 0.0)) if po_it else 0.0
+            qty_ddt = float(ddt_it.get("quantity", 0.0)) if ddt_it else 0.0
+            qty_inv = float(inv_it.get("quantity", 0.0)) if inv_it else 0.0
+
+            price_po = float(po_it.get("unit_price", po_it.get("unit_cost", 0.0))) if po_it else None
+            price_inv = float(inv_it.get("unit_price", 0.0)) if inv_it else None
+
+            desc = (inv_it or ddt_it or po_it or {}).get("description", k)
+
+            line_entry = {
+                "key": k,
+                "description": desc,
+                "qty_ordered_po": qty_po,
+                "qty_delivered_ddt": qty_ddt,
+                "qty_billed_invoice": qty_inv,
+                "unit_price_po": price_po,
+                "unit_price_invoice": price_inv,
+                "status": "MATCH"
+            }
+
+            if qty_po > 0 and qty_ddt == 0 and qty_inv > 0:
+                line_entry["status"] = "MISSING_DDT"
+                discrepancies.append({
+                    "item": desc,
+                    "type": "MISSING_DDT",
+                    "message": f"Voce '{desc}' fatturata ({qty_inv} pz) ma non risultante da alcun DDT di consegna."
+                })
+            elif qty_inv > qty_ddt and qty_ddt > 0:
+                line_entry["status"] = "QUANTITY_OVERBILLED"
+                discrepancies.append({
+                    "item": desc,
+                    "type": "QUANTITY_OVERBILLED",
+                    "message": f"Quantità fatturata ({qty_inv} pz) superiore alla merce effettivamente consegnata ({qty_ddt} pz)."
+                })
+            elif price_po is not None and price_inv is not None and round(price_inv, 2) > round(price_po, 2):
+                line_entry["status"] = "PRICE_VARIANCE"
+                discrepancies.append({
+                    "item": desc,
+                    "type": "PRICE_VARIANCE",
+                    "message": f"Prezzo unitario fatturato (€ {price_inv:.2f}) superiore al prezzo concordato in ordine (€ {price_po:.2f})."
+                })
+            elif po_it is None and inv_it is not None:
+                line_entry["status"] = "UNORDERED_BILLING"
+                discrepancies.append({
+                    "item": desc,
+                    "type": "UNORDERED_BILLING",
+                    "message": f"Voce '{desc}' fatturata senza corrispondente Ordine di Acquisto (PO)."
+                })
+
+            reconciled_lines.append(line_entry)
+
+        is_conforming = len(discrepancies) == 0
+        return {
+            "is_conforming": is_conforming,
+            "overall_status": "MATCH" if is_conforming else "DISCREPANCY",
+            "total_po_net": round(total_po_net, 2),
+            "total_invoice_net": round(total_inv_net, 2),
+            "variance_net": round(total_inv_net - total_po_net, 2),
+            "lines_analyzed": len(reconciled_lines),
+            "discrepancies_count": len(discrepancies),
+            "discrepancies": discrepancies,
+            "reconciled_lines": reconciled_lines
+        }
+
 class DocumentIngestionPipeline:
     """Pipeline H: Ingestione Documentale Deterministica basata su Evidenze e Zero Allucinazioni."""
 
@@ -624,6 +945,9 @@ class DocumentIngestionPipeline:
         # Se il file e' un singolo artefatto Markdown OKF v0.2
         elif file_path.suffix.lower() == ".md":
             result = OKFDocumentParser.extract(file_path)
+        # Se il file e' un XML SDI Fattura Elettronica
+        elif file_path.suffix.lower() == ".xml":
+            result = SdiXmlExtractor.extract(file_path)
         else:
             with pdfplumber.open(file_path) as pdf:
                 pages = pdf.pages

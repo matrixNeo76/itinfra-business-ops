@@ -1,5 +1,6 @@
 import datetime
 import json
+import re
 import xml.etree.ElementTree as ET
 import yaml
 from pathlib import Path
@@ -259,8 +260,22 @@ class BillingPipeline:
         caddr = cbilling.get("address", {})
         comp = self.config.get("company", {})
 
+        draft = batch.get("invoice_draft") or batch
+        client_obj = batch.get("client") or draft.get("client") or {}
+
+        is_pa = bool(
+            cmanifest.get("is_public_administration") or
+            cbilling.get("is_pa") or
+            batch.get("is_public_administration") or
+            batch.get("is_pa") or
+            client_obj.get("is_public_administration") or
+            client_obj.get("is_pa") or
+            (len(str(client_obj.get("sdi_code", "")).strip()) == 6)
+        )
+
+        versione = "FPA12" if is_pa else "FPR12"
         root = ET.Element("p:FatturaElettronica", {
-            "versione": "FPR12",
+            "versione": versione,
             "xmlns:p": "http://ivaservizi.agenziaentrate.gov.it/docs/xsd/fatture/v1.2",
             "xmlns:ds": "http://www.w3.org/2000/09/xmldsig#"
         })
@@ -274,10 +289,17 @@ class BillingPipeline:
         ET.SubElement(id_trasm, "IdPaese").text = "IT"
         ET.SubElement(id_trasm, "IdCodice").text = comp.get("fiscal_code", "01234567890")
         ET.SubElement(dati_trasm, "ProgressivoInvio").text = batch.get("batch_id", "00001")[-10:]
-        ET.SubElement(dati_trasm, "FormatoTrasmissione").text = "FPR12"
-        ET.SubElement(dati_trasm, "CodiceDestinatario").text = cbilling.get("sdi_code", "0000000")
-        if cbilling.get("pec"):
-            ET.SubElement(dati_trasm, "PECDestinatario").text = cbilling.get("pec")
+
+        sdi_code = client_obj.get("sdi_code") or cbilling.get("sdi_code") or cbilling.get("ipa_code") or ("000000" if is_pa else "0000000")
+        if is_pa:
+            ET.SubElement(dati_trasm, "FormatoTrasmissione").text = "FPA12"
+            ET.SubElement(dati_trasm, "CodiceDestinatario").text = str(sdi_code).strip().upper()[:6]
+        else:
+            ET.SubElement(dati_trasm, "FormatoTrasmissione").text = "FPR12"
+            ET.SubElement(dati_trasm, "CodiceDestinatario").text = str(sdi_code).strip().upper()[:7]
+
+        if cbilling.get("pec") or client_obj.get("pec"):
+            ET.SubElement(dati_trasm, "PECDestinatario").text = cbilling.get("pec") or client_obj.get("pec")
 
         # Cedente / Prestatore (Fornitore)
         cedente = ET.SubElement(header, "CedentePrestatore")
@@ -298,33 +320,69 @@ class BillingPipeline:
         # Cessionario / Committente (Cliente)
         cessionario = ET.SubElement(header, "CessionarioCommittente")
         dati_anag_cess = ET.SubElement(cessionario, "DatiAnagrafici")
-        vat_raw = cbilling.get("vat_id", "00000000000").replace("IT", "")
+        vat_raw = str(client_obj.get("vat_id") or cbilling.get("vat_id", "00000000000")).replace("IT", "")
         id_fisc_cess = ET.SubElement(dati_anag_cess, "IdFiscaleIVA")
         ET.SubElement(id_fisc_cess, "IdPaese").text = "IT"
         ET.SubElement(id_fisc_cess, "IdCodice").text = vat_raw
-        if cbilling.get("fiscal_code"):
-            ET.SubElement(dati_anag_cess, "CodiceFiscale").text = cbilling.get("fiscal_code")
+        fisc_code = client_obj.get("fiscal_code") or cbilling.get("fiscal_code")
+        if fisc_code:
+            ET.SubElement(dati_anag_cess, "CodiceFiscale").text = str(fisc_code)
         anag_cess = ET.SubElement(dati_anag_cess, "Anagrafica")
-        ET.SubElement(anag_cess, "Denominazione").text = cmanifest.get("client_name", slug)
+        ET.SubElement(anag_cess, "Denominazione").text = client_obj.get("name") or cmanifest.get("client_name", slug)
         sede_cess = ET.SubElement(cessionario, "Sede")
-        ET.SubElement(sede_cess, "Indirizzo").text = caddr.get("street", "Via Cliente, 1")
-        ET.SubElement(sede_cess, "CAP").text = caddr.get("zip", "00100")
-        ET.SubElement(sede_cess, "Comune").text = caddr.get("city", "Roma")
-        ET.SubElement(sede_cess, "Provincia").text = caddr.get("province", "RM")
-        ET.SubElement(sede_cess, "Nazione").text = "IT"
+        ET.SubElement(sede_cess, "Indirizzo").text = client_obj.get("address") or caddr.get("street", "Via Cliente, 1")
+        ET.SubElement(sede_cess, "CAP").text = client_obj.get("zip") or caddr.get("zip", "00100")
+        ET.SubElement(sede_cess, "Comune").text = client_obj.get("city") or caddr.get("city", "Roma")
+        ET.SubElement(sede_cess, "Provincia").text = client_obj.get("province") or caddr.get("province", "RM")
+        ET.SubElement(sede_cess, "Nazione").text = client_obj.get("country") or caddr.get("country", "IT")
 
         # Supporto sia batch completo che dizionario fattura diretto
-        draft = batch.get("invoice_draft") or batch
         raw_lines = draft.get("lines", [])
 
         # --- BODY ---
         body = ET.SubElement(root, "FatturaElettronicaBody")
-        dati_gen = ET.SubElement(body, "DatiGenerali")        # Dati Documento
+        dati_gen = ET.SubElement(body, "DatiGenerali")
         dati_doc = ET.SubElement(dati_gen, "DatiGeneraliDocumento")
         ET.SubElement(dati_doc, "TipoDocumento").text = "TD01"
         ET.SubElement(dati_doc, "Divisa").text = comp.get("currency", "EUR")
         ET.SubElement(dati_doc, "Data").text = draft.get("invoice_date", "")
         ET.SubElement(dati_doc, "Numero").text = draft.get("invoice_number", "DRAFT-01")
+
+        # Ritenuta d'Acconto (se presente)
+        withholding = draft.get("withholding_tax") or cbilling.get("withholding_tax")
+        if withholding and isinstance(withholding, dict):
+            w_tax = ET.SubElement(dati_doc, "DatiRitenuta")
+            ET.SubElement(w_tax, "TipoRitenuta").text = withholding.get("type", "RT02")
+            ET.SubElement(w_tax, "ImportoRitenuta").text = f"{float(withholding.get('amount', 0.0)):.2f}"
+            rate = withholding.get("rate_percent") if withholding.get("rate_percent") is not None else withholding.get("percentage", 20.0)
+            ET.SubElement(w_tax, "AliquotaRitenuta").text = f"{float(rate):.2f}"
+            ET.SubElement(w_tax, "CausalePagamento").text = withholding.get("causale") or withholding.get("reason", "A")
+
+        # Cassa Previdenziale (se presente)
+        pension = draft.get("pension_fund") or cbilling.get("pension_fund")
+        if pension and isinstance(pension, dict):
+            p_fund = ET.SubElement(dati_doc, "DatiCassaPrevidenziale")
+            ET.SubElement(p_fund, "TipoCassa").text = pension.get("type", "TC22")
+            rate = pension.get("rate_percent") if pension.get("rate_percent") is not None else pension.get("percentage", 4.0)
+            ET.SubElement(p_fund, "AlCassa").text = f"{float(rate):.2f}"
+            ET.SubElement(p_fund, "ImportoContributoCassa").text = f"{float(pension.get('amount', 0.0)):.2f}"
+            ET.SubElement(p_fund, "ImponibileCassa").text = f"{float(pension.get('taxable_base', 0.0)):.2f}"
+            ET.SubElement(p_fund, "AliquotaIVA").text = f"{float(pension.get('vat_rate', 22.0)):.2f}"
+            ET.SubElement(p_fund, "Ritenuta").text = "SI" if pension.get("withholding") else "NO"
+
+        # Dati Ordine / CIG & CUP (Obbligatori per PA)
+        po = draft.get("purchase_order") or batch.get("purchase_order") or {}
+        cig = draft.get("cig") or cbilling.get("cig") or batch.get("cig") or po.get("cig")
+        cup = draft.get("cup") or cbilling.get("cup") or batch.get("cup") or po.get("cup")
+        order_ref = draft.get("order_reference") or cbilling.get("order_reference") or batch.get("order_reference") or po.get("po_number")
+        if is_pa or cig or cup or order_ref:
+            dati_ord = ET.SubElement(dati_gen, "DatiOrdineAcquisto")
+            ET.SubElement(dati_ord, "RiferimentoNumeroLinea").text = "1"
+            ET.SubElement(dati_ord, "IdDocumento").text = str(order_ref or f"ORD-{draft.get('invoice_number', '01')}")
+            if cig:
+                ET.SubElement(dati_ord, "CodiceCIG").text = str(cig).strip().upper()
+            if cup:
+                ET.SubElement(dati_ord, "CodiceCUP").text = str(cup).strip().upper()
 
         # Calcolo totali e bollo
         tot_gross = draft.get("totals", {}).get("total_gross")
@@ -801,6 +859,203 @@ class BillingPipeline:
             "recommended_action": action,
             "overdue_count": len(overdue_installments),
             "overdue_installments": overdue_installments
+        }
+
+    def create_invoice(
+        self,
+        slug: str,
+        items: List[Dict[str, Any]],
+        payment_terms: str = "bonifico_30gg",
+        sdi_code: str = "0000000",
+        invoice_number: Optional[str] = None
+    ) -> Path:
+        """Crea e salva un file fattura YAML per il cliente."""
+        idir = self.clients_root / slug / "invoices"
+        idir.mkdir(parents=True, exist_ok=True)
+        today = datetime.date.today()
+        if not invoice_number:
+            existing = list(idir.glob("fat-*.yaml"))
+            seq = len(existing) + 1
+            invoice_number = f"FAT-{today.year}-{seq:04d}"
+
+        subtotal = sum(float(it.get("total", it.get("quantity", 1) * it.get("unit_price", 0.0))) for it in items)
+        vat_rate = 22.0
+        vat_amount = round(subtotal * (vat_rate / 100.0), 2)
+        total_gross = round(subtotal + vat_amount, 2)
+
+        inv_data = {
+            "invoice_number": invoice_number,
+            "invoice_date": today.isoformat(),
+            "slug": slug,
+            "status": "unpaid",
+            "payment_terms": payment_terms,
+            "sdi_code": sdi_code,
+            "lines": items,
+            "totals": {
+                "subtotal_net": subtotal,
+                "vat_amount": vat_amount,
+                "total_gross": total_gross
+            }
+        }
+        inv_file = idir / f"{invoice_number.lower()}.yaml"
+        with open(inv_file, "w", encoding="utf-8") as fp:
+            yaml.safe_dump(inv_data, fp, sort_keys=False, allow_unicode=True)
+        return inv_file
+
+    def reconcile_bank_statement(self, camt_xml_content_or_path: Any, auto_mark_paid: bool = True) -> Dict[str, Any]:
+        """
+        Riconcilia automaticamente i movimenti bancari da tracciato standard ISO 20022 CAMT.053.
+        Interpreta gli accrediti (CRDT), estrae la causale libera (<RmtInf><Ustrd>) ed esegue il matching
+        con le fatture aperte, aggiornando deterministicamente lo scadenzario con data incasso e ID transazione.
+        """
+        if isinstance(camt_xml_content_or_path, Path) or (isinstance(camt_xml_content_or_path, str) and ("\n" not in camt_xml_content_or_path and Path(camt_xml_content_or_path).is_file())):
+            raw_xml = Path(camt_xml_content_or_path).read_text(encoding="utf-8")
+        else:
+            raw_xml = str(camt_xml_content_or_path)
+
+        # Rimuove namespace per parsing agnostico e resiliente
+        clean_xml = re.sub(r'\sxmlns(:\w+)?="[^"]+"', '', raw_xml)
+        root = ET.fromstring(clean_xml)
+
+        matched = []
+        unmatched = []
+        total_reconciled = 0.0
+
+        # Trova tutte le voci movimento Ntry
+        for ntry in root.findall(".//Ntry"):
+            amt_elem = ntry.find("Amt")
+            amt = float(amt_elem.text) if amt_elem is not None and amt_elem.text else 0.0
+            cdt_dbt = ntry.findtext("CdtDbtInd", "CRDT").strip().upper()
+
+            # Riconciliamo solo entrate (CRDT)
+            if cdt_dbt != "CRDT":
+                continue
+
+            dt_elem = ntry.find(".//BookgDt/Dt")
+            if dt_elem is None:
+                dt_elem = ntry.find(".//ValDt/Dt")
+            tx_date = dt_elem.text.strip() if dt_elem is not None and dt_elem.text else datetime.date.today().isoformat()
+
+            ustrd_elem = ntry.find(".//RmtInf/Ustrd")
+            remittance = ustrd_elem.text.strip() if ustrd_elem is not None and ustrd_elem.text else ""
+
+            dbtr_elem = ntry.find(".//Dbtr/Nm")
+            debtor_name = dbtr_elem.text.strip() if dbtr_elem is not None and dbtr_elem.text else ""
+
+            tx_id_elem = ntry.find(".//AcctSvcrRef")
+            if tx_id_elem is None:
+                tx_id_elem = ntry.find(".//EndToEndId")
+            tx_id = tx_id_elem.text.strip() if tx_id_elem is not None and tx_id_elem.text else f"TX-CAMT-{int(datetime.datetime.now().timestamp())}"
+
+            # Ricerca fattura/batch associato
+            found_match = False
+            for client_dir in self.clients_root.iterdir():
+                if not client_dir.is_dir():
+                    continue
+                c_slug = client_dir.name
+                idir = client_dir / "invoices"
+                if not idir.is_dir():
+                    continue
+
+                # 1. Controlla file JSON batch fatturazione
+                for jf in idir.glob("*.json"):
+                    try:
+                        with open(jf, "r", encoding="utf-8") as fp:
+                            batch = json.load(fp)
+                        bid = batch.get("batch_id", "")
+                        inv_num = batch.get("invoice_draft", {}).get("invoice_number", "")
+                        
+                        # Match per numero fattura, batch_id o slug presente nella causale
+                        matches_ref = (inv_num and inv_num.lower() in remittance.lower()) or \
+                                      (bid and bid.lower() in remittance.lower()) or \
+                                      (c_slug in remittance.lower())
+
+                        if matches_ref:
+                            # Controlla importo rata
+                            scad = batch.get("scadenzario", {})
+                            for inst in scad.get("installments", []):
+                                if inst.get("status") != "paid":
+                                    inst_amt = float(inst.get("amount", 0.0))
+                                    # Tolleranza centesimi
+                                    if abs(inst_amt - amt) < 0.05 or abs(float(batch.get("invoice_draft", {}).get("totals", {}).get("total_gross", 0.0)) - amt) < 0.05:
+                                        if auto_mark_paid:
+                                            self.mark_installment_paid(
+                                                slug=c_slug,
+                                                batch_id=bid,
+                                                installment_num=inst.get("number", 1),
+                                                tx_id=tx_id
+                                            )
+                                        matched.append({
+                                            "slug": c_slug,
+                                            "batch_id": bid,
+                                            "invoice_number": inv_num,
+                                            "installment_number": inst.get("number", 1),
+                                            "amount": amt,
+                                            "tx_id": tx_id,
+                                            "date": tx_date,
+                                            "debtor_name": debtor_name,
+                                            "remittance": remittance
+                                        })
+                                        total_reconciled += amt
+                                        found_match = True
+                                        break
+                        if found_match:
+                            break
+                    except Exception:
+                        pass
+                if found_match:
+                    break
+
+                # 2. Controlla file YAML singole fatture
+                for yf in idir.glob("*.yaml"):
+                    try:
+                        with open(yf, "r", encoding="utf-8") as fp:
+                            inv_data = yaml.safe_load(fp) or {}
+                        inv_num = inv_data.get("invoice_number", "")
+                        if inv_num and inv_num.lower() in remittance.lower():
+                            if inv_data.get("status") != "paid":
+                                if auto_mark_paid:
+                                    inv_data["status"] = "paid"
+                                    inv_data["payment_date"] = tx_date
+                                    inv_data["payment_reference"] = f"CAMT053-RECONCILED-{tx_id}"
+                                    with open(yf, "w", encoding="utf-8") as fp:
+                                        yaml.safe_dump(inv_data, fp, sort_keys=False, allow_unicode=True)
+                                matched.append({
+                                    "slug": c_slug,
+                                    "invoice_number": inv_num,
+                                    "amount": amt,
+                                    "tx_id": tx_id,
+                                    "date": tx_date,
+                                    "debtor_name": debtor_name,
+                                    "remittance": remittance
+                                })
+                                total_reconciled += amt
+                                found_match = True
+                                break
+                    except Exception:
+                        pass
+                if found_match:
+                    break
+
+            if not found_match:
+                unmatched.append({
+                    "amount": amt,
+                    "date": tx_date,
+                    "debtor_name": debtor_name,
+                    "remittance": remittance,
+                    "tx_id": tx_id
+                })
+
+        return {
+            "status": "success",
+            "total_entries": len(matched) + len(unmatched),
+            "matched_entries_count": len(matched),
+            "unmatched_entries_count": len(unmatched),
+            "reconciled_count": len(matched),
+            "reconciled_invoices": matched,
+            "total_reconciled_amount": round(total_reconciled, 2),
+            "matched": matched,
+            "unmatched": unmatched
         }
 
     @staticmethod
