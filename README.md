@@ -3,6 +3,8 @@
 > **Hub Operativo, Finanziario, Contrattualistica PSA e Commesse**  
 > Progettato secondo il paradigma **Hub-and-Spoke** basato su **Shared Customer Slug (`<slug>`)**, in perfetta sinergia con il repository tecnico [`itinfra`](https://github.com/matrixNeo76/itinfra).
 
+> 📖 **Sei un utente o un nuovo collaboratore?** Consulta la **[Guida Globale Utente dell'Ecosistema](docs/GUIDA-UTENTE-ECOSISTEMA-COMPLETO.okf.md)** per scoprire tutte le funzionalità, scenari d'uso e risposte rapide in italiano semplice.
+
 ---
 
 ## 🎯 Visione Architetturale: Hub-and-Spoke & SoC

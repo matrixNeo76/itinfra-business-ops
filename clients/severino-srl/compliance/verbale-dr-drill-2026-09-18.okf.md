@@ -4,7 +4,7 @@ id: "CERT-DR-severino-srl-2026-09-18"
 title: "Verbale Ufficiale Esercitazione Disaster Recovery — severino-srl"
 type: "report"
 domain: "Business Continuity & GDPR Art. 32"
-generated.at: "2026-09-18T22:50:00.229647"
+generated.at: "2026-09-18T22:53:40.514276"
 tags:
   - "disaster-recovery"
   - "gdpr-art32"
