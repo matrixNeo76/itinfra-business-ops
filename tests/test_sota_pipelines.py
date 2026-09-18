@@ -303,6 +303,11 @@ class TestSotaPipelines(unittest.TestCase):
         # Pulizia del file generato dal test
         if draft_file.exists():
             draft_file.unlink()
+        reg = self.memory._load_registry()
+        nid = meta.get("id", "")
+        if nid in reg.get("nodes", {}):
+            del reg["nodes"][nid]
+            self.memory._save_registry(reg)
 
         # Audit del grafo di memoria
         audit_rep = self.memory.audit_memory()
