@@ -289,31 +289,31 @@ class TestSotaPipelines(unittest.TestCase):
 
     def test_10_memory_engine_record_incident_and_audit(self):
         """Verifica cattura autonoma incidenti e monitoraggio nodi stale o in scadenza."""
-        draft_file = self.memory.record_incident_as_draft(
-            context="Esecuzione script calcolo canoni",
-            error_message="KeyError: 'semestral_base_fee' in mps.py",
-            root_cause="File YAML privo di parametri tariffari minimi",
-            suggested_guardrail="Verificare sempre presenza della chiave semestral_base_fee con fallback a 0.0"
-        )
-        self.assertTrue(draft_file.exists())
-        meta, body = self.memory.parse_okf_file(draft_file)
-        self.assertEqual(meta["trust"]["tier"], "generated")
-        self.assertIn("KeyError", meta["incident"]["observed_failure"])
+        orig_reg = self.memory.registry_file.read_text(encoding="utf-8") if self.memory.registry_file.exists() else None
+        try:
+            draft_file = self.memory.record_incident_as_draft(
+                context="Esecuzione script calcolo canoni",
+                error_message="KeyError: 'semestral_base_fee' in mps.py",
+                root_cause="File YAML privo di parametri tariffari minimi",
+                suggested_guardrail="Verificare sempre presenza della chiave semestral_base_fee con fallback a 0.0"
+            )
+            self.assertTrue(draft_file.exists())
+            meta, body = self.memory.parse_okf_file(draft_file)
+            self.assertEqual(meta["trust"]["tier"], "generated")
+            self.assertIn("KeyError", meta["incident"]["observed_failure"])
 
-        # Pulizia del file generato dal test
-        if draft_file.exists():
-            draft_file.unlink()
-        reg = self.memory._load_registry()
-        nid = meta.get("id", "")
-        if nid in reg.get("nodes", {}):
-            del reg["nodes"][nid]
-            self.memory._save_registry(reg)
+            # Pulizia del file generato dal test
+            if draft_file.exists():
+                draft_file.unlink()
 
-        # Audit del grafo di memoria
-        audit_rep = self.memory.audit_memory()
-        self.assertIn("total_nodes", audit_rep)
-        self.assertIn("expiring_soon_nodes", audit_rep)
-        self.assertIn(audit_rep["status"], ["PASS", "WARNING"])
+            # Audit del grafo di memoria
+            audit_rep = self.memory.audit_memory()
+            self.assertIn("total_nodes", audit_rep)
+            self.assertIn("expiring_soon_nodes", audit_rep)
+            self.assertIn(audit_rep["status"], ["PASS", "WARNING"])
+        finally:
+            if orig_reg is not None:
+                self.memory.registry_file.write_text(orig_reg, encoding="utf-8")
 
     def test_11_jira_outbox_queue_and_conflict_detection(self):
         """Verifica accodamento outbox offline e rilevamento sovrapposizioni d'agenda."""
