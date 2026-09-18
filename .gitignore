@@ -22,6 +22,8 @@ credentials.json
 *.db
 tmp/
 temp/
+.agents/events.jsonl
+.agents/pending_actions.json
 
 # OS generated files
 Thumbs.db

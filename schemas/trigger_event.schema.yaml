@@ -1,0 +1,48 @@
+$schema: "http://json-schema.org/draft-07/schema#"
+title: "Trigger Event Schema (SPEC-22)"
+description: "Schema per eventi del Trigger Engine e azioni del Safe Action Gate"
+type: object
+required:
+  - event_id
+  - event_type
+  - slug
+  - timestamp
+  - source
+  - status
+properties:
+  event_id:
+    type: string
+  event_type:
+    type: string
+  slug:
+    type: string
+  timestamp:
+    type: string
+  source:
+    type: string
+  payload:
+    type: object
+  action_proposed:
+    type: ["object", "null"]
+    properties:
+      action_id:
+        type: string
+      action_type:
+        type: string
+      title:
+        type: string
+      description:
+        type: string
+      requires_approval:
+        type: boolean
+      workflow_to_run:
+        type: ["string", "null"]
+      target_params:
+        type: object
+  status:
+    type: string
+    enum: ["EMITTED", "PENDING_APPROVAL", "APPROVED", "REJECTED", "EXECUTED", "FAILED"]
+  resolved_at:
+    type: ["string", "null"]
+  resolved_by:
+    type: ["string", "null"]

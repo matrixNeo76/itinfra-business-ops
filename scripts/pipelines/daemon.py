@@ -25,6 +25,7 @@ ROOT_DIR = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(ROOT_DIR))
 
 from scripts.core.config import get_clients_dir
+from scripts.core.trigger_engine import TriggerEngine
 
 
 class MPSDaemon:
@@ -106,6 +107,20 @@ class MPSDaemon:
                                 })
                 except Exception:
                     pass
+
+        # Emissione Trigger Events (SPEC-22)
+        try:
+            te = TriggerEngine(clients_root=self.clients_root)
+            for a in alerts:
+                te.emit_event(
+                    event_type="telemetry.mps.consumable_low",
+                    slug=a["slug"],
+                    source="daemon:mps",
+                    payload={"model": a["printer"], "toner_info": ", ".join(a["low_supplies"]), "serial": a.get("serial")},
+                    auto_evaluate=True,
+                )
+        except Exception:
+            pass
 
         return {
             "timestamp": datetime.datetime.now().isoformat(),
@@ -191,6 +206,21 @@ class SLADaemon:
                             pass
                 except Exception:
                     pass
+
+        # Emissione Trigger Events (SPEC-22)
+        try:
+            te = TriggerEngine(clients_root=self.clients_root)
+            for a in alerts:
+                if a.get("type") == "HOURS_DEPLETION":
+                    te.emit_event(
+                        event_type="telemetry.sla.hours_low",
+                        slug=a["slug"],
+                        source="daemon:sla",
+                        payload={"contract_id": a.get("contract_id"), "message": a.get("message")},
+                        auto_evaluate=True,
+                    )
+        except Exception:
+            pass
 
         return {
             "timestamp": datetime.datetime.now().isoformat(),

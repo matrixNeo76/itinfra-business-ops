@@ -37,6 +37,8 @@ Questo è l'ambiente di lavoro per la gestione operativa, commerciale, fatturazi
 | **Demoni di Monitoraggio Proattivo** | `daemon [mps\|sla]` | `.\it-ops.cmd daemon [mps\|sla] [--once]` |
 | **Git Guard Hooks Deterministici** | `hooks [install\|check]` | `.\it-ops.cmd hooks [install\|check] [--both]` |
 | **Gestore Skills (Catalogo 300+)** | `skills [search\|list\|info\|install]` | `.\it-ops.cmd skills [search\|list\|info\|install]` |
+| **Orchestrazione Workflows (SPEC-21)** | `workflow <name> <slug>` *(o `wf`)* | `.\it-ops.cmd workflow [run\|list\|status] <name> <slug>` |
+| **Trigger Proattivi & Gate (SPEC-22)** | `triggers [pending\|scan\|approve]` *(o `tr`)* | `.\it-ops.cmd triggers [pending\|scan\|approve\|reject]` |
 
 ---
 

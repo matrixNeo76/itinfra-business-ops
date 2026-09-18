@@ -124,6 +124,14 @@ La suite include il wrapper Windows [`it-ops.cmd`](file:///c:/Users/auresystem/r
 .\it-ops.cmd workflow status <workflow_id>
 .\it-ops.cmd workflow resume <workflow_id>
 
+# Sistema Proattivo Trigger & Safe Action Gate (SPEC-22)
+.\it-ops.cmd triggers list
+.\it-ops.cmd triggers scan [--slug <slug>]
+.\it-ops.cmd triggers pending
+.\it-ops.cmd triggers events [--slug <slug>]
+.\it-ops.cmd triggers approve <action_id>
+.\it-ops.cmd triggers reject <action_id> [--reason "..."]
+
 # Commesse Arredo Ufficio
 .\it-ops.cmd furniture <slug> status
 

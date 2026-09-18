@@ -31,6 +31,7 @@ sys.path.insert(0, str(ROOT_DIR))
 from scripts.core.config import get_clients_dir, get_itinfra_dir
 from scripts.core.bridge import ITInfraBridge
 from scripts.core.workflow_engine import WorkflowEngine
+from scripts.core.trigger_engine import TriggerEngine
 
 
 class MissionControlPipeline:
@@ -281,10 +282,14 @@ class MissionControlPipeline:
         wf_engine = WorkflowEngine(repo_root=ROOT_DIR, clients_root=self.clients_root)
         recent_workflows = wf_engine.list_workflows(limit=5)
 
+        trigger_engine = TriggerEngine(repo_root=ROOT_DIR, clients_root=self.clients_root)
+        pending_actions = trigger_engine.list_pending_actions()
+
         return {
             "generated_at": datetime.datetime.now().isoformat(),
             "total_clients": len(clients_data),
             "recent_workflows": recent_workflows,
+            "pending_actions": pending_actions,
             "global_kpis": {
                 "total_sla_hours_available": round(total_sla_hours_available, 1),
                 "total_sla_hours_consumed": round(total_sla_hours_consumed, 1),
@@ -340,6 +345,19 @@ class MissionControlPipeline:
             br_str = c["bridge_status"]
 
             lines.append(f"{c['slug']:<20} | {sla_str:<12} | {cred_str:<10} | {mps_str:<8} | {comp_str:<6} | {br_str:<10}")
+
+        # Sezione Azioni Pendenti Action Gate (SPEC-22)
+        pa = data.get("pending_actions", [])
+        if pa:
+            lines.append(f"  🔔 AZIONI IN ATTESA DI APPROVAZIONE (SAFE ACTION GATE — {len(pa)} PENDENTI)")
+            lines.append("-" * 80)
+            for a in pa:
+                aid = a.get("action_id", "")
+                aslug = a.get("slug", "")
+                atitle = a.get("title", "")
+                lines.append(f"  [!] {aid:<30} | {aslug:<15} | {atitle}")
+            lines.append("  Approva con: .\\it-ops.cmd triggers approve <action_id>")
+            lines.append("=" * 80)
 
         # Sezione Workflows Recenti (SPEC-21)
         rw = data.get("recent_workflows", [])

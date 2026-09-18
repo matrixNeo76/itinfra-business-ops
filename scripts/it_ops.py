@@ -39,8 +39,102 @@ from scripts.core.swarm import Auditor231Agent, FinanceReconcilerAgent, Infrastr
 from scripts.pipelines.quote_simulator import QuoteSimulatorPipeline
 from scripts.pipelines.daemon import MPSDaemon, SLADaemon
 from scripts.core.workflow_engine import WorkflowEngine
+from scripts.core.trigger_engine import TriggerEngine
 from scripts.pipelines.workflow_definitions import WorkflowRegistry
 
+
+
+def cmd_triggers(args):
+    action = args.action
+    te = TriggerEngine(repo_root=ROOT_DIR, clients_root=get_clients_dir())
+
+    if action == "list":
+        print("=" * 75)
+        print("  ⚡ REGOLE & TRIGGER OPERATIVI CONFIGURATI (SPEC-22)")
+        print("=" * 75)
+        print("SORGENTI & EVENTI:")
+        print("  • telemetry.mps.consumable_low  -> Riordino consumabile OEM (Gate: APPROVAL)")
+        print("  • telemetry.sla.hours_low       -> Proposta espansione monte ore (Gate: APPROVAL)")
+        print("  • itinfra.asbuilt.changed       -> Riconciliazione SLA apparati (Gate: APPROVAL)")
+        print("  • documents.incoming.dropped    -> Ingestione visiva SOTA (Gate: AUTO)")
+        print("  • temporal.billing.preflight    -> Pre-Flight chiusura mensile (Gate: AUTO)")
+        print("=" * 75)
+        return 0
+
+    elif action == "events":
+        limit = args.limit or 20
+        events = te.list_events(slug=args.slug, limit=limit)
+        print("=" * 75)
+        print(f"  📜 STORICO EVENTI TRIGGER (Ultime {len(events)} registrazioni)")
+        print("=" * 75)
+        if not events:
+            print("  (Nessun evento registrato nel log immutabile)")
+        else:
+            for e in events:
+                badge = "[✓]" if e.get("status") in ["EXECUTED", "APPROVED"] else "[!]" if e.get("status") == "PENDING_APPROVAL" else "[~]"
+                print(f"  {badge} {e.get('event_id'):<32} | {e.get('event_type'):<25} | {e.get('slug'):<12} | {e.get('status')}")
+        print("=" * 75)
+        return 0
+
+    elif action == "pending":
+        pending = te.list_pending_actions(slug=args.slug)
+        print("=" * 75)
+        print(f"  🔔 AZIONI IN ATTESA DI APPROVAZIONE ({len(pending)} PENDENTI)")
+        print("=" * 75)
+        if not pending:
+            print("  (Nessuna azione in attesa di approvazione. Sistema a regime.)")
+        else:
+            for a in pending:
+                print(f"  [!] ID       : {a.get('action_id')}")
+                print(f"      Cliente  : {a.get('slug')}")
+                print(f"      Titolo   : {a.get('title')}")
+                print(f"      Dettaglio: {a.get('description')}")
+                print(f"      Workflow : {a.get('workflow_to_run') or 'N/A'}")
+                print("-" * 75)
+            print("  Per approvare: .\\it-ops.cmd triggers approve <action_id>")
+            print("  Per rifiutare: .\\it-ops.cmd triggers reject <action_id> [--reason \"...\"]")
+        print("=" * 75)
+        return 0
+
+    elif action == "scan":
+        print(f"[*] Avvio scansione proattiva delle sorgenti (Target: {args.slug or 'tutti i clienti'})...")
+        emitted = te.scan_sources(slug=args.slug)
+        print(f"[+] Scansione completata. Rilevati ed emessi {len(emitted)} eventi.")
+        for e in emitted:
+            prop = e.get("action_proposed")
+            if prop:
+                print(f"  [!] Generata proposta: {prop.get('action_id')} -> {prop.get('title')}")
+        return 0
+
+    elif action == "approve":
+        aid = args.action_id
+        if not aid:
+            print("[!] Specificare l'ID dell'azione da approvare (es. it-ops triggers approve ACT-...)")
+            return 1
+        try:
+            res = te.approve_action(aid, approved_by=args.by or "human:possumato")
+            print(f"[✓] Azione {aid} APPROVATA ed eseguita con successo!")
+            if res.get("workflow_result"):
+                print(f"    Esito Workflow collegato: {res['workflow_result'].get('status')}")
+            return 0
+        except Exception as ex:
+            print(f"[!] Errore durante l'approvazione: {ex}")
+            return 1
+
+    elif action == "reject":
+        aid = args.action_id
+        if not aid:
+            print("[!] Specificare l'ID dell'azione da rifiutare (es. it-ops triggers reject ACT-...)")
+            return 1
+        try:
+            res = te.reject_action(aid, reason=args.reason or "", rejected_by=args.by or "human:possumato")
+            print(f"[✓] Azione {aid} RIFIUTATA ed archiviata.")
+            return 0
+        except Exception as ex:
+            print(f"[!] Errore durante il rifiuto: {ex}")
+            return 1
+
+    return 0
 
 def cmd_workflow(args):
     action = args.action
@@ -1385,6 +1479,16 @@ def main():
     p_wf.add_argument("--dry-run", action="store_true", help="Simulazione esecuzione senza scritture su disco")
     p_wf.add_argument("--resume", action="store_true", help="Riprendi dagli step non completati")
     p_wf.set_defaults(func=cmd_workflow)
+
+    # triggers (SPEC-22)
+    p_trig = subparsers.add_parser("triggers", aliases=["tr"], help="Sistema Proattivo Trigger & Safe Action Gate (SPEC-22)")
+    p_trig.add_argument("action", nargs="?", default="pending", choices=["list", "events", "pending", "scan", "approve", "reject"], help="Azione trigger")
+    p_trig.add_argument("action_id", nargs="?", help="ID dell'azione per approve o reject")
+    p_trig.add_argument("--slug", help="Slug cliente target (o all)")
+    p_trig.add_argument("--limit", type=int, default=20, help="Limite eventi da visualizzare (default: 20)")
+    p_trig.add_argument("--reason", help="Motivazione del rifiuto (per reject)")
+    p_trig.add_argument("--by", default="human:possumato", help="Operatore autorizzatore (default: human:possumato)")
+    p_trig.set_defaults(func=cmd_triggers)
 
     args = parser.parse_args()
     if not args.subcommand:
