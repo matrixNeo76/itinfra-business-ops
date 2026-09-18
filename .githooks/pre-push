@@ -1,0 +1,2 @@
+#!/usr/bin/env sh
+python scripts/hooks/git_guard.py pre-push

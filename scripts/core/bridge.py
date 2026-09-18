@@ -93,7 +93,7 @@ class ITInfraBridge:
                         if clean_v.startswith("<") and clean_v.endswith(">"):
                             continue
                         if "serial" in k or "service tag" in k:
-                            serial_val = clean_v
+                            serial_val = clean_v.split("/")[0].strip()
                         elif "hostname" in k or "host" in k:
                             host_val = clean_v
                         elif "modello" in k or "model" in k:

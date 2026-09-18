@@ -33,6 +33,11 @@ from scripts.pipelines.quotes import QuotesPipeline
 from scripts.pipelines.mps import MPSPipeline
 from scripts.pipelines.furniture import FurniturePipeline
 from scripts.pipelines.ingestion import DocumentIngestionPipeline
+from scripts.pipelines.onboard import OnboardPipeline
+from scripts.pipelines.mission_control import MissionControlPipeline
+from scripts.core.swarm import Auditor231Agent, FinanceReconcilerAgent, InfrastructureSentinelAgent, ContractGuardianAgent, DeterministicSwarm
+from scripts.pipelines.quote_simulator import QuoteSimulatorPipeline
+from scripts.pipelines.daemon import MPSDaemon, SLADaemon
 
 def cmd_init(args):
     slug = args.slug.strip().lower()
@@ -508,6 +513,13 @@ def cmd_quote(args):
         print("=" * 70)
         return 0
 
+    if action == "ui":
+        qsp = QuoteSimulatorPipeline()
+        out_path = Path("clients") / slug / "quotes" / f"simulator-{slug}.html"
+        qsp.generate_interactive_simulator(slug, quote_id=getattr(args, "id", None), output_path=out_path)
+        print(f"[✓] Simulatore di preventivo interattivo generato: {out_path}")
+        return 0
+
     if action == "export":
         if not args.id:
             print("[ERRORE] Specificare --id del preventivo da esportare")
@@ -814,6 +826,145 @@ def cmd_gap(args):
         print(f"[ERRORE] Azione '{action}' non riconosciuta per gap.")
         return 1
 
+
+def cmd_onboard(args):
+    slug = args.slug.strip().lower()
+    client_name = args.client or slug.replace("-", " ").title()
+    vat_id = getattr(args, "vat", None)
+    sdi_code = getattr(args, "sdi", None)
+    subnet = getattr(args, "subnet", "192.168.10.0/24") or "192.168.10.0/24"
+    tier = getattr(args, "tier", "gold") or "gold"
+    domain = getattr(args, "domain", None)
+
+    pipeline = OnboardPipeline()
+    try:
+        res = pipeline.onboard_client(
+            slug=slug,
+            client_name=client_name,
+            vat_id=vat_id,
+            sdi_code=sdi_code,
+            primary_subnet=subnet,
+            tier=tier,
+            domain=domain
+        )
+    except Exception as e:
+        print(f"[ERRORE ONBOARDING] {e}")
+        return 1
+
+    print("=" * 70)
+    print(f" 🚀 ONBOARDING CLIENTE COMPLETATO: {res['client_name'].upper()}")
+    print("=" * 70)
+    print(f" Slug                  : {res['slug']}")
+    print(f" P.IVA                 : {res['vat_id']}")
+    print(f" Livello SLA           : {res['tier'].upper()} ({res['hours_allocated']}h incluse)")
+    print(f" Subnet Primaria / GW  : {res['primary_subnet']} (GW: {res['gateway_ip']})")
+    print(f" Cartella Business Ops : {res['business_ops_path']}")
+    if res["itinfra_created"]:
+        print(f" Cartella itinfra      : {res['itinfra_path']}")
+        print(f" Cross-Check Status    : {res['cross_check_status']}")
+        drift_txt = "[✓ ZERO-DRIFT CERTIFICATO]" if res["zero_drift_certified"] else "[!] VERIFICA MANUALE RICHIESTA"
+        print(f" Certificazione Drift  : {drift_txt}")
+    else:
+        print(" [i] itinfra non presente, creato solo workspace business-ops.")
+    print(f" Sigillo SHA-256       : {res['sha256_seal']}")
+    print(f" File generati ({len(res['created_files'])}):")
+    for f in res['created_files']:
+        print(f"   • {f}")
+    print("=" * 70)
+    return 0
+
+def cmd_hooks(args):
+    action = args.action or "check"
+    from scripts.hooks.git_guard import run_pre_commit, run_pre_push, install_hooks
+    if action == "install":
+        return install_hooks(both=getattr(args, "both", False))
+    elif action == "check":
+        r1 = run_pre_commit()
+        r2 = run_pre_push()
+        return 0 if (r1 == 0 and r2 == 0) else 1
+    elif action == "pre-commit":
+        return run_pre_commit()
+    elif action == "pre-push":
+        return run_pre_push()
+    else:
+        print(f"[ERRORE] Azione '{action}' non valida per hooks.")
+        return 1
+
+def cmd_mission_control(args):
+    pipeline = MissionControlPipeline()
+    if getattr(args, "html", False):
+        out_p = getattr(args, "out", None) or Path("docs") / "mission-control.html"
+        pipeline.render_html(output_path=out_p)
+        print(f"[✓] Mission Control Dashboard HTML generata con successo: {out_p}")
+        return 0
+    else:
+        print(pipeline.render_tui())
+        return 0
+
+def cmd_ui(args):
+    pipeline = MissionControlPipeline()
+    out_p = Path("docs") / "mission-control.html"
+    pipeline.render_html(output_path=out_p)
+    print(f"[✓] Mission Control Dashboard HTML aggiornata: {out_p}")
+    return 0
+
+def cmd_agent(args):
+    agent_type = args.type.lower()
+    slug = args.slug.strip().lower()
+    as_json = getattr(args, "json", False)
+
+    if agent_type == "audit-231":
+        ag = Auditor231Agent()
+        res = ag.run(slug)
+    elif agent_type == "finance-reconciler":
+        ag = FinanceReconcilerAgent()
+        res = ag.run(slug)
+    elif agent_type == "infrastructure-sentinel":
+        ag = InfrastructureSentinelAgent()
+        res = ag.run(slug)
+    elif agent_type == "contract-guardian":
+        ag = ContractGuardianAgent()
+        res = ag.run(slug)
+    elif agent_type == "swarm":
+        sw = DeterministicSwarm()
+        res = sw.execute_swarm(slug)
+    else:
+        print(f"[ERRORE] Tipo agente '{agent_type}' non riconosciuto.")
+        return 1
+
+    if as_json:
+        print(json.dumps(res, indent=2))
+    else:
+        print("=" * 70)
+        print(f" 🤖 AGENT RESULT: {agent_type.upper()} ({slug})")
+        print("=" * 70)
+        for k, v in res.items():
+            if isinstance(v, dict):
+                print(f" {k}:")
+                for sk, sv in v.items():
+                    print(f"   • {sk}: {sv}")
+            else:
+                print(f" {k:<25}: {v}")
+        print("=" * 70)
+    return 0
+
+def cmd_daemon(args):
+    service = args.service.lower()
+    interval = getattr(args, "interval", 3600) or 3600
+    once = getattr(args, "once", False)
+
+    if service == "mps":
+        d = MPSDaemon()
+        d.run_loop(interval_seconds=interval, once=once)
+        return 0
+    elif service == "sla":
+        d = SLADaemon()
+        d.run_loop(interval_seconds=interval, once=once)
+        return 0
+    else:
+        print(f"[ERRORE] Servizio demone '{service}' non riconosciuto.")
+        return 1
+
 def main():
     check_auto_sync_memory()
     parser = argparse.ArgumentParser(description="itinfra-business-ops CLI Master Engine (v0.3.0)")
@@ -909,7 +1060,7 @@ def main():
     # quote
     p_quote = subparsers.add_parser("quote", help="Preventivazione e margini")
     p_quote.add_argument("slug", help="Slug cliente")
-    p_quote.add_argument("action", nargs="?", default="calculate", choices=["calculate", "add-item", "export", "audit"])
+    p_quote.add_argument("action", nargs="?", default="calculate", choices=["calculate", "add-item", "export", "audit", "ui"])
     p_quote.add_argument("--id", "--quote-id", dest="id", help="ID preventivo")
     p_quote.add_argument("--doc", "--doc-path", dest="doc_path", help="Percorso del preventivo o cartella da verificare (default: docs/viola-preventivo)")
     p_quote.add_argument("--cat", help="Categoria merceologica (hardware_server_network, professional_services, ecc.)")
@@ -966,6 +1117,47 @@ def main():
     p_gap.add_argument("--score", type=float, default=0.0, help="Punteggio evidenze (0-100)")
     p_gap.add_argument("--finding", help="Rilievo di Vulnerability Assessment (JSON o desc)")
     p_gap.set_defaults(func=cmd_gap)
+
+    
+    # onboard (Pipeline 11 - SPEC-20)
+    p_onboard = subparsers.add_parser("onboard", help="Onboarding unificato cliente dual-repo (SPEC-20)")
+    p_onboard.add_argument("slug", help="Slug cliente")
+    p_onboard.add_argument("--client", help="Ragione Sociale del cliente")
+    p_onboard.add_argument("--vat", help="Partita IVA")
+    p_onboard.add_argument("--sdi", help="Codice Destinatario SDI")
+    p_onboard.add_argument("--subnet", default="192.168.10.0/24", help="Subnet primaria CIDR (default: 192.168.10.0/24)")
+    p_onboard.add_argument("--tier", choices=["silver", "gold", "platinum"], default="gold", help="Livello SLA (default: gold)")
+    p_onboard.add_argument("--domain", help="Dominio Active Directory / LAN")
+    p_onboard.set_defaults(func=cmd_onboard)
+
+    # hooks (SPEC-20)
+    p_hooks = subparsers.add_parser("hooks", help="Gestione Git Guard Hooks deterministici (SPEC-20)")
+    p_hooks.add_argument("action", nargs="?", default="check", choices=["check", "install", "pre-commit", "pre-push"], help="Azione hook")
+    p_hooks.add_argument("--both", action="store_true", help="Installa gli hook anche nel repository federato itinfra")
+    p_hooks.set_defaults(func=cmd_hooks)
+
+    # mission-control & ui (SPEC-20)
+    p_mc = subparsers.add_parser("mission-control", aliases=["mc"], help="Mission Control Executive Dashboard 360° (SPEC-20)")
+    p_mc.add_argument("--html", action="store_true", help="Genera ed esporta la dashboard HTML stand-alone")
+    p_mc.add_argument("--out", help="Percorso di destinazione file HTML")
+    p_mc.set_defaults(func=cmd_mission_control)
+
+    p_ui = subparsers.add_parser("ui", help="Genera e visualizza la Mission Control Dashboard HTML (SPEC-20)")
+    p_ui.set_defaults(func=cmd_ui)
+
+    # agent (SPEC-20)
+    p_agent = subparsers.add_parser("agent", help="Sciame Agenti Deterministici Bounded (SPEC-20)")
+    p_agent.add_argument("type", choices=["audit-231", "finance-reconciler", "infrastructure-sentinel", "contract-guardian", "swarm"], help="Tipologia di agente")
+    p_agent.add_argument("slug", help="Slug cliente")
+    p_agent.add_argument("--json", action="store_true", help="Output in formato JSON")
+    p_agent.set_defaults(func=cmd_agent)
+
+    # daemon (SPEC-20)
+    p_daemon = subparsers.add_parser("daemon", help="Demoni di monitoraggio proattivo in background (SPEC-20)")
+    p_daemon.add_argument("service", choices=["mps", "sla"], help="Servizio demone da avviare")
+    p_daemon.add_argument("--interval", type=int, default=3600, help="Intervallo di scansione in secondi (default: 3600)")
+    p_daemon.add_argument("--once", action="store_true", help="Esegui un unico ciclo di controllo e termina")
+    p_daemon.set_defaults(func=cmd_daemon)
 
     args = parser.parse_args()
     if not args.subcommand:

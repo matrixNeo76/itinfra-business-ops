@@ -31,6 +31,11 @@ Questo è l'ambiente di lavoro per la governance operativa, commerciale, PSA, fa
 | **Ingestione Documenti (OKF v0.2)** | `ingest <file>` | `.\it-ops.cmd ingest <file> [--slug <slug>] [--apply]` |
 | **Memoria Auto-Correttiva (OKF v0.2)** | `learn [sync\|audit\|test]` | `.\it-ops.cmd learn [list\|sync\|audit\|test]` |
 | **Gap Analysis & Compliance 231** | `gap <slug>` | `.\it-ops.cmd gap <slug> [status\|calculate\|report\|check]` |
+| **Onboarding Unificato (Pipeline 11)** | `onboard <slug>` | `.\it-ops.cmd onboard <slug> --client "Nome" [--tier gold]` |
+| **Mission Control & Dashboard 360°** | `mission-control` *(o `mc`, `ui`)* | `.\it-ops.cmd mission-control [--html]` |
+| **Swarm Agenti Deterministici** | `agent <type> <slug>` | `.\it-ops.cmd agent [audit-231\|finance-reconciler\|infrastructure-sentinel\|contract-guardian\|swarm] <slug>` |
+| **Demoni di Monitoraggio Proattivo** | `daemon [mps\|sla]` | `.\it-ops.cmd daemon [mps\|sla] [--once]` |
+| **Git Guard Hooks Deterministici** | `hooks [install\|check]` | `.\it-ops.cmd hooks [install\|check] [--both]` |
 
 ---
 
