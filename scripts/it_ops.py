@@ -697,6 +697,7 @@ def cmd_validate(args):
         "mps-": "mps.schema.yaml",
         "arr-": "furniture.schema.yaml",
         "quote-": "quote.schema.yaml",
+        "ga-": "gap_analysis.schema.yaml",
     }
 
     files_to_check = []
@@ -780,6 +781,38 @@ def cmd_learn(args):
             by=getattr(args, "by", "human:possumato"),
         )
     return 0
+
+def cmd_gap(args):
+    """Dispatcher per la pipeline di Gap Analysis & Compliance 231 (SPEC-19)."""
+    from scripts.pipelines.gap_analysis import GapAnalysisPipeline
+    pipeline = GapAnalysisPipeline()
+    slug = args.slug
+    action = args.action
+
+    if action == "init":
+        return pipeline.cmd_init(slug, title=getattr(args, "title", None))
+    elif action == "status":
+        return pipeline.cmd_status(slug)
+    elif action == "interview":
+        return pipeline.cmd_interview(
+            slug,
+            area=getattr(args, "area", None),
+            notes=getattr(args, "notes", None),
+            score=getattr(args, "score", 0.0)
+        )
+    elif action == "va":
+        return pipeline.cmd_va(slug, finding_json=getattr(args, "finding", None))
+    elif action == "calculate":
+        return pipeline.cmd_calculate(slug)
+    elif action == "remediation":
+        return pipeline.cmd_remediation(slug)
+    elif action == "report":
+        return pipeline.cmd_report(slug)
+    elif action == "check":
+        return pipeline.cmd_check(slug)
+    else:
+        print(f"[ERRORE] Azione '{action}' non riconosciuta per gap.")
+        return 1
 
 def main():
     check_auto_sync_memory()
@@ -922,6 +955,17 @@ def main():
     p_learn.add_argument("--guardrail", help="Contenuto markdown personalizzato")
     p_learn.add_argument("--by", default="human:possumato", help="Certificatore attestation (default: human:possumato)")
     p_learn.set_defaults(func=cmd_learn)
+
+    # gap
+    p_gap = subparsers.add_parser("gap", help="Pipeline di Gap Analysis e Compliance D.Lgs. 231/2001 (SPEC-19)")
+    p_gap.add_argument("slug", help="Slug cliente")
+    p_gap.add_argument("action", nargs="?", default="status", choices=["status", "init", "interview", "va", "calculate", "remediation", "report", "check"], help="Azione da eseguire (default: status)")
+    p_gap.add_argument("--title", help="Titolo dell'assessment (per init)")
+    p_gap.add_argument("--area", help="Area canonica di intervista (ciso_security, it_operations, risk_compliance, procurement_contracts, facility_physical_security)")
+    p_gap.add_argument("--notes", help="Note o verbali dell'intervista")
+    p_gap.add_argument("--score", type=float, default=0.0, help="Punteggio evidenze (0-100)")
+    p_gap.add_argument("--finding", help="Rilievo di Vulnerability Assessment (JSON o desc)")
+    p_gap.set_defaults(func=cmd_gap)
 
     args = parser.parse_args()
     if not args.subcommand:

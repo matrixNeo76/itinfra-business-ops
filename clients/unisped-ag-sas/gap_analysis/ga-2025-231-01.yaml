@@ -1,0 +1,252 @@
+assessment_id: ga-2025-231-01
+slug: unisped-ag-sas
+title: Gap Analysis & Vulnerability Assessment D.Lgs. 231/2001 (Art. 24-bis)
+framework: dlgs_231
+created_at: '2026-09-18'
+target_completion_date: '2026-11-02'
+status: in_progress
+lead_auditor: Aure System Senior Advisor
+reference_quote_id: quote-PREV-2025-08-231
+scope:
+  location: Via San Nicola alla Dogana, 9, 80133 Napoli (NA)
+  target_networks:
+  - 192.168.10.0/24
+  in_scope_assets_count: 25
+  third_party_dependencies:
+  - Fornitore Cloud / Hosting
+  - Outsourcer Gestionali
+documentary_review:
+  documents_requested: 7
+  documents_received: 6
+  reviewed_items:
+  - code: modello_231_morg
+    name: Modello di Organizzazione, Gestione e Controllo ex D.Lgs. 231/01
+    status: compliant_with_gaps
+    finding: Documento MOG aggiornato a maggio 2024. Sezione speciale reati informatici
+      (Art. 24-bis) parzialmente sviluppata.
+  - code: codice_etico
+    name: Codice Etico Aziendale Unisped AG S.a.s.
+    status: compliant
+    finding: Definisce principi di integrità e condotta dipendenti nell'uso dei beni
+      e sistemi aziendali.
+  - code: politiche_sicurezza_ict
+    name: Politiche di Sicurezza delle Informazioni (Policy ICT)
+    status: compliant_with_gaps
+    finding: Policy password e gestione utenze presente ma da revisionare secondo
+      controlli ISO/IEC 27001:2022.
+  - code: disciplinare_dispositivi
+    name: Disciplinare Tecnico Uso Dispositivi e Postazioni (Art. 4 L. 300/70)
+    status: compliant
+    finding: Disciplinare conforme allo Statuto dei Lavoratori per l'utilizzo dei
+      dispositivi mobili e PC.
+  - code: disaster_recovery_plan
+    name: Piano di Continuità Operativa e Disaster Recovery (BCP/DR)
+    status: missing
+    finding: Non formalizzato in documento autonomo. Esiste procedura backup Veeam
+      non testata formalmente con RTO/RPO.
+  - code: registro_trattamenti
+    name: Registro delle Attività di Trattamento Dati (Art. 30 GDPR)
+    status: compliant_with_gaps
+    finding: Registro redatto nel 2023, richiede aggiornamento per nuove infrastrutture
+      cloud e smart working.
+  - code: organigramma_ict
+    name: Organigramma Funzionale ICT & Matrice RACI Sicurezza
+    status: compliant
+    finding: Identificato Referente ICT interno e fornitore sistemistico di supporto
+      Aure System.
+interviews:
+- area: ciso_security
+  respondent: Dott. Roberto Viola (Referente Sicurezza delle Informazioni / OdV)
+  interview_date: '2026-09-18'
+  maturity_score: 3.4
+  notes: Valutazione presidi anticrimine informatico ex Art. 24-bis. Presenza di presidi
+    base, ma assenza di audit periodici formali prima del presente incarico.
+  answers: {}
+- area: it_operations
+  respondent: Ing. Marco Esposito (Responsabile Sistemi & Reti Unisped)
+  interview_date: '2026-09-18'
+  maturity_score: 3.6
+  notes: Esaminata architettura di rete, segmentazione VLAN, gestione credenziali
+    amministrative e configurazione firewall Fortinet FortiGate.
+  answers: {}
+- area: risk_compliance
+  respondent: Avv. Gianluigi Severino (Consulente Compliance Legale 231 & GDPR)
+  interview_date: '2026-09-18'
+  maturity_score: 3.25
+  notes: Verifica adeguatezza del MOG 231 rispetto alle nuove fattispecie di reato
+    informatico introdotte dalla L. 90/2024.
+  answers: {}
+- area: procurement_contracts
+  respondent: Dott.ssa Laura De Rosa (Responsabile Acquisti & Contratti Terzi)
+  interview_date: '2026-09-18'
+  maturity_score: 2.9
+  notes: Verifica clausole di sicurezza nei contratti di fornitura software e servizi
+    cloud SaaS. Assenza di clausole di audit di terza parte nei contratti fornitori
+    critici.
+  answers: {}
+- area: facility_physical_security
+  respondent: Sig. Antonio Rossi (Responsabile Sicurezza Fisica & Sede Dogana)
+  interview_date: '2026-09-18'
+  maturity_score: 3.75
+  notes: Ispezione fisica sala CED e armadi rack. Controllo accessi con badge presente
+    ma assenza di log centralizzati a prova di manomissione.
+  answers: {}
+vulnerability_assessment:
+  scan_date: '2026-09-18'
+  engine: CVSS_v4
+  total_targets_scanned: 4
+  findings_summary:
+    critical: 1
+    high: 1
+    medium: 1
+    low: 1
+  findings:
+  - cve_id: CVE-2024-6387
+    target_ip: 192.168.10.15
+    port: 22
+    service: OpenSSH 9.2p1 Debian
+    cvss_v4_score: 8.1
+    severity: high
+    title: OpenSSH Remote Code Execution (regreSSHion)
+    remediation: Aggiornare immediatamente il demone OpenSSH alla versione 9.8p1 o
+      superiore e disabilitare l'accesso root diretto.
+    evidence_packet: SSH-2.0-OpenSSH_9.2p1 Debian-2+deb12u2 detected on target 192.168.10.15:22
+  - cve_id: CVE-2023-48795
+    target_ip: 192.168.10.1
+    port: 22
+    service: FortiOS FortiGate-60F SSH
+    cvss_v4_score: 5.9
+    severity: medium
+    title: Terrapin SSH Protocol Flaw — Weak Encryption / MAC Negotiation
+    remediation: Disabilitare i cifrari ChaCha20-Poly1305 e HMAC CBC su interfaccia
+      di gestione firewall FortiOS.
+    evidence_packet: Vulnerable KEX algorithm chacha20-poly1305@openssh.com negotiated
+      on 192.168.10.1:22
+  - cve_id: CVE-2024-21413
+    target_ip: 192.168.10.20
+    port: 443
+    service: Microsoft Exchange Server 2019 CU12
+    cvss_v4_score: 9.8
+    severity: critical
+    title: Microsoft Outlook / Exchange NTLM Credential Leaking Vulnerability
+    remediation: Applicare Microsoft Security Update KB5035334 e forzare la disabilitazione
+      di NTLM v1/v2 a favore di Kerberos/Modern Auth.
+    evidence_packet: Exchange Server build 15.2.1118.7 missing MonikerLink mitigation
+      patch
+  - cve_id: VULN-TLS-001
+    target_ip: 192.168.10.25
+    port: 443
+    service: Apache Tomcat 9.0 Web Portal Dogana
+    cvss_v4_score: 3.7
+    severity: low
+    title: Uso di Protocolli Crittografici Deprecati TLS 1.0 / TLS 1.1
+    remediation: Disabilitare TLSv1.0 e TLSv1.1 su server.xml e abilitare unicamente
+      TLSv1.2 e TLSv1.3 con cipher suite PFS.
+    evidence_packet: Server accepts TLSv1.0 with TLS_RSA_WITH_AES_128_CBC_SHA
+gap_scores:
+  overall_compliance_percent: 65.94
+  maturity_level: 3.3
+  documentary_score: 68.57
+  interviews_score: 67.6
+  technical_vulnerability_score: 60.0
+  domain_scores:
+    modello_231_legal: 65.0
+    access_governance: 68.0
+    network_infrastructure: 66.0
+    data_protection_gdpr: 66.78
+    incident_continuity: 75.0
+remediation_plan:
+  total_actions: 7
+  total_cost_eur: 6700.0
+  actions:
+  - id: REM-02
+    priority: P1_CRITICAL
+    deadline_days: 15
+    domain: network_infrastructure
+    title: Mitigazione CVE-2024-21413 su 192.168.10.20:443
+    description: 'Microsoft Outlook / Exchange NTLM Credential Leaking Vulnerability.
+      Contromisura raccomandata: Applicare Microsoft Security Update KB5035334 e forzare
+      la disabilitazione di NTLM v1/v2 a favore di Kerberos/Modern Auth.'
+    owner: IT Operations / Security Advisor
+    estimated_cost_eur: 650.0
+    related_reato_presupposto: Art. 24-bis D.Lgs. 231/01 (Accesso abusivo a sistema
+      informatico)
+  - id: REM-01
+    priority: P2_HIGH
+    deadline_days: 45
+    domain: network_infrastructure
+    title: Mitigazione CVE-2024-6387 su 192.168.10.15:22
+    description: 'OpenSSH Remote Code Execution (regreSSHion). Contromisura raccomandata:
+      Aggiornare immediatamente il demone OpenSSH alla versione 9.8p1 o superiore
+      e disabilitare l''accesso root diretto.'
+    owner: IT Operations / Security Advisor
+    estimated_cost_eur: 450.0
+    related_reato_presupposto: Art. 24-bis D.Lgs. 231/01 (Accesso abusivo a sistema
+      informatico)
+  - id: REM-05
+    priority: P2_HIGH
+    deadline_days: 60
+    domain: modello_231_legal
+    title: 'Aggiornamento e formalizzazione: Piano di Continuità Operativa e Disaster
+      Recovery (BCP/DR)'
+    description: Non formalizzato in documento autonomo. Esiste procedura backup Veeam
+      non testata formalmente con RTO/RPO.
+    owner: Compliance & Team Legale
+    estimated_cost_eur: 1200.0
+    related_reato_presupposto: Art. 6 e 7 D.Lgs. 231/01 (Idoneità del Modello Organizzativo
+      MOG)
+  - id: REM-07
+    priority: P2_HIGH
+    deadline_days: 45
+    domain: access_governance
+    title: Adozione MFA obbligatoria e revisione account privilegiati
+    description: Introdurre autenticazione a più fattori su VPN e pannelli amministrativi
+      con dismissione password deboli.
+    owner: IT Administrator
+    estimated_cost_eur: 800.0
+    related_reato_presupposto: Art. 24-bis D.Lgs. 231/01 (Frode informatica con furto
+      di identità)
+  - id: REM-03
+    priority: P3_MEDIUM
+    deadline_days: 90
+    domain: modello_231_legal
+    title: 'Aggiornamento e formalizzazione: Modello di Organizzazione, Gestione e
+      Controllo ex D.Lgs. 231/01'
+    description: Documento MOG aggiornato a maggio 2024. Sezione speciale reati informatici
+      (Art. 24-bis) parzialmente sviluppata.
+    owner: Compliance & Team Legale
+    estimated_cost_eur: 1200.0
+    related_reato_presupposto: Art. 6 e 7 D.Lgs. 231/01 (Idoneità del Modello Organizzativo
+      MOG)
+  - id: REM-04
+    priority: P3_MEDIUM
+    deadline_days: 90
+    domain: modello_231_legal
+    title: 'Aggiornamento e formalizzazione: Politiche di Sicurezza delle Informazioni
+      (Policy ICT)'
+    description: Policy password e gestione utenze presente ma da revisionare secondo
+      controlli ISO/IEC 27001:2022.
+    owner: Compliance & Team Legale
+    estimated_cost_eur: 1200.0
+    related_reato_presupposto: Art. 6 e 7 D.Lgs. 231/01 (Idoneità del Modello Organizzativo
+      MOG)
+  - id: REM-06
+    priority: P3_MEDIUM
+    deadline_days: 90
+    domain: modello_231_legal
+    title: 'Aggiornamento e formalizzazione: Registro delle Attività di Trattamento
+      Dati (Art. 30 GDPR)'
+    description: Registro redatto nel 2023, richiede aggiornamento per nuove infrastrutture
+      cloud e smart working.
+    owner: Compliance & Team Legale
+    estimated_cost_eur: 1200.0
+    related_reato_presupposto: Art. 6 e 7 D.Lgs. 231/01 (Idoneità del Modello Organizzativo
+      MOG)
+deliverables:
+  kickoff: C:\Users\auresystem\repos\itinfra-business-ops\clients\unisped-ag-sas\gap_analysis\01-verbale-kickoff.md
+  gap_analysis_report: C:\Users\auresystem\repos\itinfra-business-ops\clients\unisped-ag-sas\gap_analysis\02-rapporto-gap-analysis-remediation.md
+  vulnerability_assessment_report: C:\Users\auresystem\repos\itinfra-business-ops\clients\unisped-ag-sas\gap_analysis\03-rapporto-vulnerability-assessment.md
+  executive_presentation: C:\Users\auresystem\repos\itinfra-business-ops\clients\unisped-ag-sas\gap_analysis\04-executive-presentation-odv.html
+  sha256_seal: fd197b67e8680280f3edd35bf461bb989cef1fb94256aa70d97cd5195c934b92
+  gap_analysis_report_pdf: C:\Users\auresystem\repos\itinfra-business-ops\clients\unisped-ag-sas\gap_analysis\02-rapporto-gap-analysis-remediation.pdf
+  vulnerability_assessment_report_pdf: C:\Users\auresystem\repos\itinfra-business-ops\clients\unisped-ag-sas\gap_analysis\03-rapporto-vulnerability-assessment.pdf

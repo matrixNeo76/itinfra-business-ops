@@ -30,6 +30,7 @@ Questo è l'ambiente di lavoro per la governance operativa, commerciale, PSA, fa
 | **Calcolo Margini Preventivo** | `preventivo <slug>` *(o `quote`)* | `.\it-ops.cmd quote <slug> calculate` |
 | **Ingestione Documenti (OKF v0.2)** | `ingest <file>` | `.\it-ops.cmd ingest <file> [--slug <slug>] [--apply]` |
 | **Memoria Auto-Correttiva (OKF v0.2)** | `learn [sync\|audit\|test]` | `.\it-ops.cmd learn [list\|sync\|audit\|test]` |
+| **Gap Analysis & Compliance 231** | `gap <slug>` | `.\it-ops.cmd gap <slug> [status\|calculate\|report\|check]` |
 
 ---
 

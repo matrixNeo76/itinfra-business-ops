@@ -1,0 +1,85 @@
+quote_id: PREV-2025-08-231
+slug: unisped-ag-sas
+status: sent
+created_at: '2025-11-18'
+valid_until: '2025-11-30'
+payment_terms: 50% all'ordine, 50% a fine lavori (entro 31/12/2025) a 30 gg DF
+delivery_time_weeks: 4
+categories:
+- name: professional_services
+  total_cost: 5000.0
+  total_net: 8500.0
+  margin_amount: 3500.0
+  margin_percent: 41.18
+  items:
+  - part_number: ADV-231-FASE1
+    description: 'FASE I: Kick-off, condivisione obiettivi, perimetro e acquisizione
+      documentale preliminare D.Lgs. 231/01'
+    quantity: 1
+    unit_cost: 1500.0
+    markup_percent: 66.67
+    unit_price: 2500.0
+    line_total: 2500.0
+    is_optional: false
+  - part_number: ADV-231-FASE2
+    description: 'FASE II: Gap Analysis, interviste 5 aree, Vulnerability Assessment
+      (CVSS v4.0) e Remediation Plan'
+    quantity: 1
+    unit_cost: 3500.0
+    markup_percent: 71.43
+    unit_price: 6000.0
+    line_total: 6000.0
+    is_optional: false
+totals:
+  total_cost: 5000.0
+  total_net: 8500.0
+  gross_margin_amount: 3500.0
+  gross_margin_percent: 41.18
+  min_gross_margin_percent: 20.0
+  margin_safety_violation: false
+  target_floor_net: 8500.0
+  margin_deficit_amount: 0.0
+lease_financial_options:
+  purchase_capex_net: 8500.0
+  lease_opex_options:
+  - &id001
+    duration_months: 24
+    label: 24 Mesi (2 Anni)
+    financial_factor: 0.045
+    monthly_installment: 382.5
+    total_rent_cost: 9180.0
+    buyback_option: 85.0
+    buyback_option_euro: 85.0
+    tax_deductible_opex: true
+  - &id002
+    duration_months: 36
+    label: 36 Mesi (3 Anni)
+    financial_factor: 0.0315
+    monthly_installment: 267.75
+    total_rent_cost: 9639.0
+    buyback_option: 85.0
+    buyback_option_euro: 85.0
+    tax_deductible_opex: true
+  - &id003
+    duration_months: 48
+    label: 48 Mesi (4 Anni)
+    financial_factor: 0.0245
+    monthly_installment: 208.25
+    total_rent_cost: 9996.0
+    buyback_option: 85.0
+    buyback_option_euro: 85.0
+    tax_deductible_opex: true
+  - &id004
+    duration_months: 60
+    label: 60 Mesi (5 Anni)
+    financial_factor: 0.0205
+    monthly_installment: 174.25
+    total_rent_cost: 10455.0
+    buyback_option: 85.0
+    buyback_option_euro: 85.0
+    tax_deductible_opex: true
+  plans:
+    24_months: *id001
+    36_months: *id002
+    48_months: *id003
+    60_months: *id004

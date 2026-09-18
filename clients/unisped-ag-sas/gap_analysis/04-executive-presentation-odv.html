@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <title>Executive Dashboard Compliance 231 — Unisped AG S.a.s.</title>
+  <style>
+    @media print {
+      body { margin: 0; background: #fff; }
+      .no-print { display: none; }
+      .dashboard-container { box-shadow: none; border: none; }
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: #F1F5F9;
+      color: #0F172A;
+      margin: 0;
+      padding: 24px;
+    }
+    .dashboard-container {
+      max-width: 1080px;
+      margin: 0 auto;
+      background: #FFFFFF;
+      border-radius: 16px;
+      box-shadow: 0 10px 25px -5px rgba(0,0,0,0.08);
+      overflow: hidden;
+      border: 1px solid #CBD5E1;
+    }
+    .header {
+      background: linear-gradient(135deg, #1E3A8A 0%, #2563EB 100%);
+      color: #FFFFFF;
+      padding: 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .header h1 { margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.5px; }
+    .header p { margin: 4px 0 0 0; font-size: 14px; opacity: 0.9; }
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      padding: 24px;
+      background: #F8FAFC;
+      border-bottom: 1px solid #E2E8F0;
+    }
+    .kpi-card {
+      background: #FFFFFF;
+      padding: 18px;
+      border-radius: 12px;
+      border: 1px solid #E2E8F0;
+      text-align: center;
+    }
+    .kpi-val { font-size: 28px; font-weight: 800; color: #1E3A8A; margin: 4px 0; }
+    .kpi-lbl { font-size: 12px; font-weight: 600; text-transform: uppercase; color: #64748B; }
+    .content-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      padding: 24px;
+    }
+    .panel {
+      background: #FFFFFF;
+      border: 1px solid #E2E8F0;
+      border-radius: 12px;
+      padding: 20px;
+    }
+    .panel h3 { margin-top: 0; font-size: 16px; color: #1E3A8A; border-bottom: 2px solid #E2E8F0; padding-bottom: 8px; }
+    table { width: 100%; border-collapse: collapse; }
+    .footer {
+      background: #F8FAFC;
+      padding: 16px 24px;
+      border-top: 1px solid #E2E8F0;
+      font-size: 12px;
+      color: #64748B;
+      display: flex;
+      justify-content: space-between;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="dashboard-container">
+    <div class="header">
+      <div>
+        <h1>AURE SYSTEM — Cybersecurity & Compliance Governance</h1>
+        <p>Executive Dashboard D.Lgs. 231/2001 (Art. 24-bis) • Organismo di Vigilanza & CDA</p>
+      </div>
+      <div style="text-align:right;">
+        <span style="background:rgba(255,255,255,0.2); padding:6px 14px; border-radius:20px; font-weight:bold; font-size:12px;">ga-2025-231-01</span>
+        <div style="margin-top:6px; font-size:12px;">Committente: <strong>Unisped AG S.a.s.</strong></div>
+      </div>
+    </div>
+
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-lbl">Conformità Complessiva</div>
+        <div class="kpi-val" style="color:#F59E0B;">65.9%</div>
+        <div style="font-size:11px; color:#64748B;">Target Legale: 100%</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-lbl">Maturità CMMI</div>
+        <div class="kpi-val">3.3 <span style="font-size:16px;">/ 5.0</span></div>
+        <div style="font-size:11px; color:#64748B;">Livello Gestito</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-lbl">Vulnerabilità Critiche</div>
+        <div class="kpi-val" style="color:#EF4444;">1</div>
+        <div style="font-size:11px; color:#64748B;">CVSS v4.0 >= 9.0</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-lbl">Azioni Remediation</div>
+        <div class="kpi-val">7</div>
+        <div style="font-size:11px; color:#64748B;">Prioritizzate P1/P2/P3</div>
+      </div>
+    </div>
+
+    <div class="content-grid">
+      <div class="panel">
+        <h3>Maturità per Dominio di Sicurezza</h3>
+        
+            <div style="margin-bottom: 14px;">
+              <div style="display:flex; justify-content:space-between; font-weight:600; font-size:13px; margin-bottom:4px;">
+                <span>Modello 231 Legal</span>
+                <span style="color:#F59E0B;">65.0%</span>
+              </div>
+              <div style="background:#E2E8F0; border-radius:8px; height:12px; overflow:hidden;">
+                <div style="background:#F59E0B; width:65.0%; height:100%;"></div>
+              </div>
+            </div>
+            
+            <div style="margin-bottom: 14px;">
+              <div style="display:flex; justify-content:space-between; font-weight:600; font-size:13px; margin-bottom:4px;">
+                <span>Access Governance</span>
+                <span style="color:#F59E0B;">68.0%</span>
+              </div>
+              <div style="background:#E2E8F0; border-radius:8px; height:12px; overflow:hidden;">
+                <div style="background:#F59E0B; width:68.0%; height:100%;"></div>
+              </div>
+            </div>
+            
+            <div style="margin-bottom: 14px;">
+              <div style="display:flex; justify-content:space-between; font-weight:600; font-size:13px; margin-bottom:4px;">
+                <span>Network Infrastructure</span>
+                <span style="color:#F59E0B;">66.0%</span>
+              </div>
+              <div style="background:#E2E8F0; border-radius:8px; height:12px; overflow:hidden;">
+                <div style="background:#F59E0B; width:66.0%; height:100%;"></div>
+              </div>
+            </div>
+            
+            <div style="margin-bottom: 14px;">
+              <div style="display:flex; justify-content:space-between; font-weight:600; font-size:13px; margin-bottom:4px;">
+                <span>Data Protection Gdpr</span>
+                <span style="color:#F59E0B;">66.8%</span>
+              </div>
+              <div style="background:#E2E8F0; border-radius:8px; height:12px; overflow:hidden;">
+                <div style="background:#F59E0B; width:66.78%; height:100%;"></div>
+              </div>
+            </div>
+            
+            <div style="margin-bottom: 14px;">
+              <div style="display:flex; justify-content:space-between; font-weight:600; font-size:13px; margin-bottom:4px;">
+                <span>Incident Continuity</span>
+                <span style="color:#10B981;">75.0%</span>
+              </div>
+              <div style="background:#E2E8F0; border-radius:8px; height:12px; overflow:hidden;">
+                <div style="background:#10B981; width:75.0%; height:100%;"></div>
+              </div>
+            </div>
+            
+      </div>
+
+      <div class="panel">
+        <h3>Vulnerability Assessment (CVSS v4.0)</h3>
+        <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:8px; margin-bottom:16px;">
+          <div style="background:#FEE2E2; color:#991B1B; padding:10px; border-radius:8px; text-align:center;">
+            <div style="font-size:18px; font-weight:800;">1</div>
+            <div style="font-size:10px; font-weight:bold;">CRITICAL</div>
+          </div>
+          <div style="background:#FFEDD5; color:#9A3412; padding:10px; border-radius:8px; text-align:center;">
+            <div style="font-size:18px; font-weight:800;">1</div>
+            <div style="font-size:10px; font-weight:bold;">HIGH</div>
+          </div>
+          <div style="background:#FEF3C7; color:#92400E; padding:10px; border-radius:8px; text-align:center;">
+            <div style="font-size:18px; font-weight:800;">1</div>
+            <div style="font-size:10px; font-weight:bold;">MEDIUM</div>
+          </div>
+          <div style="background:#DBEAFE; color:#1E40AF; padding:10px; border-radius:8px; text-align:center;">
+            <div style="font-size:18px; font-weight:800;">1</div>
+            <div style="font-size:10px; font-weight:bold;">LOW</div>
+          </div>
+        </div>
+        <p style="font-size:12px; color:#64748B; line-height:1.5;">
+          Scansione eseguita su <strong>4 apparati</strong>. Il riscontro di vulnerabilità critiche impone l'immediata applicazione delle azioni di remediation a salvaguardia della responsabilità penale dell'ente ex Art. 24-bis.
+        </p>
+      </div>
+    </div>
+
+    <div style="padding: 0 24px 24px 24px;">
+      <div class="panel">
+        <h3>Prime Azioni di Remediation Prioritarie</h3>
+        <table>
+          <thead>
+            <tr style="border-bottom: 2px solid #CBD5E1; text-align:left; font-size:12px; color:#64748B;">
+              <th style="padding:8px;">ID</th>
+              <th style="padding:8px;">Priorità</th>
+              <th style="padding:8px;">Azione di Bonifica</th>
+              <th style="padding:8px;">Owner</th>
+              <th style="padding:8px; text-align:right;">Stima Spesa</th>
+            </tr>
+          </thead>
+          <tbody>
+            
+            <tr style="border-bottom: 1px solid #E2E8F0; font-size:13px;">
+              <td style="padding:8px;"><code>REM-02</code></td>
+              <td style="padding:8px;"><span style="background:#EF4444; color:#fff; padding:2px 8px; border-radius:4px; font-size:11px; font-weight:bold;">P1_CRITICAL</span></td>
+              <td style="padding:8px;">Mitigazione CVE-2024-21413 su 192.168.10.20:443</td>
+              <td style="padding:8px;">IT Operations / Security Advisor</td>
+              <td style="padding:8px; text-align:right; font-weight:600;">€ 650.00</td>
+            </tr>
+            
+            <tr style="border-bottom: 1px solid #E2E8F0; font-size:13px;">
+              <td style="padding:8px;"><code>REM-01</code></td>
+              <td style="padding:8px;"><span style="background:#F59E0B; color:#fff; padding:2px 8px; border-radius:4px; font-size:11px; font-weight:bold;">P2_HIGH</span></td>
+              <td style="padding:8px;">Mitigazione CVE-2024-6387 su 192.168.10.15:22</td>
+              <td style="padding:8px;">IT Operations / Security Advisor</td>
+              <td style="padding:8px; text-align:right; font-weight:600;">€ 450.00</td>
+            </tr>
+            
+            <tr style="border-bottom: 1px solid #E2E8F0; font-size:13px;">
+              <td style="padding:8px;"><code>REM-05</code></td>
+              <td style="padding:8px;"><span style="background:#F59E0B; color:#fff; padding:2px 8px; border-radius:4px; font-size:11px; font-weight:bold;">P2_HIGH</span></td>
+              <td style="padding:8px;">Aggiornamento e formalizzazione: Piano di Continuità Operativa e Disaster Recovery (BCP/DR)</td>
+              <td style="padding:8px;">Compliance & Team Legale</td>
+              <td style="padding:8px; text-align:right; font-weight:600;">€ 1200.00</td>
+            </tr>
+            
+            <tr style="border-bottom: 1px solid #E2E8F0; font-size:13px;">
+              <td style="padding:8px;"><code>REM-07</code></td>
+              <td style="padding:8px;"><span style="background:#F59E0B; color:#fff; padding:2px 8px; border-radius:4px; font-size:11px; font-weight:bold;">P2_HIGH</span></td>
+              <td style="padding:8px;">Adozione MFA obbligatoria e revisione account privilegiati</td>
+              <td style="padding:8px;">IT Administrator</td>
+              <td style="padding:8px; text-align:right; font-weight:600;">€ 800.00</td>
+            </tr>
+            
+            <tr style="border-bottom: 1px solid #E2E8F0; font-size:13px;">
+              <td style="padding:8px;"><code>REM-03</code></td>
+              <td style="padding:8px;"><span style="background:#3B82F6; color:#fff; padding:2px 8px; border-radius:4px; font-size:11px; font-weight:bold;">P3_MEDIUM</span></td>
+              <td style="padding:8px;">Aggiornamento e formalizzazione: Modello di Organizzazione, Gestione e Controllo ex D.Lgs. 231/01</td>
+              <td style="padding:8px;">Compliance & Team Legale</td>
+              <td style="padding:8px; text-align:right; font-weight:600;">€ 1200.00</td>
+            </tr>
+            
+            <tr style="border-bottom: 1px solid #E2E8F0; font-size:13px;">
+              <td style="padding:8px;"><code>REM-04</code></td>
+              <td style="padding:8px;"><span style="background:#3B82F6; color:#fff; padding:2px 8px; border-radius:4px; font-size:11px; font-weight:bold;">P3_MEDIUM</span></td>
+              <td style="padding:8px;">Aggiornamento e formalizzazione: Politiche di Sicurezza delle Informazioni (Policy ICT)</td>
+              <td style="padding:8px;">Compliance & Team Legale</td>
+              <td style="padding:8px; text-align:right; font-weight:600;">€ 1200.00</td>
+            </tr>
+            
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="footer">
+      <div>Aure System di Eduardo Possumato • Via Luigi Tansillo, 54 F - 80125 Napoli (NA) • P.IVA: IT07714231219</div>
+      <div>Sigillo Forense SHA-256: <code>fd197b67e8680280f3edd35b...</code></div>
+    </div>
+  </div>
+
+</body>
+</html>

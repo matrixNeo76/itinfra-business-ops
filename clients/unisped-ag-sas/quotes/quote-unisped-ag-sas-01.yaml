@@ -1,0 +1,36 @@
+quote_id: "Q-2026-unisped-ag-sas-01"
+slug: "unisped-ag-sas"
+status: "draft"
+created_at: "2026-09-18"
+valid_until: "2026-10-18"
+payment_terms: "30_60_DF_FM"
+delivery_time_weeks: 3
+
+categories:
+  - name: "hardware_server_network"
+    items:
+      - part_number: "SRV-DL360-G10"
+        description: "Server HPE ProLiant DL360 Gen10 Xeon 16C 64GB RAM"
+        quantity: 1
+        unit_cost: 3200.00
+        markup_percent: 22.0
+        unit_price: 3904.00
+        line_total: 3904.00
+        is_optional: false
+
+  - name: "professional_services"
+    items:
+      - part_number: "SRV-DEPLOY"
+        description: "Servizio installazione, collaudo a rack e configurazione cluster"
+        quantity: 16
+        unit_cost: 45.00
+        markup_percent: 55.5
+        unit_price: 70.00
+        line_total: 1120.00
+        is_optional: false
+
+totals:
+  total_cost: 3920.00
+  total_net: 5024.00
+  gross_margin_amount: 1104.00
+  gross_margin_percent: 21.97

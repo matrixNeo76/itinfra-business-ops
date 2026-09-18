@@ -1,0 +1,38 @@
+order_id: "ARR-2026-unisped-ag-sas-01"
+slug: "unisped-ag-sas"
+title: "Fornitura Arredo Direzionale e 12 Postazioni Operative"
+status: "1_survey" # 1_survey, 2_design, 3_sampling_approval, 4_procurement, 5_assembly, 6_handover_approved
+budget_net: 18500.00
+
+stages:
+  survey:
+    date: "2026-09-18"
+    surveyor: "Architetto Tecnico"
+    laser_measures_verified: true
+    data_power_points_mapped: true
+    notes: "Verificate quote pareti, torrette a pavimento presenti ogni 2.5m"
+
+  design:
+    dwg_reference: "CAD/LAYOUT-UFFICI-P1.dwg"
+    render_3d_count: 4
+    workstations_count: 12
+    meeting_rooms_count: 1
+    approved_by_client: false
+
+  procurement:
+    factory_orders_sent: false
+
+  assembly:
+    planned_start_date: "2026-11-10"
+    assembly_team: "Squadra Montaggi Pro"
+    cable_trays_fitted: false
+    packaging_disposed_green: false
+
+  handover:
+    checklist:
+      desk_planarity_ok: false
+      drawer_locks_functional: false
+      finishes_scratch_free: false
+      power_data_accessible: false
+    signed_acceptance_date: ""
+    client_signatory: ""

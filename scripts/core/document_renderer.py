@@ -1024,3 +1024,249 @@ class DocumentRenderer:
 
         doc_pdf.build(story)
         return target_pdf
+
+    # -------------------------------------------------------------------------
+    # 5. GAP ANALYSIS & COMPLIANCE 231 (SPEC-19)
+    # -------------------------------------------------------------------------
+    @staticmethod
+    def render_gap_analysis_to_pdf(assessment_data: Dict[str, Any], out_pdf_path: Path) -> Path:
+        """Esporta il Rapporto Ufficiale di Gap Analysis in formato PDF professionale A4."""
+        doc = SimpleDocTemplate(
+            str(out_pdf_path),
+            pagesize=A4,
+            leftMargin=36,
+            rightMargin=36,
+            topMargin=36,
+            bottomMargin=36
+        )
+        styles = getSampleStyleSheet()
+        title_style = ParagraphStyle('GATitle', parent=styles['Heading1'], fontName='Helvetica-Bold', fontSize=14, leading=18, textColor=colors.HexColor(BrandConfig.HEX_PRIMARY), alignment=1)
+        sub_style = ParagraphStyle('GASub', parent=styles['Normal'], fontName='Helvetica', fontSize=8.5, leading=12, textColor=colors.HexColor(BrandConfig.HEX_MUTED), alignment=1)
+        h2_style = ParagraphStyle('GAH2', parent=styles['Heading2'], fontName='Helvetica-Bold', fontSize=11, leading=15, textColor=colors.HexColor(BrandConfig.HEX_SECONDARY), spaceBefore=10, spaceAfter=4)
+        norm_style = ParagraphStyle('GANorm', parent=styles['Normal'], fontName='Helvetica', fontSize=8, leading=11)
+        bold_style = ParagraphStyle('GABold', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=8, leading=11)
+        th_style = ParagraphStyle('GATh', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=8, leading=10, textColor=colors.white)
+
+        story = []
+        aid = assessment_data.get("assessment_id", "GA-2025")
+        cdate = assessment_data.get("created_at", "")
+        slug = assessment_data.get("slug", "")
+
+        story.append(DocumentBranding.get_pdf_branded_header("RAPPORTO UFFICIALE DI GAP ANALYSIS 231", aid, cdate))
+        story.append(Spacer(1, 10))
+
+        story.append(Paragraph("RAPPORTO PERITALE DI GAP ANALYSIS & REMEDIATION PLAN", title_style))
+        story.append(Paragraph(f"Conformità D.Lgs. 231/2001 (Art. 24-bis) • ISO/IEC 27001:2022 • NIST CSF v2.0", sub_style))
+        story.append(Spacer(1, 10))
+
+        # Box Cliente
+        parties_data = [
+            [
+                Paragraph(f"<b>ORGANIZZAZIONE AUDITATA:</b><br/>{assessment_data.get('slug', 'Cliente').upper()}<br/>{assessment_data.get('scope', {}).get('location', '')}<br/>Referente Quote: {assessment_data.get('reference_quote_id', 'N/D')}", norm_style),
+                Paragraph(f"<b>ORGANISMO AUDITORE CERTIFICATORE:</b><br/>{BrandConfig.COMPANY_NAME}<br/>{BrandConfig.ADDRESS}<br/>Lead Auditor: {assessment_data.get('lead_auditor', 'Aure System Lead Auditor')}", norm_style)
+            ]
+        ]
+        t_parties = Table(parties_data, colWidths=[260, 260])
+        t_parties.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor(BrandConfig.HEX_SURFACE)),
+            ('BOX', (0, 0), (-1, -1), 0.5, colors.HexColor(BrandConfig.HEX_BORDER)),
+            ('TOPPADDING', (0, 0), (-1, -1), 6),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+        ]))
+        story.append(t_parties)
+        story.append(Spacer(1, 10))
+
+        # KPI Maturità
+        scores = assessment_data.get("gap_scores", {})
+        ov_pct = scores.get("overall_compliance_percent", 0.0)
+        kpi_data = [
+            [
+                Paragraph("<b>Conformità Complessiva</b>", norm_style),
+                Paragraph("<b>Maturità CMMI</b>", norm_style),
+                Paragraph("<b>Audit Documentale</b>", norm_style),
+                Paragraph("<b>Audit Tecnico (VA)</b>", norm_style)
+            ],
+            [
+                Paragraph(f"<font size='12' color='{BrandConfig.HEX_PRIMARY}'><b>{ov_pct:.1f}%</b></font>", bold_style),
+                Paragraph(f"<font size='12' color='{BrandConfig.HEX_PRIMARY}'><b>{scores.get('maturity_level', 1.0):.1f} / 5.0</b></font>", bold_style),
+                Paragraph(f"<b>{scores.get('documentary_score', 0.0):.1f}%</b>", norm_style),
+                Paragraph(f"<b>{scores.get('technical_vulnerability_score', 0.0):.1f}%</b>", norm_style)
+            ]
+        ]
+        t_kpi = Table(kpi_data, colWidths=[130, 130, 130, 130])
+        t_kpi.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor("#F8FAFC")),
+            ('BOX', (0, 0), (-1, -1), 0.5, colors.HexColor(BrandConfig.HEX_BORDER)),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('TOPPADDING', (0, 0), (-1, -1), 5),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
+        ]))
+        story.append(t_kpi)
+        story.append(Spacer(1, 10))
+
+        # Scorecard Domini
+        story.append(Paragraph("Scorecard di Conformità per Dominio di Sicurezza", h2_style))
+        dom_rows = [[Paragraph("Dominio di Valutazione", th_style), Paragraph("Conformità", th_style), Paragraph("Esito Peritale", th_style)]]
+        for k, v in scores.get("domain_scores", {}).items():
+            status_text = "CONFORME" if v >= 75 else ("GAP RILEVATO" if v >= 50 else "CRITICO")
+            dom_rows.append([
+                Paragraph(k.replace('_', ' ').title(), norm_style),
+                Paragraph(f"<b>{v:.1f}%</b>", norm_style),
+                Paragraph(status_text, norm_style)
+            ])
+        t_dom = Table(dom_rows, colWidths=[240, 120, 160])
+        t_dom.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor(BrandConfig.HEX_PRIMARY)),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor(BrandConfig.HEX_BORDER)),
+            ('TOPPADDING', (0, 0), (-1, -1), 4),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+        ]))
+        story.append(t_dom)
+        story.append(Spacer(1, 10))
+
+        # Remediation Plan
+        story.append(Paragraph("Remediation Plan Operativo (Azioni Prioritarie)", h2_style))
+        rem = assessment_data.get("remediation_plan", {})
+        rem_rows = [[
+            Paragraph("ID", th_style),
+            Paragraph("Priorità", th_style),
+            Paragraph("Termine", th_style),
+            Paragraph("Azione Correttiva", th_style),
+            Paragraph("Owner", th_style),
+            Paragraph("Stima Spesa", th_style)
+        ]]
+        for a in rem.get("actions", [])[:8]:
+            rem_rows.append([
+                Paragraph(f"<code>{a.get('id')}</code>", norm_style),
+                Paragraph(f"<b>{a.get('priority')}</b>", norm_style),
+                Paragraph(f"{a.get('deadline_days')} gg", norm_style),
+                Paragraph(a.get('title')[:38], norm_style),
+                Paragraph(a.get('owner')[:20], norm_style),
+                Paragraph(f"€ {a.get('estimated_cost_eur', 0):.2f}", norm_style)
+            ])
+        t_rem = Table(rem_rows, colWidths=[50, 75, 45, 180, 95, 75])
+        t_rem.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor(BrandConfig.HEX_SECONDARY)),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor(BrandConfig.HEX_BORDER)),
+            ('TOPPADDING', (0, 0), (-1, -1), 3),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
+        ]))
+        story.append(t_rem)
+        story.append(Spacer(1, 12))
+
+        # Firme e Sigillo
+        deliv = assessment_data.get("deliverables", {})
+        seal = deliv.get("sha256_seal", "N/A")
+        sign_data = [
+            [
+                Paragraph(f"<b>Per la Società Certificatrice:</b><br/>{BrandConfig.LEGAL_SIGNATURE}<br/>Sigillo Forense SHA-256:<br/><code>{seal[:32]}...</code>", norm_style),
+                Paragraph(f"<b>Per Ricevuta e Presa Visione (OdV / CDA):</b><br/>{assessment_data.get('slug', 'Cliente').upper()}<br/><br/>__________________________________", norm_style)
+            ]
+        ]
+        t_sign = Table(sign_data, colWidths=[260, 260])
+        t_sign.setStyle(TableStyle([('TOPPADDING', (0, 0), (-1, -1), 8)]))
+        story.append(t_sign)
+
+        out_pdf_path.parent.mkdir(parents=True, exist_ok=True)
+        doc.build(story)
+        return out_pdf_path
+
+    @staticmethod
+    def render_vulnerability_assessment_to_pdf(assessment_data: Dict[str, Any], out_pdf_path: Path) -> Path:
+        """Esporta il Rapporto Tecnico di Vulnerability Assessment (CVSS v4.0) in PDF A4."""
+        doc = SimpleDocTemplate(
+            str(out_pdf_path),
+            pagesize=A4,
+            leftMargin=36,
+            rightMargin=36,
+            topMargin=36,
+            bottomMargin=36
+        )
+        styles = getSampleStyleSheet()
+        title_style = ParagraphStyle('VATitle', parent=styles['Heading1'], fontName='Helvetica-Bold', fontSize=14, leading=18, textColor=colors.HexColor(BrandConfig.HEX_PRIMARY), alignment=1)
+        sub_style = ParagraphStyle('VASub', parent=styles['Normal'], fontName='Helvetica', fontSize=8.5, leading=12, textColor=colors.HexColor(BrandConfig.HEX_MUTED), alignment=1)
+        h2_style = ParagraphStyle('VAH2', parent=styles['Heading2'], fontName='Helvetica-Bold', fontSize=11, leading=15, textColor=colors.HexColor(BrandConfig.HEX_SECONDARY), spaceBefore=10, spaceAfter=4)
+        norm_style = ParagraphStyle('VANorm', parent=styles['Normal'], fontName='Helvetica', fontSize=8, leading=11)
+        bold_style = ParagraphStyle('VABold', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=8, leading=11)
+        th_style = ParagraphStyle('VATh', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=8, leading=10, textColor=colors.white)
+
+        story = []
+        aid = assessment_data.get("assessment_id", "VA-2025")
+        va = assessment_data.get("vulnerability_assessment", {})
+        sdate = va.get("scan_date", "")
+
+        story.append(DocumentBranding.get_pdf_branded_header("RAPPORTO TECNICO VULNERABILITY ASSESSMENT", aid, sdate))
+        story.append(Spacer(1, 10))
+
+        story.append(Paragraph("RAPPORTO TECNICO DI VULNERABILITY ASSESSMENT", title_style))
+        story.append(Paragraph("Metodologia CVSS v4.0 • Conformità Preventiva Reati Informatici (Art. 24-bis)", sub_style))
+        story.append(Spacer(1, 10))
+
+        sum_va = va.get("findings_summary", {})
+        kpi_va = [
+            [
+                Paragraph("<b>CRITICAL (>=9.0)</b>", bold_style),
+                Paragraph("<b>HIGH (7.0-8.9)</b>", bold_style),
+                Paragraph("<b>MEDIUM (4.0-6.9)</b>", bold_style),
+                Paragraph("<b>LOW (&lt;4.0)</b>", bold_style)
+            ],
+            [
+                Paragraph(f"<font size='12' color='#DC2626'><b>{sum_va.get('critical', 0)}</b></font>", bold_style),
+                Paragraph(f"<font size='12' color='#EA580C'><b>{sum_va.get('high', 0)}</b></font>", bold_style),
+                Paragraph(f"<font size='12' color='#D97706'><b>{sum_va.get('medium', 0)}</b></font>", bold_style),
+                Paragraph(f"<font size='12' color='#2563EB'><b>{sum_va.get('low', 0)}</b></font>", bold_style)
+            ]
+        ]
+        t_kpi_va = Table(kpi_va, colWidths=[130, 130, 130, 130])
+        t_kpi_va.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor("#F8FAFC")),
+            ('BOX', (0, 0), (-1, -1), 0.5, colors.HexColor(BrandConfig.HEX_BORDER)),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('TOPPADDING', (0, 0), (-1, -1), 5),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
+        ]))
+        story.append(t_kpi_va)
+        story.append(Spacer(1, 12))
+
+        # Tabella Rilievi
+        story.append(Paragraph("Registro Dettagliato delle Vulnerabilità Rilevate", h2_style))
+        find_rows = [[
+            Paragraph("CVE ID", th_style),
+            Paragraph("IP Target", th_style),
+            Paragraph("Porta/Servizio", th_style),
+            Paragraph("CVSS v4", th_style),
+            Paragraph("Severità", th_style),
+            Paragraph("Descrizione Debolezza", th_style)
+        ]]
+        for f in va.get("findings", []):
+            find_rows.append([
+                Paragraph(f"<code>{f.get('cve_id')}</code>", norm_style),
+                Paragraph(f.get('target_ip', ''), norm_style),
+                Paragraph(f"{f.get('port')}/{f.get('service')[:16]}", norm_style),
+                Paragraph(f"<b>{f.get('cvss_v4_score')}</b>", norm_style),
+                Paragraph(f.get('severity', '').upper(), norm_style),
+                Paragraph(f.get('title')[:36], norm_style)
+            ])
+        t_find = Table(find_rows, colWidths=[80, 80, 90, 50, 60, 160])
+        t_find.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor(BrandConfig.HEX_PRIMARY)),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor(BrandConfig.HEX_BORDER)),
+            ('TOPPADDING', (0, 0), (-1, -1), 3),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
+        ]))
+        story.append(t_find)
+        story.append(Spacer(1, 14))
+
+        sign_data = [
+            [
+                Paragraph(f"<b>Aure System — Divisione Sicurezza Offensiva & VA</b><br/>{BrandConfig.LEGAL_SIGNATURE}", norm_style),
+                Paragraph("<b>Attestazione Consegna Risultati al Responsabile IT:</b><br/><br/>__________________________________", norm_style)
+            ]
+        ]
+        t_sign = Table(sign_data, colWidths=[260, 260])
+        t_sign.setStyle(TableStyle([('TOPPADDING', (0, 0), (-1, -1), 8)]))
+        story.append(t_sign)
+
+        out_pdf_path.parent.mkdir(parents=True, exist_ok=True)
+        doc.build(story)
+        return out_pdf_path

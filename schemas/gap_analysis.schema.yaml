@@ -1,0 +1,199 @@
+﻿$schema: "http://json-schema.org/draft-07/schema#"
+title: "Compliance & Gap Analysis Schema (Pipeline J - SPEC-19)"
+description: "Schema formale per audit di conformita', interviste 5 aree, vulnerability assessment CVSS v4.0 e remediation plan"
+type: object
+required:
+  - assessment_id
+  - slug
+  - title
+  - framework
+  - created_at
+  - status
+  - lead_auditor
+  - scope
+properties:
+  assessment_id:
+    type: string
+  slug:
+    type: string
+  title:
+    type: string
+  framework:
+    type: string
+    enum: ["dlgs_231", "iso_27001", "nist_csf", "gdpr_integrated", "custom"]
+  created_at:
+    type: string
+    format: date
+  target_completion_date:
+    type: string
+    format: date
+  status:
+    type: string
+    enum: ["draft", "in_progress", "remediation_ready", "closed"]
+  lead_auditor:
+    type: string
+  reference_quote_id:
+    type: string
+  scope:
+    type: object
+    required:
+      - location
+    properties:
+      location:
+        type: string
+      target_networks:
+        type: array
+        items:
+          type: string
+      in_scope_assets_count:
+        type: integer
+      third_party_dependencies:
+        type: array
+        items:
+          type: string
+  documentary_review:
+    type: object
+    properties:
+      documents_requested:
+        type: integer
+      documents_received:
+        type: integer
+      reviewed_items:
+        type: array
+        items:
+          type: object
+          required:
+            - code
+            - name
+            - status
+          properties:
+            code:
+              type: string
+            name:
+              type: string
+            status:
+              type: string
+              enum: ["compliant", "compliant_with_gaps", "missing", "not_applicable"]
+            finding:
+              type: string
+  interviews:
+    type: array
+    items:
+      type: object
+      required:
+        - area
+        - respondent
+        - maturity_score
+      properties:
+        area:
+          type: string
+          enum: ["ciso_security", "it_operations", "risk_compliance", "procurement_contracts", "facility_physical_security"]
+        respondent:
+          type: string
+        interview_date:
+          type: string
+          format: date
+        maturity_score:
+          type: number
+          minimum: 1.0
+          maximum: 5.0
+        notes:
+          type: string
+        answers:
+          type: object
+  vulnerability_assessment:
+    type: object
+    properties:
+      scan_date:
+        type: string
+        format: date
+      engine:
+        type: string
+      total_targets_scanned:
+        type: integer
+      findings_summary:
+        type: object
+        properties:
+          critical:
+            type: integer
+          high:
+            type: integer
+          medium:
+            type: integer
+          low:
+            type: integer
+      findings:
+        type: array
+        items:
+          type: object
+          required:
+            - target_ip
+            - cvss_v4_score
+            - severity
+            - title
+          properties:
+            cve_id:
+              type: string
+            target_ip:
+              type: string
+            service:
+              type: string
+            cvss_v4_score:
+              type: number
+              minimum: 0.0
+              maximum: 10.0
+            severity:
+              type: string
+              enum: ["critical", "high", "medium", "low"]
+            title:
+              type: string
+            remediation:
+              type: string
+  gap_scores:
+    type: object
+    properties:
+      overall_compliance_percent:
+        type: number
+        minimum: 0.0
+        maximum: 100.0
+      maturity_level:
+        type: number
+      domain_scores:
+        type: object
+  remediation_plan:
+    type: object
+    properties:
+      total_actions:
+        type: integer
+      actions:
+        type: array
+        items:
+          type: object
+          required:
+            - id
+            - priority
+            - deadline_days
+            - title
+            - owner
+          properties:
+            id:
+              type: string
+            priority:
+              type: string
+              enum: ["P1_CRITICAL", "P2_HIGH", "P3_MEDIUM", "P4_LOW"]
+            deadline_days:
+              type: integer
+            domain:
+              type: string
+            title:
+              type: string
+            description:
+              type: string
+            owner:
+              type: string
+            estimated_cost_eur:
+              type: number
+            related_reato_presupposto:
+              type: string
+  deliverables:
+    type: object

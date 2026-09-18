@@ -1,0 +1,32 @@
+slug: "unisped-ag-sas"
+client_name: "Unisped AG S.a.s."
+created_at: "2026-09-18"
+
+contacts:
+  - name: "Referente Tecnico"
+    role: "Responsabile IT / Sicurezza"
+    email: "it@unisped.it"
+    phone: "+39 081 0000001"
+  - name: "Referente Amministrazione"
+    role: "Direzione / Amministrazione"
+    email: "amministrazione@unisped.it"
+    phone: "+39 081 0000002"
+
+billing_info:
+  vat_id: "IT01385160633"
+  fiscal_code: "01385160633"
+  sdi_code: "0000000"
+  pec: "unisped@pec.it"
+  iban: "IT00X0000000000000000000000"
+  payment_terms: "30_DF_50_50"
+  address:
+    street: "Via San Nicola alla Dogana, 9"
+    zip: "80133"
+    city: "Napoli"
+    province: "NA"
+
+modules:
+  it_support: true
+  mps_rental: false
+  office_furniture: false
+  compliance_gap_analysis: true
