@@ -262,3 +262,10 @@ Il modulo `SkillsManager` (`scripts/core/skills_manager.py`) implementa la gover
 - **Catalogo Curato**: Accesso istantaneo a oltre 300 skills dal repository ufficiale `rmyndharis/antigravity-skills`.
 - **Installazione Standalone in Pure Python**: Installazione atomica senza dipendenze Node.js/npm.
 - **Nazionalizzazione Normativa**: Revisione obbligatoria per garantire che le competenze acquisite rispettino il diritto italiano e gli standard comunitari (es. `billing-automation` su FatturaPA v1.2, Codici Agenzia Entrate MP05/MP12, DFFM e D.Lgs. 231/2002).
+
+---
+
+## 8. Tassonomia Architetturale Integrata & Continuum di Determinismo (SPEC-23)
+
+Per la classificazione ontologica, la matrice decisionale di design e il grado di confidenza dei 10 pattern architetturali (Trigger, Daemon, Automazioni, Hook, Pipeline, Shared Entity Bridge, Workflow, Cognitive Bridge, Agent, Swarm Multi-Agente), consultare la specifica formale certificata OKF v0.2:
+👉 [`docs/specs/23-spec-integrated-architectural-taxonomy.okf.md`](specs/23-spec-integrated-architectural-taxonomy.okf.md).

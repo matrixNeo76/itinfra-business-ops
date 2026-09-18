@@ -161,6 +161,10 @@ La suite include il wrapper Windows [`it-ops.cmd`](file:///c:/Users/auresystem/r
 | **SPEC-08** | Ingestione Visiva Nativa (Pixel-to-Markdown) & OKF v0.2 | [`08-spec-visual-document-ingestion-okf.md`](docs/specs/08-spec-visual-document-ingestion-okf.md) |
 | **SPEC-16** | Enterprise Document Templates, Corporate Branding & Multi-Format Rendering | [`16-spec-enterprise-document-templates-branding.md`](docs/specs/16-spec-enterprise-document-templates-branding.md) |
 | **SPEC-17** | Unified Cognitive Memory Architecture & Cross-Repository Self-Correction Bridge | [`17-spec-unified-cognitive-memory-bridge.md`](docs/specs/17-spec-unified-cognitive-memory-bridge.md) |
+| **SPEC-20** | Mission Control Dashboard 360°, Swarm di Agenti Deterministici & Git Guard | [`20-spec-mission-control-and-autonomous-swarm.okf.md`](docs/specs/20-spec-mission-control-and-autonomous-swarm.okf.md) |
+| **SPEC-21** | State-Machine Workflow Orchestration & Continuous Lifecycle Assurance | [`21-spec-workflow-orchestration-and-lifecycle-assurance.okf.md`](docs/specs/21-spec-workflow-orchestration-and-lifecycle-assurance.okf.md) |
+| **SPEC-22** | Event-Driven Proactive Trigger System & Safe Action Gate | [`22-spec-event-driven-trigger-system-and-action-gate.okf.md`](docs/specs/22-spec-event-driven-trigger-system-and-action-gate.okf.md) |
+| **SPEC-23** | Tassonomia Architetturale Integrata: Da Determinismo Puro a Sistemi Agentici | [`23-spec-integrated-architectural-taxonomy.okf.md`](docs/specs/23-spec-integrated-architectural-taxonomy.okf.md) |
 
 ### Pipeline Operative OKF v0.2
 | Pipeline | Titolo Specifica OKF v0.2 | Documento |

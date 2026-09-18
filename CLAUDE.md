@@ -45,4 +45,5 @@ Questo è l'ambiente di lavoro per la gestione operativa, commerciale, fatturazi
 ## 🔒 Principi di Integrazione Hub-and-Spoke
 * **SoC**: Repository commerciale/operativo separato dal repository tecnico `itinfra`.
 * **Shared Slug**: Identificativo cliente identico (`<slug>`).
+* **Tassonomia Architetturale (SPEC-23)**: Consulta [`docs/specs/23-spec-integrated-architectural-taxonomy.okf.md`](docs/specs/23-spec-integrated-architectural-taxonomy.okf.md) per la matrice di determinismo dei 10 concetti architetturali.
 * **Cross-Check**: Lettura in sola lettura di `../itinfra/projects/<slug>/` per coerenza con As-Built.

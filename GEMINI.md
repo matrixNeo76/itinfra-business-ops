@@ -80,3 +80,4 @@ Quando l'utente carica o allega un file (PDF, fattura, distinta tecnica, offerta
 1. **Separation of Concerns**: Non inserire mai dati contabili o di fatturazione all'interno del repository tecnico `itinfra`.
 2. **Read-Only Bridge**: L'accesso ai documenti tecnici in `../itinfra/projects/<slug>/` è sempre e solo in lettura (`manifest.yaml`, `06-As-Built.md`).
 3. **Shared Customer Slug**: Lo slug cliente (es. `cliente-rossi-srl`) deve coincidere esattamente tra i due repository per permettere la cross-validazione degli asset.
+4. **Tassonomia e Continuum Deterministico (SPEC-23)**: Consulta sempre [`docs/specs/23-spec-integrated-architectural-taxonomy.okf.md`](docs/specs/23-spec-integrated-architectural-taxonomy.okf.md) per verificare la natura (deterministica vs probabilistica) dei 10 componenti di architettura.
