@@ -1,0 +1,70 @@
+workflow_id: WF-20260918204554-FIRMWARE-UPGRADE-severinosrl
+workflow_type: firmware-upgrade
+slug: severino-srl
+status: COMPLETED
+created_at: '2026-09-18T20:45:54.104990+00:00'
+updated_at: '2026-09-18T20:45:54.210063+00:00'
+completed_at: '2026-09-18T20:45:54.210063+00:00'
+initiated_by: cli:operator
+current_step_index: 5
+total_steps: 5
+steps:
+- step_id: preflight_backup
+  name: Esportazione Backup Configurazione nel Vault
+  status: DONE
+  started_at: '2026-09-18T20:45:54.157694+00:00'
+  completed_at: '2026-09-18T20:45:54.162743+00:00'
+  output_summary: Backup di sicurezza pre-upgrade esportato e salvato nel Vault locale
+    crittografato per Router-Core-01.
+  data:
+    device: Router-Core-01
+    backup_file: Router-Core-01-pre-upgrade.rsc
+    vault_locked: true
+  error: null
+- step_id: hash_check
+  name: Verifica Immagine Firmware con SHA-256 Ufficiale
+  status: DONE
+  started_at: '2026-09-18T20:45:54.168090+00:00'
+  completed_at: '2026-09-18T20:45:54.172129+00:00'
+  output_summary: Immagine firmware v7.16.2-stable verificata con hash SHA-256 ufficiale
+    OEM.
+  data:
+    version: v7.16.2-stable
+    sha256_verified: true
+  error: null
+- step_id: safe_deploy
+  name: Deploy Firmware in Modalità Safe-Mode con Auto-Revert
+  status: DONE
+  started_at: '2026-09-18T20:45:54.177415+00:00'
+  completed_at: '2026-09-18T20:45:54.182437+00:00'
+  output_summary: Firmware installato in Safe-Mode su Router-Core-01. Timer di auto-revert
+    attivo (600s).
+  data:
+    safe_mode: true
+    revert_timer_seconds: 600
+  error: null
+- step_id: smoke_test
+  name: Smoke Test di Connettività, Routing e Tunnel VPN
+  status: DONE
+  started_at: '2026-09-18T20:45:54.187501+00:00'
+  completed_at: '2026-09-18T20:45:54.193550+00:00'
+  output_summary: 'Smoke test di rete superato: Ping < 2ms, Tabelle OSPF/BGP stabili,
+    Tunnel VPN attivi.'
+  data:
+    ping_gateway_ms: 1.2
+    vpn_tunnels_online: 3
+    packet_loss_pct: 0.0
+  error: null
+- step_id: commit_or_rollback
+  name: Consolidamento Permanente o Ripristino Rapido
+  status: DONE
+  started_at: '2026-09-18T20:45:54.199146+00:00'
+  completed_at: '2026-09-18T20:45:54.204217+00:00'
+  output_summary: Safe-Mode disattivata. Configurazione firmware consolidata permanentemente
+    con successo.
+  data:
+    committed: true
+    reverted: false
+    device: Router-Core-01
+  error: null
+metadata: {}

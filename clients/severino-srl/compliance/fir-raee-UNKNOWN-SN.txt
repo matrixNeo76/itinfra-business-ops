@@ -1,0 +1,24 @@
+================================================================================
+           FORMULARIO DI IDENTIFICAZIONE RIFIUTI (F.I.R. RAEE)
+           Ai sensi dell'art. 193 D.Lgs. 152/2006 e D.Lgs. 49/2014
+================================================================================
+Data Emissione: 2026-09-18
+Produttore / Detentore: severino-srl
+Destinatario Smaltimento: Centro di Raccolta RAEE Autorizzato Cat. 3 / Cat. 4
+
+DETTAGLIO APPARATO INFORMATICO DISMESSO:
+- Descrizione  : Apparato Hardware
+- Seriale (S/N): UNKNOWN-SN
+- Codice CER   : 16 02 14 (Apparecchiature fuori uso non pericolose)
+- Quantità     : 1 unità
+- Stato Fisico : Solido non pulverulento
+
+ATTESTAZIONE DI CANCELLAZIONE SICURA DATI:
+Si certifica che i supporti di memoria magnetici/elettronici del dispositivo 
+sono stati integralmente bonificati secondo standard NIST SP 800-88 Rev. 1, 
+in conformità al Provvedimento del Garante per la Protezione dei Dati Personali 
+del 13 ottobre 2008.
+
+Firma Operatore Autorizzato (Aure System): Eduardo Possumato
+Firma per Presa in Carico Trasportatore / Centro RAEE: ______________________
+================================================================================

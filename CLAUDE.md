@@ -39,6 +39,7 @@ Questo è l'ambiente di lavoro per la gestione operativa, commerciale, fatturazi
 | **Gestore Skills (Catalogo 300+)** | `skills [search\|list\|info\|install]` | `.\it-ops.cmd skills [search\|list\|info\|install]` |
 | **Orchestrazione Workflows (SPEC-21)** | `workflow <name> <slug>` *(o `wf`)* | `.\it-ops.cmd workflow [run\|list\|status] <name> <slug>` |
 | **Trigger Proattivi & Gate (SPEC-22)** | `triggers [pending\|scan\|approve]` *(o `tr`)* | `.\it-ops.cmd triggers [pending\|scan\|approve\|reject]` |
+| **Gestione Crediti 231 (SPEC-24)** | `credit [status\|calculate\|remind]` *(o `cr`)* | `.\it-ops.cmd credit [status\|calculate\|remind]` |
 
 ---
 
@@ -46,4 +47,5 @@ Questo è l'ambiente di lavoro per la gestione operativa, commerciale, fatturazi
 * **SoC**: Repository commerciale/operativo separato dal repository tecnico `itinfra`.
 * **Shared Slug**: Identificativo cliente identico (`<slug>`).
 * **Tassonomia Architetturale (SPEC-23)**: Consulta [`docs/specs/23-spec-integrated-architectural-taxonomy.okf.md`](docs/specs/23-spec-integrated-architectural-taxonomy.okf.md) per la matrice di determinismo dei 10 concetti architetturali.
+* **Conformità Nazionale Italiana & Estensioni (SPEC-24)**: Consulta [`docs/specs/24-spec-italian-compliance-and-high-return-extensions.okf.md`](docs/specs/24-spec-italian-compliance-and-high-return-extensions.okf.md) per la validazione fiscale P.IVA/CF, mora 231, CCNL e workflow tecnici.
 * **Cross-Check**: Lettura in sola lettura di `../itinfra/projects/<slug>/` per coerenza con As-Built.

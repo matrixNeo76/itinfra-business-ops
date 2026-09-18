@@ -241,3 +241,13 @@ Durante lo sviluppo quotidiano e l'evoluzione dei due progetti, fare riferimento
 - [`docs/20-SPEC-MISSION-CONTROL-AND-AUTONOMOUS-SWARM.md`](../../../itinfra/docs/20-SPEC-MISSION-CONTROL-AND-AUTONOMOUS-SWARM.md): Controparte tecnica SPEC-20.
 - [`docs/21-SPEC-WORKFLOW-ORCHESTRATION-AND-LIFECYCLE-ASSURANCE.md`](../../../itinfra/docs/21-SPEC-WORKFLOW-ORCHESTRATION-AND-LIFECYCLE-ASSURANCE.md): Controparte tecnica SPEC-21.
 - [`docs/22-SPEC-EVENT-DRIVEN-TRIGGER-SYSTEM-AND-ACTION-GATE.md`](../../../itinfra/docs/22-SPEC-EVENT-DRIVEN-TRIGGER-SYSTEM-AND-ACTION-GATE.md): Controparte tecnica SPEC-22.
+
+
+---
+
+## 8. Applicazione Esecutiva nella Triade di Estensioni ad Alto Ritorno (SPEC-24)
+
+La tassonomia dei 10 concetti trova diretta attuazione e validazione sul campo nella specifica **SPEC-24**:
+- **Ambito 1 (Incident $\rightarrow$ Rapportino)**: combina **Trigger** (`telemetry.incident.created`), **Shared Entity Bridge** (Shared Customer Slug & 10-RCA.md), **Safe Action Gate** (approvazione umana preventiva) e **Pipeline** (Pipeline B con calcolo maggiorazioni CCNL).
+- **Ambito 2 (Credit Collection D.Lgs. 231/2002)**: unisce **Daemon** (`CreditDaemon` per scansione continua partite aperte), **Automazione** (formula matematica BCE + 8% e €40 forfait), **Hook** (blocco Git Guard per P.IVA/CF errati) e **Pipeline** (Pipeline C per emissione lettere graduate a 3 stadi).
+- **Ambito 3 (Technical Workflows FSM)**: implementa **Workflow** finiti e resumable a 5 step per `itinfra` (`dr-drill`, `firmware-upgrade`, `hardware-decommissioning-raee`), garantendo la massima resilienza operativa deterministica su procedure critiche di cybersecurity, continuità operativa e sostenibilità ecologica.

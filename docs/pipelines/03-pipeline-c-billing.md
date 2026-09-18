@@ -135,3 +135,28 @@ Dato l'importo totale $T_{gross}$ e la data fattura $D$:
   --inst 1 `
   --tx "CRO-123456789012"
 ```
+
+
+---
+
+## 5. Gestione Crediti, Interessi di Mora & Recupero ex D.Lgs. 231/2002 (SPEC-24)
+
+### 5.1 Calcolo Automatico Interessi Moratori Commerciali
+Nelle transazioni B2B tra imprese, in caso di ritardo nel pagamento delle fatture attive:
+- **Decorrenza Automatica**: Gli interessi di mora decorrono ipso iure dal giorno successivo alla scadenza pattuita, senza obbligo di preventiva costituzione in mora (Art. 4 D.Lgs. 231/2002).
+- **Tasso Legale di Mora**: Tasso BCE sulle operazioni di rifinanziamento principale + maggiorazione legale **+8.00%** (es. BCE 3.50% $\rightarrow$ **11.50% annuo**).
+- **Formula di Calcolo**:
+  $$\text{Interessi} = \frac{\text{Capitale Insoluto} \times \text{Tasso Mora} \times \text{Giorni Ritardo}}{365}$$
+- **Risarcimento Forfettario dei Costi di Recupero (Art. 6)**: Spetta al creditore, per ciascuna fattura scaduta e senza necessità di prova del danno, l'importo fisso di **€ 40,00**.
+
+### 5.2 Strategia di Sollecito Graduata a 3 Stadi
+Il modulo `ItalianComplianceGuard` e la CLI `it-ops credit remind` generano formalmente:
+1. **Stadio 1 (Scaduta da 7 a 14 giorni)**: *Avviso di Cortesia / Promemoria* (invito bonario al saldo con coordinate IBAN).
+2. **Stadio 2 (Scaduta da 15 a 30 giorni)**: *Sollecito Formale con Addebito Mora 231 & 40 €* (estratto conto analitico con sorte capitale, mora al centesimo e risarcimento spese).
+3. **Stadio 3 (Scaduta da oltre 30 giorni)**: *Diffida ad Adempiere e Costituzione in Mora ex Art. 1219 C.C.* (termine perentorio di 5 giorni, preavviso immediato di sospensione supporto SLA e passaggio al legale per decreto ingiuntivo provvisoriamente esecutivo).
+
+### 5.3 Presidio Fiscale Deterministico in Entrata
+Tutti i dati fiscali associati al cliente sono convalidati all'origine da `ItalianComplianceGuard`:
+- Partita IVA a 11 cifre con verifica algebrica Luhn modificato italiano.
+- Codice Fiscale a 16 caratteri conforme al DM 23/12/1976 con gestione ufficiale omocodie (lettere L..V).
+- Canale SDI conforme alle specifiche dell'Agenzia delle Entrate (7 car. B2B, 6 car. IPA per PA, 0000000 + PEC).

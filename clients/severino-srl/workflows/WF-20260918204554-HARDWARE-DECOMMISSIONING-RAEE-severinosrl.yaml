@@ -1,0 +1,57 @@
+workflow_id: WF-20260918204554-HARDWARE-DECOMMISSIONING-RAEE-severinosrl
+workflow_type: hardware-decommissioning-raee
+slug: severino-srl
+status: COMPLETED
+created_at: '2026-09-18T20:45:54.244935+00:00'
+updated_at: '2026-09-18T20:45:54.334719+00:00'
+completed_at: '2026-09-18T20:45:54.334719+00:00'
+initiated_by: cli:operator
+current_step_index: 4
+total_steps: 4
+steps:
+- step_id: identify_asset
+  name: Ispezione Seriale & Censimento As-Built / SLA
+  status: DONE
+  started_at: '2026-09-18T20:45:54.297107+00:00'
+  completed_at: '2026-09-18T20:45:54.301093+00:00'
+  output_summary: 'Identificato apparato da dismettere: Apparato Hardware (S/N: UNKNOWN-SN)
+    per cliente severino-srl.'
+  data:
+    slug: severino-srl
+    serial: UNKNOWN-SN
+    model: Apparato Hardware
+  error: null
+- step_id: nist_sanitize
+  name: Sanificazione Sicura Supporti NIST SP 800-88 Purge
+  status: DONE
+  started_at: '2026-09-18T20:45:54.305111+00:00'
+  completed_at: '2026-09-18T20:45:54.309094+00:00'
+  output_summary: Sanificazione dati eseguita (NIST 800-88 Purge 3-pass). Certificato
+    crittografico generato.
+  data:
+    standard: NIST SP 800-88 Rev. 1
+    method: Cryptographic Erase & Block Overwrite (3-pass)
+    wipe_verification_hash: 7f26d2b72c2af7e2c61a2645cf655f2740e04b7dd844f97c67f0d7f4135eab6e
+    gdpr_compliant: true
+  error: null
+- step_id: asbuilt_detach
+  name: Distacco Apparato da As-Built e Canone SLA
+  status: DONE
+  started_at: '2026-09-18T20:45:54.314293+00:00'
+  completed_at: '2026-09-18T20:45:54.318685+00:00'
+  output_summary: Apparato S/N UNKNOWN-SN rimosso dall'As-Built e stralciato dal canone
+    SLA attivo.
+  data:
+    serial_removed: UNKNOWN-SN
+    sla_adjusted: true
+  error: null
+- step_id: raee_fir_generation
+  name: Emissione Formulario Identificazione Rifiuti RAEE
+  status: DONE
+  started_at: '2026-09-18T20:45:54.323679+00:00'
+  completed_at: '2026-09-18T20:45:54.329699+00:00'
+  output_summary: Documento FIR per smaltimento ecologico RAEE generato in fir-raee-UNKNOWN-SN.txt.
+  data:
+    fir_document: C:\Users\auresystem\repos\itinfra-business-ops\clients\severino-srl\compliance\fir-raee-UNKNOWN-SN.txt
+  error: null
+metadata: {}

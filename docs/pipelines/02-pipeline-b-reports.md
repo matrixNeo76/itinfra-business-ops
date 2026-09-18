@@ -122,3 +122,25 @@ $$H_{rounded} = \frac{\text{Steps} \times 30}{60} = \text{Steps} \times 0.5 \tex
 # Visualizzare il riepilogo delle ore dell'archivio rapportini
 .\it-ops.cmd report <slug> balance
 ```
+
+
+---
+
+## 5. Tariffe CCNL & Integrazione Incident Cross-Repo (SPEC-24)
+
+### 5.1 Maggiorazioni Orarie CCNL Metalmeccanico / Terziario ICT
+Per gli interventi tecnici straordinari o fuori orario canonico (08:30 - 18:30), la pipeline applica deterministiche maggiorazioni sul consumo ore o tariffa:
+- **Intervento Feriale Diurno**: moltiplicatore **1.00x** (tariffa ordinaria da contratto).
+- **Intervento Feriale Notturno (22:00 - 06:00)**: moltiplicatore **1.20x** (+20% consumo ore/tariffa).
+- **Intervento Festivo / Sabato-Domenica**: moltiplicatore **1.30x** (+30% consumo ore/tariffa).
+- **Intervento Festivo Notturno**: moltiplicatore **1.50x** (+50% consumo ore/tariffa).
+
+### 5.2 Ponte Deterministico Incident-to-Report
+Alla redazione o chiusura di un fascicolo post-mortem `10-RCA.md` nel repository tecnico `itinfra`:
+1. L'evento `telemetry.incident.created` viene intercettato dal `TriggerEngine`.
+2. Il **Safe Action Gate** notifica l'azione proposta `incident_emergency_report`.
+3. Previa autorizzazione dell'operatore, `ReportsPipeline.create_incident_report_draft()` genera la bozza del rapportino con evidenza degli apparati impattati, calcolo automatico del moltiplicatore CCNL e scarico dal monte ore del contratto SLA attivo.
+
+### 5.3 Valore Probatorio e Firma Elettronica
+In conformità all'**Art. 2702 c.c.** e al **Codice dell'Amministrazione Digitale (D.Lgs. 82/2005)**:
+- Il rapportino firmato su HTML5 Canvas acquisisce data certa con marcatura oraria ISO 8601 e sigillo crittografico SHA-256 (`sha256_seal`), costituendo piena prova della prestazione eseguita.

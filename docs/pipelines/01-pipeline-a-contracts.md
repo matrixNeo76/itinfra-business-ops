@@ -118,3 +118,13 @@ Dato un monte ore totale $H_{tot}$, ore già consumate $H_{cons}$, e un nuovo in
 # Generare la bozza di rinnovo per l'anno successivo
 .\it-ops.cmd contract <slug> renew --contract-id CTR-2026-SEVERINO
 ```
+
+
+---
+
+## 5. Sorveglianza Continua Scadenze & Rinnovi (SPEC-21, SPEC-24)
+
+In aderenza alle specifiche **SPEC-21** e **SPEC-24**:
+- **Demone di Sorveglianza Contrattuale (`CreditDaemon`)**: Monitora costantemente la data di scadenza (`end_date`) dei contratti attivi emettendo alert a **60 giorni** (avvio trattativa revisione tariffe) e a **30 giorni** (termine per eventuale disdetta a norma delle condizioni generali di contratto).
+- **Workflow a Stati Finiti `contract-renewal`**: Avvia la procedura FSM guidata in 4 step per la revisione del canone, aggiornamento monte ore, redazione nuova appendice contrattuale e archiviazione del contratto precedente.
+- **Trigger Proattivo `contract.renewal.*`**: Inoltra la proposta di rinnovo al **Safe Action Gate** (SPEC-22) richiedendo l'autorizzazione dell'amministrazione prima di apportare modifiche all'anagrafica cliente.
