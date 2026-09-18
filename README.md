@@ -43,7 +43,7 @@ flowchart TD
 
 ---
 
-## 🚀 Le 10 Pipeline Operative
+## 🚀 Le 11 Pipeline Operative
 
 | Pipeline | Ambito | Descrizione & Output |
 | :---: | :--- | :--- |
@@ -57,6 +57,7 @@ flowchart TD
 | **H** | **Ingestione Documentale SOTA (OKF v0.2)** | Analisi visiva nativa pixel-to-markdown di PDF, contratti e preventivi, decomposizione modulare e audit qualitativo deterministico. |
 | **I** | **Memoria Auto-Correttiva & Cognitive Bridge (SPEC-17)** | Apprendimento attestato con trust tiers, compilazione regole Antigravity e ponte federato con la memoria di `itinfra`. |
 | **J** | **Gap Analysis & Compliance D.Lgs. 231/2001 (SPEC-19)** | Audit peritale reati informatici (Art. 24-bis), scoring CVSS v4.0 FIRST, remediation plan e cross-check Shadow IT As-Built. |
+| **K** | **Onboarding Unificato Clienti (SPEC-20)** | Provisioning atomico commerciale/tecnico dual-repo, calcolo IPAM, tier SLA e certificazione zero-drift (`client-manifest.yaml`). |
 
 ---
 
@@ -97,6 +98,25 @@ La suite include il wrapper Windows [`it-ops.cmd`](file:///c:/Users/auresystem/r
 
 # Calcolo Batch Fatturazione e Scadenzario
 .\it-ops.cmd billing <slug> summary
+
+# Onboarding Unificato & Dual-Repo Scaffolding (SPEC-20)
+.\it-ops.cmd onboard <slug> --client "Nome" --vat "IT..." [--subnet "192.168.X.0/24"] [--tier silver|gold|platinum]
+
+# Mission Control & Dashboard 360°
+.\it-ops.cmd mission-control [--html]
+.\it-ops.cmd ui
+
+# Swarm Agenti Deterministici Specializzati
+.\it-ops.cmd agent [audit-231|finance-reconciler|infrastructure-sentinel|contract-guardian|swarm] <slug>
+
+# Demoni di Monitoraggio Proattivo
+.\it-ops.cmd daemon [mps|sla] [--once]
+
+# Git Guard Hooks Deterministici
+.\it-ops.cmd hooks [install|check] [--both]
+
+# Gestore Skills Agente (Catalogo 300+)
+.\it-ops.cmd skills [search|list|info|install]
 
 # Commesse Arredo Ufficio
 .\it-ops.cmd furniture <slug> status
@@ -139,6 +159,10 @@ La suite include il wrapper Windows [`it-ops.cmd`](file:///c:/Users/auresystem/r
 | **E** | Preventivazione Multiprodotto Cost-Plus | [`05-pipeline-e-quotes.md`](docs/pipelines/05-pipeline-e-quotes.md) |
 | **F** | Noleggio Multifunzione MPS & Telemetria SNMP | [`06-pipeline-f-mps-rental.md`](docs/pipelines/06-pipeline-f-mps-rental.md) |
 | **G** | Commesse Arredo Ufficio & Collaudo Finale | [`07-pipeline-g-furniture.md`](docs/pipelines/07-pipeline-g-furniture.md) |
+| **H** | Ingestione Documentale SOTA & Visual Parsing | [`08-pipeline-h-document-ingestion.okf.md`](docs/pipelines/08-pipeline-h-document-ingestion.okf.md) |
+| **I** | Memoria Auto-Correttiva Attestata & Cognitive Bridge | [`09-pipeline-i-memory-learning.okf.md`](docs/pipelines/09-pipeline-i-memory-learning.okf.md) |
+| **J** | Gap Analysis & Compliance D.Lgs. 231/2001 | [`10-pipeline-j-gap-analysis.okf.md`](docs/pipelines/10-pipeline-j-gap-analysis.okf.md) |
+| **K** | Onboarding Unificato & Dual Storage Zero-Drift | [`11-pipeline-k-client-onboarding.okf.md`](docs/pipelines/11-pipeline-k-client-onboarding.okf.md) |
 | **📐 Visual** | **Compendio Diagrammi ASCII (Hub & Pipelines)** | [`docs/ASCII_DIAGRAMS.md`](docs/ASCII_DIAGRAMS.md) |
 
 ---

@@ -212,3 +212,53 @@ flowchart TD
    - `.\it-ops.cmd learn promotables`: elenca tutte le voci dello scratchpad globale `itinfra` idonee alla promozione.
    - `.\it-ops.cmd learn promote <entry_id> --code <CODE> --title "..."`: promuove la voce in nodo OKF v0.2, sigilla con SHA-256 e rigenera le regole agentiche live.
 
+
+
+---
+
+## 6. Continuous Assurance, Mission Control & Swarm Deterministico (`SPEC-20`)
+
+L'architettura introduce un livello di controllo esecutivo centralizzato e continuo:
+
+```mermaid
+graph TD
+    subgraph UI ["Executive Interfaces"]
+        MC["Mission Control (it-ops mc / it-ops ui)<br/>Terminal ANSI + Zero-CDN HTML Dashboard"]
+        QS["Interactive Quote Simulator<br/>HTML5 Dynamic Margins & Markups"]
+    end
+
+    subgraph SWARM ["Bounded Deterministic Swarm (it-ops agent)"]
+        S_AUD["Auditor231Agent (Maturita 231 & CVSS v4.0)"]
+        S_FIN["FinanceReconcilerAgent (SLA, Copie MPS & Fatturazione)"]
+        S_INF["InfrastructureSentinelAgent (Cross-Check As-Built)"]
+        S_CTR["ContractGuardianAgent (Burn Rate Ore & Scadenzario)"]
+    end
+
+    subgraph DAEMONS ["Proactive Monitoring Daemons (it-ops daemon)"]
+        D_MPS["MPSDaemon (Telemetria SNMP v3, Allarme Toner <=15%)"]
+        D_SLA["SLADaemon (Watchdog Saldo Monte Ore SLA)"]
+    end
+
+    subgraph GOV ["Continuous Assurance Git Guard Hooks"]
+        PRE_COMMIT["Pre-Commit: Schemi YAML, Secret Leak & OKF Linter"]
+        PRE_PUSH["Pre-Push: Unit Test Suite & Sync Hub-and-Spoke"]
+    end
+
+    UI --> SWARM
+    SWARM --> DAEMONS
+    DAEMONS --> GOV
+```
+
+### Invarianti Fondamentali di Continuous Assurance:
+1. **Contratti Agente Deterministici**: Gli agenti bounded restituiscono esclusivamente dizionari JSON normalizzati, senza generazione libera di testo suscettibile di allucinazioni su dati contabili o indirizzi IP.
+2. **Sorveglianza Proattiva di Background**: I demoni `MPSDaemon` e `SLADaemon` identificano anomalie operative (consumabili in esaurimento, monte ore consumato in anticipo) prima che si trasformino in disservizi per il cliente.
+3. **Git Guard Hooks Portabili**: Qualsiasi commit o push su entrambi i repository viene validato localmente (`scripts/hooks/git_guard.py`), garantendo zero leak di credenziali e perfetta corrispondenza Hub-and-Spoke.
+
+---
+
+## 7. Skills Management & Catalogo Agenti Antigravity
+
+Il modulo `SkillsManager` (`scripts/core/skills_manager.py`) implementa la governance centralizzata delle capacita agentiche per Google Antigravity:
+- **Catalogo Curato**: Accesso istantaneo a oltre 300 skills dal repository ufficiale `rmyndharis/antigravity-skills`.
+- **Installazione Standalone in Pure Python**: Installazione atomica senza dipendenze Node.js/npm.
+- **Nazionalizzazione Normativa**: Revisione obbligatoria per garantire che le competenze acquisite rispettino il diritto italiano e gli standard comunitari (es. `billing-automation` su FatturaPA v1.2, Codici Agenzia Entrate MP05/MP12, DFFM e D.Lgs. 231/2002).

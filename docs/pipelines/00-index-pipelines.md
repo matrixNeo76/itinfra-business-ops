@@ -65,16 +65,20 @@ relations:
     targetId: "spec-ops-pipeline-j-gap-analysis"
     relationType: "documents"
     weight: 1.0
+  - targetTitle: "Pipeline K — Unified Client Onboarding Orchestrator"
+    targetId: "spec-ops-pipeline-k-onboard"
+    relationType: "documents"
+    weight: 1.0
 ---
 
 # 📚 Indice Master delle Pipeline Operative
 
 Benvenuto nel compendio formale **OKF v0.2** di **`itinfra-business-ops`**.  
-Questo documento censisce, mappa e relaziona le **10 pipeline native** di gestione operativa, commerciale, contabile, logistica, documentale e di conformità legale.
+Questo documento censisce, mappa e relaziona le **11 pipeline native** di gestione operativa, commerciale, contabile, logistica, documentale e di conformità legale.
 
 ---
 
-## 🗺️ Mappa delle Relazioni delle 10 Pipeline
+## 🗺️ Mappa delle Relazioni delle 11 Pipeline
 
 ```mermaid
 flowchart TD
@@ -142,4 +146,5 @@ flowchart TD
 | [`08-pipeline-h-document-ingestion.okf.md`](08-pipeline-h-document-ingestion.okf.md) | `spec-ops-pipeline-h-document-ingestion` | Ingestione SOTA & Audit Triangolare | N/A (Multi-Engine) |
 | [`09-pipeline-i-memory-learning.okf.md`](09-pipeline-i-memory-learning.okf.md) | `spec-ops-pipeline-i-memory-learning` | Memoria DAG & Attestation | `registry.yaml` |
 | [`10-pipeline-j-gap-analysis.okf.md`](10-pipeline-j-gap-analysis.okf.md) | `spec-ops-pipeline-j-gap-analysis` | Gap Analysis 231 & CVSS v4.0 | `gap_analysis.schema.yaml` |
+| [`11-pipeline-k-client-onboarding.okf.md`](11-pipeline-k-client-onboarding.okf.md) | `spec-ops-pipeline-k-onboard` | Onboarding Unificato & Dual Storage | `client.schema.yaml` |
 | [`../ASCII_DIAGRAMS.md`](../ASCII_DIAGRAMS.md) | `spec-ops-ascii-diagrams` | Compendio Diagrammi ASCII Hub & Pipelines | N/A |

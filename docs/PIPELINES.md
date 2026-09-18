@@ -1,6 +1,6 @@
-# 🔄 Le 10 Pipeline Operative di itinfra-business-ops
+# 🔄 Le 11 Pipeline Operative di itinfra-business-ops
 
-Guida dettagliata al funzionamento deterministico delle pipeline da A a I con diagrammi di flusso ASCII.
+Guida dettagliata al funzionamento deterministico delle pipeline da A a K con diagrammi di flusso ASCII.
 
 > 📄 *Per il compendio architetturale completo, consulta [`docs/ASCII_DIAGRAMS.md`](ASCII_DIAGRAMS.md).*
 
@@ -454,4 +454,41 @@ Guida dettagliata al funzionamento deterministico delle pipeline da A a I con di
   │ Cross-check: IP Scansionati vs 04-Network-IPAM.md & 06-As-Built.md          │
   │ Esito: Copertura contrattuale certificata oppure ALLERTA SHADOW IT          │
   └─────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### Pipeline K — Unified Client Onboarding Orchestrator (Zero-Drift Dual Storage)
+* **Scopo**: Creazione atomica e deterministica di nuovi clienti sia nel repository commerciale (`clients/<slug>/`) sia nel repository tecnico (`../itinfra/projects/<slug>/`), con certificazione istantanea di zero-drift, subnet IPAM e assegnazione profilo di servizio (Silver, Gold, Platinum).
+* **Artefatti**: `clients/<slug>/client-manifest.yaml`, `contracts/ctr-*.yaml`, `quotes/quote-*.yaml`, `mps/mps-*.yaml`, `gap_analysis/ga-*.yaml`, e in `itinfra`: `manifest.yaml`, `01-Executive-Summary.md`, `04-Network-IPAM.md`, `06-As-Built.md`.
+* **Workflow**:
+  1. `Parameter Ingestion & Tier Selection`: Acquisizione ragione sociale, identificativi fiscali, subnet IP e livello di servizio.
+  2. `Commercial Provisioning`: Generazione fascicolo commerciale completo con monte ore SLA associato.
+  3. `Technical Workspace Provisioning`: Generazione documentazione ingegneristica con calcolo pool DHCP/IPAM e baseline apparati.
+  4. `Zero-Drift Cross-Check`: Validazione istantanea con `ITInfraBridge.check_slug` e apposizione del sigillo SHA-256.
+
+```text
+┌───────────────────────────────────────────────────────────────────────────────┐
+│       PIPELINE K: UNIFIED CLIENT ONBOARDING (DUAL-STORAGE ZERO-DRIFT)         │
+└───────────────────────────────────────┬───────────────────────────────────────┘
+                                        │
+             ┌──────────────────────────┴──────────────────────────┐
+             ▼                                                     ▼
+┌────────────────────────────────────────┐ ┌────────────────────────────────────────┐
+│ Workspace itinfra-business-ops         │ │ Workspace itinfra (Tecnico)            │
+│ clients/<slug>/                        │ │ projects/<slug>/                       │
+├────────────────────────────────────────┤ ├────────────────────────────────────────┤
+│ • client-manifest.yaml                 │ │ • manifest.yaml (Sincronizzato)        │
+│ • contracts/ctr-<slug>-2026.yaml       │ │ • 01-Executive-Summary.md              │
+│ • quotes/quote-<slug>-01.yaml          │ │ • 04-Network-IPAM.md (Subnet calcolata)│
+│ • mps/mps-<slug>-01.yaml               │ │ • 06-As-Built.md (Baseline apparati)   │
+│ • gap_analysis/ga-<slug>-01.yaml       │ │ • 02, 03, 05 (DR Plan, Survey, LLD)    │
+└────────────────────────────────────────┘ └────────────────────────────────────────┘
+             │                                                     │
+             └──────────────────────────┬──────────────────────────┘
+                                        │
+                                        ▼
+        ┌───────────────────────────────────────────────────────────────┐
+        │ Validazione Bridge & Certificazione Zero-Drift Eseguita       │
+        └───────────────────────────────────────────────────────────────┘
 ```
