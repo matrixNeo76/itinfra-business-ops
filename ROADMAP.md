@@ -90,6 +90,30 @@ flowchart LR
 
 ---
 
+---
+
+### 🛡️ FASE SOTA Level-2 (Settembre 2026) — Enterprise Architecture & Legal Governance (Completata)
+* [x] **Pipeline H (Ingestione SOTA & Visual Parsing)**:
+  * [x] Analisi visiva nativa pixel-to-markdown per PDF, distinte tecniche e fatture SDI.
+  * [x] Riconciliazione triangolare 3-way matching tra documento, anagrafica e preventivo con zero allucinazioni.
+* [x] **Pipeline I (Memoria Auto-Correttiva DAG & Attestation)**:
+  * [x] Grafo aciclico orientato (DAG) con validazione cicli DFS e rilevamento orfani.
+  * [x] Modello di attestazione formale umana (`human:possumato`) e decadimento logaritmico della confidenza.
+  * [x] Peer-synchronization atomica cross-repository bidirezionale con `itinfra`.
+* [x] **Pipeline J (Gap Analysis & Compliance D.Lgs. 231/2001, SPEC-19)**:
+  * [x] Perimetro normativo reati informatici (Art. 24-bis), ISO/IEC 27001:2022, ISO 22301 e NIST CSF v2.0.
+  * [x] Algoritmo di scoring ponderato (25% doc, 50% interviste, 25% VA) e livello di maturità CMMI (1.0 - 5.0).
+  * [x] Scoring tecnico vulnerabilità secondo lo standard FIRST CVSS v4.0.
+  * [x] Generazione automatica di Remediation Plan prioritizzato (P1 15gg, P2 45gg, P3 90gg).
+  * [x] Riconciliazione federata As-Built/IPAM con rilevamento e allerta automatica di Shadow IT.
+  * [x] Emissione formale dei 4 deliverable sigillati con digest SHA-256 e PDF vettoriali brandizzati Aure System.
+* [x] **Evoluzioni SOTA Level-2 sulle 7 Pipeline Storiche (SPEC-18)**:
+  * [x] Pipeline C: FatturaPA FPA12 per PA, codici CIG/CUP, ritenute RT01/RT02 e riconciliazione ISO 20022 CAMT.053.
+  * [x] Pipeline A: Algoritmo Gaussiano per festività mobili di Pasqua e calcolo penali SLA progressive.
+  * [x] Pipeline E: Safety floor per margini commerciali minimi e gestione rischio cambio USD/EUR.
+  * [x] Pipeline F: SNMP v3 USM autenticato e monitoraggio parti ad usura prolungata (Drum/Fusore).
+  * [x] Pipeline G: Gestione punch list (snagging), ritenuta di garanzia 5% e verifica carico elettrico su LLD.
+
 ### 🟠 FASE 4: v0.4.0 — Solleciti Automatici (Dunning) & Riconciliazione Bancaria (Q1 2027)
 * [ ] **Engine Dunning & Solleciti**:
   * [ ] Notifica di cortesia automatica a -5 giorni dalla scadenza della rata.
@@ -125,3 +149,6 @@ flowchart LR
 | **E** | Preventivazione Multi | ✅ | ✅ | ✅ | 📅 Pianificato | 📅 Pianificato |
 | **F** | Multifunzione MPS | ✅ | ✅ | ✅ | 📅 Pianificato | 📅 Pianificato |
 | **G** | Commesse Arredo | ✅ | ✅ | ✅ | 📅 Pianificato | 📅 Pianificato |
+| **H** | Ingestione SOTA OKF | ✅ | ✅ | ✅ | ✅ | 📅 Pianificato |
+| **I** | Memoria DAG Attestata | ✅ | ✅ | ✅ | ✅ | 📅 Pianificato |
+| **J** | Gap Analysis 231 | ✅ | ✅ | ✅ | ✅ | 📅 Pianificato |

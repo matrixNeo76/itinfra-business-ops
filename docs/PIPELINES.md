@@ -1,4 +1,4 @@
-# 🔄 Le 9 Pipeline Operative di itinfra-business-ops
+# 🔄 Le 10 Pipeline Operative di itinfra-business-ops
 
 Guida dettagliata al funzionamento deterministico delle pipeline da A a I con diagrammi di flusso ASCII.
 
@@ -402,5 +402,56 @@ Guida dettagliata al funzionamento deterministico delle pipeline da A a I con di
   │ • Lock Concorrente: `projects/_global_scratchpad.lock`                      │
   │ • Sanificazione: `MultiTenantSanitizer` (Zero IP, domini o credenziali)     │
   │ • Promozione: `it-ops learn promote <id> --code LES-NET-XXX`                │
+  └─────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### Pipeline J — Gap Analysis, Compliance D.Lgs. 231/2001 & Vulnerability Assessment (CVSS v4.0)
+* **Scopo**: Certificazione della conformità al D.Lgs. 231/2001 (Art. 24-bis reati informatici), ISO/IEC 27001:2022 e NIST CSF v2.0, calcolo deterministico del gap, penalità CVSS v4.0 FIRST, generazione del Remediation Plan prioritizzato e verifica Shadow IT con l'As-Built di `itinfra`.
+* **Artefatti**: `clients/<slug>/gap_analysis/ga-*.yaml`, `01-verbale-kickoff.md`, `02-rapporto-gap-analysis-remediation.md` & `.pdf`, `03-rapporto-vulnerability-assessment.md` & `.pdf`, `04-executive-presentation-odv.html`.
+* **Workflow**:
+  1. `Documentary Review & Interviews`: Riesame di 7 documenti formali e svolgimento delle interviste sulle 5 aree canoniche.
+  2. `Vulnerability Assessment & CVSS v4.0`: Scansione host e servizi con calcolo delle penalità tecniche.
+  3. `Gap Calculation & Remediation Engine`: Calcolo ponderato (25% doc, 50% interviste, 25% VA), maturità CMMI (1.0-5.0) e generazione automatica roadmap correttiva (P1/P2/P3).
+  4. `Deliverable Generation & Sigillo SHA-256`: Emissione dei verbali, report peritali in Markdown e PDF vettoriale ad alta risoluzione con logo ufficiale Aure System e dashboard HTML per OdV e CDA.
+  5. `itinfra Hub-and-Spoke Cross-Check`: Riconciliazione tra gli IP target scansionati e gli asset IPAM/As-Built di `itinfra` con alert immediato in caso di Shadow IT.
+
+```text
+┌───────────────────────────────────────────────────────────────────────────────┐
+│     PIPELINE J: GAP ANALYSIS & COMPLIANCE D.LGS. 231/01 (ART. 24-BIS)        │
+└───────────────────────────────────────┬───────────────────────────────────────┘
+                                        │
+  [1. Acquisizione Evidenze]            ▼
+  ┌─────────────────────────────────────────────────────────────────────────────┐
+  │ • Documenti Formali (7 minimi: MOG 231, Codice Etico, Policy ICT, BCP/DR)   │
+  │ • Interviste 5 Aree: CISO, IT Ops, Risk/Compliance, Acquisti, Sicurezza     │
+  │ • Vulnerability Assessment: Rilevazione debolezza con scoring CVSS v4.0     │
+  └─────────────────────────────────────┬───────────────────────────────────────┘
+                                        │
+  [2. Scoring Deterministico & CMMI]    ▼
+  ┌─────────────────────────────────────────────────────────────────────────────┐
+  │ Conformita' = 25% Doc + 50% Interviste + 25% VA (Penalita' CVSS v4.0 FIRST) │
+  │ Maturita' CMMI = 1.0 + (Conformita' / 100) * 4.0 (Scala 1.0 - 5.0)         │
+  └─────────────────────────────────────┬───────────────────────────────────────┘
+                                        │
+  [3. Remediation Engine Prioritizzato] ▼
+  ┌─────────────────────────────────────────────────────────────────────────────┐
+  │ Generazione Azioni: P1_CRITICAL (15 gg) | P2_HIGH (45 gg) | P3_MEDIUM (90 gg│
+  │ Correlazione automatica: Reati presupposto ex Art. 24-bis D.Lgs. 231/01     │
+  └─────────────────────────────────────┬───────────────────────────────────────┘
+                                        │
+  [4. Sigillo Forense & Deliverables]   ▼
+  ┌─────────────────────────────────────────────────────────────────────────────┐
+  │ • Sigillo Immutabile SHA-256 su payload canonico normalizzato               │
+  │ • Deliverables: 01-Kickoff, 02-Rapporto Gap (MD+PDF), 03-VA (MD+PDF)        │
+  │ • 04-Executive Dashboard HTML interattiva e print-ready per CDA e OdV       │
+  └─────────────────────────────────────┬───────────────────────────────────────┘
+                                        │
+  [5. Bridge Federato itinfra (As-Built)]
+                                        ▼
+  ┌─────────────────────────────────────────────────────────────────────────────┐
+  │ Cross-check: IP Scansionati vs 04-Network-IPAM.md & 06-As-Built.md          │
+  │ Esito: Copertura contrattuale certificata oppure ALLERTA SHADOW IT          │
   └─────────────────────────────────────────────────────────────────────────────┘
 ```

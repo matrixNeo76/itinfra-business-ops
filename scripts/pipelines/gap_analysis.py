@@ -60,20 +60,19 @@ class ItinfraBridge:
         allocations = []
         subnets = []
         in_table = False
+        import re
         for line in content.splitlines():
             line_str = line.strip()
-            if "Subnet" in line_str or "CIDR" in line_str:
-                parts = [p.strip() for p in line_str.split("|") if p.strip()]
-                for p in parts:
-                    if "/" in p and any(char.isdigit() for char in p):
-                        subnets.append(p)
+            m = re.search(r'(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/\d{1,2})', line_str)
+            if m:
+                subnets.append(m.group(1))
             if line_str.startswith("|") and ("IP" in line_str or "Host" in line_str):
                 in_table = True
                 continue
             if in_table and line_str.startswith("|"):
-                parts = [p.strip() for p in line_str.split("|") if p.strip()]
+                parts = [p.strip().replace("`", "") for p in line_str.split("|") if p.strip()]
                 if len(parts) >= 2 and not parts[0].startswith("---"):
-                    ip_candidate = parts[0]
+                    ip_candidate = parts[0].strip()
                     desc = parts[1] if len(parts) > 1 else ""
                     if any(char.isdigit() for char in ip_candidate) and "." in ip_candidate:
                         allocations.append({"ip": ip_candidate, "hostname_or_desc": desc})

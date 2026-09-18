@@ -33,6 +33,7 @@ flowchart TD
     B_CTR -.->|"Cross-Check Asset As-Built"| T_ASB
     B_RAP -.->|"Verifica Seriali Intervento"| T_ASB
     B_MPS -.->|"Verifica Seriale Hardware"| T_ASB
+    B_GAP -.->|"Cross-Check IPAM & Rilevamento Shadow IT"| T_ASB
 ```
 
 ### Perché Non nel Repo Tecnico (SoC & Compliance)

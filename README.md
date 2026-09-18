@@ -43,7 +43,7 @@ flowchart TD
 
 ---
 
-## 🚀 Le 7 Pipeline Operative
+## 🚀 Le 10 Pipeline Operative
 
 | Pipeline | Ambito | Descrizione & Output |
 | :---: | :--- | :--- |
@@ -56,6 +56,7 @@ flowchart TD
 | **G** | **Fornitura Arredo Ufficio** | Gestione commessa chiavi in mano: rilievo metrico, layout 2D/3D, campionatura, posa e verbale di collaudo con handover. |
 | **H** | **Ingestione Documentale SOTA (OKF v0.2)** | Analisi visiva nativa pixel-to-markdown di PDF, contratti e preventivi, decomposizione modulare e audit qualitativo deterministico. |
 | **I** | **Memoria Auto-Correttiva & Cognitive Bridge (SPEC-17)** | Apprendimento attestato con trust tiers, compilazione regole Antigravity e ponte federato con la memoria di `itinfra`. |
+| **J** | **Gap Analysis & Compliance D.Lgs. 231/2001 (SPEC-19)** | Audit peritale reati informatici (Art. 24-bis), scoring CVSS v4.0 FIRST, remediation plan e cross-check Shadow IT As-Built. |
 
 ---
 
@@ -107,6 +108,13 @@ La suite include il wrapper Windows [`it-ops.cmd`](file:///c:/Users/auresystem/r
 .\it-ops.cmd learn audit
 .\it-ops.cmd learn test
 .\it-ops.cmd learn sync
+# Gap Analysis & Compliance 231 (SPEC-19)
+.\it-ops.cmd gap <slug> status
+.\it-ops.cmd gap <slug> calculate
+.\it-ops.cmd gap <slug> remediation
+.\it-ops.cmd gap <slug> va
+.\it-ops.cmd gap <slug> report
+.\it-ops.cmd gap <slug> check
 ```
 
 ---
